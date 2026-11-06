@@ -1,0 +1,52 @@
+name: 버그 신고
+description: 오류의 재현 방법과 기대 동작을 정리합니다.
+title: 'fix: '
+body:
+  - type: input
+    id: owner
+    attributes:
+      label: 담당자
+      description: GitHub 아이디를 적고 이슈의 Assignees에도 지정해주세요.
+      placeholder: '@github-id'
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 현재 동작과 영향
+      description: 발생한 오류와 영향을 받는 기능을 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법
+      description: 실행 환경, 브랜치 또는 커밋, 요청 경로와 재현 순서를 적어주세요. 요청 데이터에는 가짜 값을 사용하세요.
+      placeholder: |
+        - 환경 및 커밋:
+        1. 요청 또는 실행
+        2. 발생한 오류
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      description: 정상적으로 동작했을 때의 결과를 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 수정 범위와 완료 조건
+      description: 확인된 수정 대상과 재발 방지를 위한 검증 조건을 적어주세요. 원인을 모르면 조사할 범위를 적어주세요.
+      placeholder: |
+        - [ ] 수정 또는 조사 작업
+        - [ ] 재현 시나리오 정상 동작 확인
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 로그 및 참고 자료
+      description: 관련 로그, 스크린샷, 이슈 링크를 적어주세요. 토큰, 비밀번호, 실제 사용자 데이터는 제거하세요.

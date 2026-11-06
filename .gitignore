@@ -1,10 +1,9 @@
-# SQL files are managed locally and shared with teammates separately.
-# These patterns apply at every directory level, including all app modules.
-*.[sS][qQ][lL]
-*.[sS][qQ][lL].*
-
-# Ignore all Flyway migration resources, including supporting files.
-**/src/main/resources/db/migration/
+# Schema SQL and Flyway migrations are versioned with application code.
+# Keep database dumps and backups in these ignored directories.
+dumps/
+backups/
+*.dump
+*.backup
 
 # Environment files are local only, including example and sample files.
 .env

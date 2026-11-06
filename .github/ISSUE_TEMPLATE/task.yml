@@ -1,0 +1,52 @@
+name: 일반 작업
+description: CI, 환경 설정, 문서, 리팩터링 등의 작업을 정리합니다.
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: 작업 유형
+      options:
+        - chore
+        - docs
+        - refactor
+        - test
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: 담당자
+      description: GitHub 아이디를 적고 이슈의 Assignees에도 지정해주세요.
+      placeholder: '@github-id'
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 목적
+      description: 이 작업이 필요한 이유를 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 작업 범위
+      description: 변경할 설정, 문서, 코드 등을 적어주세요.
+      placeholder: |
+        - [ ] 작업 항목
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건
+      description: 실행할 검증과 기대 결과를 적어주세요.
+      placeholder: |
+        - [ ] 검증 조건
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: 참고 자료
+      description: 관련 문서와 이슈 링크를 적어주세요. 인증정보와 실제 사용자 데이터는 포함하지 마세요.
