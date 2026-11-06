@@ -1,0 +1,44 @@
+# SQL files are managed locally and shared with teammates separately.
+# These patterns apply at every directory level, including all app modules.
+*.[sS][qQ][lL]
+*.[sS][qQ][lL].*
+
+# Ignore all Flyway migration resources, including supporting files.
+**/src/main/resources/db/migration/
+
+# Environment files are local only, including example and sample files.
+.env
+.env.*
+*.env
+*.env.*
+.envrc
+
+# Local configuration and secret directories.
+.secrets/
+secrets/
+credentials/
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# Private keys and credential stores.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+
+# Cloud service credentials. Arbitrarily named secret JSON belongs in secrets/.
+service-account*.json
+service_account*.json
+*-service-account*.json
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+application_default_credentials.json
+credentials.json
+
+# macOS metadata.
+.DS_Store
