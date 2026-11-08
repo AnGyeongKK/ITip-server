@@ -2,7 +2,7 @@
 
 ## API 호출 구조 보기
 
-[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·관련 커밋을 볼 수 있다. 이번 구현 6개와 후속 설계 32개를 구분하며, 실제 GCS·모델 연동 대기 상태도 표시한다.
+[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·관련 커밋을 볼 수 있다. 구현 8개와 후속 설계 30개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
 
 편집 원본은 [`visualizations/yousum-api-pipelines.fragment.html`](visualizations/yousum-api-pipelines.fragment.html)이다. 배포용 HTML은 이 원본에 테마·미리보기 실행 환경을 포함한 파일이며, 수정 후 두 파일의 동작을 함께 확인한다.
 
