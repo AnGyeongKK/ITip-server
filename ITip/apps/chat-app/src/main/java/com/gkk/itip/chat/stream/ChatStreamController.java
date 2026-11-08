@@ -4,6 +4,7 @@ import com.gkk.itip.chat.infrastructure.PythonChatClient;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.exception.BusinessException;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -24,13 +25,14 @@ public class ChatStreamController {
     }
     @PostMapping(produces=MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<StreamingResponseBody> send(@PathVariable UUID conversationId,@RequestHeader("Idempotency-Key") UUID key,
-            @Valid @RequestBody SendMessageRequest request) {
+            @Valid @RequestBody SendMessageRequest request,HttpServletResponse response) {
         python.requireConfigured();
         if(!capacity.tryAcquire()) throw new BusinessException(CHAT_CAPACITY_EXCEEDED);
         GenerationTicket ticket;
         try {ticket=store.begin(user.ownerId(),conversationId,key,request);}
         catch(RuntimeException failure) {capacity.release();throw failure;}
-        StreamingResponseBody body=out->{try {bridge.write(ticket,request.content(),out);}finally {capacity.release();}};
+        // Spring 7.0.6+ wraps the callback stream with nonFlushing; SSE needs the servlet stream's flush.
+        StreamingResponseBody body=ignored->{try {bridge.write(ticket,request.content(),response.getOutputStream());}finally {capacity.release();}};
         return ResponseEntity.ok().contentType(MediaType.TEXT_EVENT_STREAM).cacheControl(CacheControl.noCache())
             .header("X-Accel-Buffering","no").body(body);
     }

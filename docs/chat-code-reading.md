@@ -88,6 +88,8 @@ POST /conversations/{id}/messages
 | `ChatStreamBridge.write()`의 try-with-resources·committed | 연결 종료 시 upstream 정리. 완료 뒤 전송 실패를 DB 실패로 되돌리지 않음 |
 | `ChatLimits`·전용 executor·semaphore | 인스턴스 자원 제한과 방별 DB 중복 제어를 구분. 시간·크기 값 한곳에서 공유 |
 
+현재 Spring 7의 callback 출력 스트림은 flush가 기본 비활성이다. `ChatStreamController`가 실제 servlet 스트림을 전달하는 이유를 함께 본다. 이 처리가 빠지면 작은 SSE가 완료 시점에 모여 도착할 수 있다. `ChatHttpStreamingTest`는 이 문제의 실제 HTTP 실패→수정을 확인한다.
+
 `fail()`도 DB 장애로 저장할 수 없으면 상태를 꾸미지 않고 연결을 닫는다. 앱은 EOF를 완료로 간주하지 않고 GET으로 복구한다. 프로세스 강제 종료는 150초 lease 만료 후 로컬 10초 복구 작업이 회수한다. 마지막 체크포인트 뒤 조각은 유실될 수 있다.
 
 ## 테스트로 동작 확인

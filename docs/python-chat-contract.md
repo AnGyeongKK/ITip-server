@@ -69,6 +69,8 @@ finishReason은 STOP·LENGTH·INSUFFICIENT_EVIDENCE다. 근거 부족은 명시�
 
 Netty 이벤트 루프에서 JPA나 앱 쓰기를 실행하지 않는다. MVC의 별도 제한된 실행 스레드가 스트림을 읽는다. 접수 전 인스턴스 동시 스트림 4개를 제한하고, 방별 중복은 DB에서 별도로 막는다. 같은 질문의 내부 자동 재시도는 수행하지 않는다.
 
+Spring 7.0.6 이후 callback의 출력 스트림은 flush를 전달하지 않을 수 있다. ChatStreamController는 HTTP 경계에서 실제 servlet 출력 스트림을 사용해 이벤트마다 네트워크로 전송한다. ChatHttpStreamingTest는 실제 포트에서 upstream을 기다리게 한 상태로 첫 delta를 수신하고, 아직 GENERATING인 부분 답변을 DB에서 확인한 뒤 완료를 허용한다. MockMvc의 최종 응답 문자열 검사만으로 이 동작을 증명하지 않는다. [현재 의존성의 응답 스트림 구현](https://github.com/spring-projects/spring-framework/blob/v7.0.10/spring-web/src/main/java/org/springframework/http/server/ServletServerHttpResponse.java)을 참고한다.
+
 기본 보호 값은 ChatLimits 한곳에서 관리한다: 질문4000자, 답변65536자, 출처20개, 연결3초, 이벤트 공백30초, 전체120초, MVC125초, DB lease150초. 문자 수는 UTF-16 기준이다. 모델·비용 정책은 AI 파트와 조정한다.
 
 부분 답변은 최초 조각과 이후 약250ms 간격으로 저장한다. 종료·오류에는 마지막 누적 텍스트를 저장한다. 강제 종료 직전의 미저장 조각은 잃을 수 있다. 로컬 Chat의 10초 스케줄러가 만료 lease를 FAILED·INCOMPLETE로 회수하며, 토큰이 다른 늦은 저장은 무시한다. Cloud Run 최소 인스턴스0 운영에서 정기 복구가 필요하면 별도 Scheduler 호출을 연결한다.
