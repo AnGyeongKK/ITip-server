@@ -30,6 +30,8 @@
 | `DB_POOL_MAX` | 프로세스별 최대 DB 연결 수. 기본 5 |
 | `WORKER_PORT` | Worker HTTP 포트. 기본 8081 |
 | `CHAT_PORT` | Chat HTTP 포트. 기본 8082 |
+| `CHAT_AI_BASE_URL` | Python 서버 기본 주소. 미설정 시 질문 생성은 JSON503, 방·기록 조회는 동작 |
+| `CHAT_AI_TOKEN` | 내부 Python 인증이 필요한 경우만 Bearer 전달. 실제 값 공유 금지 |
 | `DEMO_USER_ID` | API·Chat에서 동일하게 설정하는 데모 소유자. 기본 demo-user |
 
 `DB_NAME`·`DB_PORT`를 변경하면 앱의 `DB_URL`도 같은 DB를 가리키게 설정한다. 기존 volume이 있으면 환경변수 변경만으로 DB 계정·비밀번호가 바뀌지 않는다. 개인 데이터가 있는 volume을 임의로 삭제하지 않는다.
@@ -105,6 +107,21 @@ curl 'http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>'
 `<analysisId>`·`<sectionId>`는 서버에서 받은 실제 UUID로 바꾼다.
 
 첫 응답의 `sections[].sectionId`를 상세 경로에 사용한다. `mindmap.sectionIds` 순서로 주제를 배치하고 `subtopics`를 하위 항목으로 그린다. 두 API는 AI를 재호출하지 않으며 구간 상세에 원본 링크·영상 카드·전체 한 줄 요약을 함께 제공한다. 오류와 저장 경계는 [AI 결과 계약](analysis-ai-contract.md#결과구간-조회-구현-5)을 따른다. 추천 영상 API는 아직 후속 범위다.
+
+## 채팅 실행·읽기
+
+API의 Flyway 완료 뒤 Chat을 실행한다. API·Chat의 `DEMO_USER_ID`를 동일하게 설정한다. 완료된 개인 분석 기록이 한 개 이상 있어야 방을 만들 수 있다.
+
+```sh
+./gradlew :apps:chat-app:bootRun
+./gradlew :apps:chat-app:test
+```
+
+앱은 방·이력 JSON과 답변 POST SSE 모두 Chat 주소(기본8082)로 호출한다. `POST /api/v1/conversations`의 scope는 [채팅 계약](chat-contract.md)을 따른다. 질문은 JSON clientRequestId·content·retryOfMessageId와 같은 UUID의 Idempotency-Key를 보내며, `Accept: text/event-stream`을 사용한다. 일반 EventSource의 GET 요청으로 대체하지 않는다.
+
+Python을 연결하려면 [내부 계약 초안](python-chat-contract.md)을 AI 파트와 맞추고 CHAT_AI_BASE_URL을 로컬에서 지정한다. 현재 실제 Python 주소·스키마가 확인되지 않았으며 키만 넣어서 GPT·RAG가 구현되는 구조가 아니다. HTTP fixture 테스트와 실제 AI 시연을 구분한다.
+
+Chat 이미지도 `./gradlew :apps:chat-app:bootJar` 후 `docker build -f apps/chat-app/Dockerfile -t itip-chat:local .`로 만든다. API와 같은 네트워크·DB 환경변수를 전달하고 8082를 로컬에 노출한다. 컨테이너에서 Python이 호스트에 있으면 localhost 대신 해당 Docker 환경의 호스트 주소를 사용한다. [코드 읽기 안내](chat-code-reading.md)에서 함수·잠금·TX·테스트 순서로 따라갈 수 있다.
 
 ```sh
 ./gradlew test
