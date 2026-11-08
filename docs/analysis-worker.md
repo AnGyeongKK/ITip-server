@@ -31,6 +31,10 @@ UUID complete(JobQueue.Claim claim, UUID analysisId, Instant now);
 
 lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완료는 `LostJobLeaseException`을 던진다. 완료 후 중복 호출도 같은 예외로 종료하며 결과·조각·기록을 추가하지 않는다. `JobQueue.advance()`도 같은 예외를 사용한다. DB 연결 정보나 저장 데이터가 맞지 않는 경우는 별도의 `IllegalStateException`으로 구분한다.
 
+## 미업로드 준비 기한
+
+`ExpiredPreparationService.findOwners(now)`는 기한이 지난 `AWAITING_UPLOAD`의 사용자만 찾는다. 실행 담당 코드는 사용자마다 `expire(ownerId, now)`를 별도 호출한다. 사용자 잠금 후 Entity의 `expireAwaitingUpload()`로 실패를 확정하며, 이미 접수한 작업·아직 유효한 준비 항목·기존 실패 원인은 바꾸지 않는다. 여러 사용자 잠금을 하나의 트랜잭션에서 모으지 않는다.
+
 ## 확인 범위
 
 `ITip/`에서 아래 명령으로 `pgvector/pgvector:pg17` Testcontainers를 사용한다. Docker가 실행 중이어야 하며 운영 DB는 사용하지 않는다. 테스트에서만 Flyway를 활성화하고 운영 Worker의 마이그레이션 설정은 바꾸지 않는다.

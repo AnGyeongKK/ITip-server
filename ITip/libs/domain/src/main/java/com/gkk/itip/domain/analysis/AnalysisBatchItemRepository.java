@@ -23,4 +23,19 @@ public interface AnalysisBatchItemRepository extends JpaRepository<AnalysisBatch
             """)
     List<AnalysisBatchItem> findUnexpiredPreparations(@Param("ownerId") String ownerId,
             @Param("videoIds") Collection<String> videoIds, @Param("now") Instant now);
+
+    @Query("""
+            select distinct batch.ownerId from AnalysisBatchItem item, AnalysisBatch batch
+            where item.batchId = batch.id and item.status = com.gkk.itip.domain.analysis.ItemStatus.AWAITING_UPLOAD
+              and item.uploadDeadlineAt <= :now order by batch.ownerId
+            """)
+    List<String> findExpiredPreparationOwners(@Param("now") Instant now);
+
+    @Query("""
+            select item from AnalysisBatchItem item, AnalysisBatch batch
+            where item.batchId = batch.id and batch.ownerId = :ownerId
+              and item.status = com.gkk.itip.domain.analysis.ItemStatus.AWAITING_UPLOAD
+              and item.uploadDeadlineAt <= :now
+            """)
+    List<AnalysisBatchItem> findExpiredPreparations(@Param("ownerId") String ownerId, @Param("now") Instant now);
 }
