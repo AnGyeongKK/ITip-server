@@ -52,7 +52,9 @@ public class JobQueue {
 
     @Transactional
     public void advance(UUID jobId, UUID token, AnalysisStage stage, Instant now) {
-        jobs.findByIdForUpdate(jobId).orElseThrow().changeStage(token, stage, now);
+        var job = jobs.findByIdForUpdate(jobId).orElseThrow(LostJobLeaseException::new);
+        if (!job.isLeaseOwned(token, now)) throw new LostJobLeaseException();
+        job.changeStage(token, stage, now);
     }
 
     @Transactional
