@@ -3,7 +3,7 @@
 - 작업 전 [AI 결과 계약과 현재 차이](../../docs/analysis-ai-contract.md), [담당 연결](../../docs/analysis-integration.md)을 읽는다. AI 실험 원문과 공개 API 명세 링크는 계약 문서에서 확인한다. 현재 코드·AI 실험 결과·구현 예정·미합의 항목을 구분한다.
 - AI 파트가 요약·주제·하위 항목·마인드맵 관계를 생성하고, 서버는 검증·ID/시간 매핑·저장·조회를 담당한다. 앱은 그래프 배치·연결선·확대/축소를 구현한다. 결과 GET에서 생성·임베딩을 다시 실행하지 않는다.
 - 마인드맵은 `rootTitle → sectionIds의 주제 → sections[].subtopics`로 구성한다. AI의 `sectionKey`를 서버 UUID `sectionId`로 바꾸고 요약·마인드맵·상세에서 같은 ID를 사용한다. 앱 전용 좌표·그래프 라이브러리 타입을 서버 계약에 미리 추가하지 않는다.
-- AI 입력·출력 DTO, 검증 후 저장 형식, 공개 API 응답을 구분한다. API가 Worker 모듈에 의존하지 않는다. 결과 조회 구현 시 실제 공유가 발생하는 `ResultDocument`의 공통 모듈 이동을 검토하고, 미래 사용처만으로 계층을 늘리지 않는다.
+- AI 입력·출력 DTO, 검증 후 저장 형식, 공개 API 응답을 구분한다. 공유 저장 타입 `ResultDocument`는 `libs/domain`의 `domain.analysis.result`에, 원시 `AnalysisOutput`은 Worker에, 공개 응답은 API에 둔다. API가 Worker 모듈에 의존하지 않으며 미래 사용처만으로 계층을 늘리지 않는다.
 - 근거 ID는 실제 입력 자막에 존재해야 하고, 시간은 원본에서 계산한다. `SOURCE`와 `AI_SUGGESTION`을 구분한다. 입력을 묶을 때 집계 ID와 원본 구간·시간의 대응을 보존하고 RAG 검색 데이터는 자막 원문으로 만든다.
 - 외부 AI 대기와 SSE 연결 전체를 DB 트랜잭션으로 묶지 않는다. 결과·검색 데이터·개인 기록이 준비되어야 완료를 확정한다. 조회·검색 시 현재 소유권과 개인 기록의 삭제 여부를 확인한다.
 - 외부 AI 서버 HTTP 연동은 WebClient를 사용한다. 영상 분석과 Python RAG 채팅의 요청·응답 계약은 별개이며, 실제 연결을 구현할 때 endpoint·타임아웃·오류·스트림 종료를 맞춘다. 저장 결과 GET에는 HTTP Client나 AI 호출을 추가하지 않는다. 교체를 예상한 인터페이스·범용 어댑터를 미리 만들지 않는다.

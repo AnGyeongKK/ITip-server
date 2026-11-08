@@ -8,6 +8,15 @@
 
 ## 준비
 
+실제 Java 소스와 테스트 위치는 다음과 같다. `ITip/`는 Gradle 집계 루트이며 최상위 `ITip/src/`는 사용하지 않는다. IntelliJ도 `ITip/settings.gradle`의 네 모듈을 기준으로 불러온다.
+
+| 모듈 | 소스·설정 | 테스트 |
+| --- | --- | --- |
+| API | `ITip/apps/api-app/src/main` | `ITip/apps/api-app/src/test` |
+| Worker | `ITip/apps/worker-app/src/main` | `ITip/apps/worker-app/src/test` |
+| 공통 응답·예외 | `ITip/libs/common/src/main` | `ITip/libs/common/src/test` |
+| Entity·Repository·공유 결과 | `ITip/libs/domain/src/main` | `ITip/libs/domain/src/test` |
+
 - Java 21과 Docker Desktop을 실행한다. IntelliJ의 Project SDK·Gradle JVM도 21로 맞춘다.
 - `ITip/`에서 명령을 실행한다. 비밀값은 각자 로컬 환경변수로 설정하며 `.env` 파일을 생성·공유·커밋하지 않는다.
 - `DB_PASSWORD`를 로컬에서 설정한 뒤 `docker compose up -d db`로 개발 DB를 실행한다. 데이터는 Docker volume에 유지된다.
@@ -80,6 +89,15 @@ docker build -f apps/api-app/Dockerfile -t itip-api:local \
 GCS 인증은 이미지에 넣지 않는다. 기존 로컬 인증 파일을 읽기 전용으로 마운트하고 컨테이너의 `GOOGLE_APPLICATION_CREDENTIALS`가 그 경로를 가리키게 설정한다. 파일 소유권 때문에 읽지 못하면 로컬 사용자 UID/GID로 실행하는 방식을 사용한다. 실제 인증 파일·환경변수 파일을 저장소나 팀 채팅으로 공유하지 않는다.
 
 ## 테스트
+
+저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.
+
+```sh
+curl http://localhost:8080/api/v1/analyses/<analysisId>
+curl http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>
+```
+
+첫 응답의 `sections[].sectionId`를 상세 경로에 사용한다. `mindmap.sectionIds` 순서로 주제를 배치하고 `subtopics`를 하위 항목으로 그린다. 두 API는 AI를 재호출하지 않으며 구간 상세에 원본 링크·영상 카드·전체 한 줄 요약을 함께 제공한다. 오류와 저장 경계는 [AI 결과 계약](analysis-ai-contract.md#결과구간-조회-구현-5)을 따른다. 추천 영상 API는 아직 후속 범위다.
 
 ```sh
 ./gradlew test

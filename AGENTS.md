@@ -3,6 +3,7 @@
 ## 프로젝트 범위
 
 - Spring Boot 프로젝트는 `ITip/`에 있다. Gradle 명령은 이 디렉터리에서 실행한다.
+- `ITip/`는 Gradle 집계 루트이며 `ITip/src/main`, `ITip/src/test`를 사용하지 않는다. 실제 소스·테스트는 `apps/api-app/src`, `apps/worker-app/src`, `libs/common/src`, `libs/domain/src`에 둔다. 초기 단일 모듈의 빈 `ITip/src/`는 제거했으며 이 경로에 새 코드를 작성하지 않는다.
 - Java 21, Spring Boot 4.1.2, Gradle Wrapper, Spring MVC, JPA를 기준으로 개발한다.
 - 현재 시연용 MVP는 영상·재생목록 가져오기, 분석·결과, 기록·폴더, 검색, AI 대화, 기기·알림이다. 로그인·결제·요금제·이용 한도는 구현 범위에서 제외한다.
 - 데모는 로컬 PostgreSQL(pgvector)·DB 작업 조회·Spring Worker로 실행한다. 파일은 실제 GCS의 presigned URL로 업로드한다. GPT·RAG 채팅은 AI 파트의 Python 서버와 연동한다.
