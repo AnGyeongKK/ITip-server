@@ -120,6 +120,14 @@ public class AnalysisJob {
                 && leaseUntil != null && now.isBefore(leaseUntil);
     }
 
+    public void renewLease(UUID token, Instant now, Duration leaseDuration) {
+        requireLease(token, now);
+        if (leaseDuration.isNegative() || leaseDuration.isZero())
+            throw new IllegalArgumentException("lease duration must be positive");
+        this.leaseUntil = now.plus(leaseDuration);
+        this.updatedAt = now;
+    }
+
     public void changeStage(UUID token, AnalysisStage nextStage, Instant now) {
         requireLease(token, now);
         if (Objects.requireNonNull(nextStage).ordinal() < stage.ordinal()) {
