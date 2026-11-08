@@ -13,12 +13,12 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.List;
 import static com.gkk.itip.common.exception.ErrorCode.*;
 
 @Service
 public class ChatGenerationStore {
     private static final String SEND = "SEND_CHAT_MESSAGE";
-    private static final int MAX_QUESTION_CHARS = 4000;
     private final ChatConversationRepository rooms;
     private final ChatMessageRepository messages;
     private final IdempotencyRequestRepository requests;
@@ -26,16 +26,20 @@ public class ChatGenerationStore {
     private final JdbcTemplate jdbc;
     private final JsonMapper mapper;
     private final Clock clock;
+    private final ChatCitationQuery citations;
+    private final ChatMessageSourceRepository sources;
     public ChatGenerationStore(ChatConversationRepository rooms, ChatMessageRepository messages,
-            IdempotencyRequestRepository requests, ChatScopeQuery scopes, JdbcTemplate jdbc, JsonMapper mapper, Clock clock) {
+            IdempotencyRequestRepository requests, ChatScopeQuery scopes, JdbcTemplate jdbc, JsonMapper mapper, Clock clock,
+            ChatCitationQuery citations, ChatMessageSourceRepository sources) {
         this.rooms=rooms; this.messages=messages; this.requests=requests; this.scopes=scopes; this.jdbc=jdbc; this.mapper=mapper; this.clock=clock;
+        this.citations=citations; this.sources=sources;
     }
     private record Request(UUID room, SendMessageRequest body) {}
 
     @Transactional
     public GenerationTicket begin(String owner, UUID roomId, UUID key, SendMessageRequest request) {
         if (!key.equals(request.clientRequestId())) throw new BusinessException(INVALID_REQUEST);
-        if (request.content() == null || request.content().isBlank() || request.content().length() > MAX_QUESTION_CHARS)
+        if (request.content() == null || request.content().isBlank() || request.content().length() > ChatLimits.MAX_QUESTION_CHARS)
             throw new BusinessException(INVALID_CHAT_MESSAGE);
         jdbc.queryForList("select pg_advisory_xact_lock(hashtextextended(?,0))", "itip-chat-send:"+owner+":"+key);
         var room = rooms.lockOwned(roomId,owner).orElseThrow(()->new BusinessException(RESOURCE_NOT_FOUND));
@@ -52,7 +56,7 @@ public class ChatGenerationStore {
         long position = room.acceptQuestion(request.content(),now);
         var question = messages.saveAndFlush(ChatMessage.question(roomId,position,key,hash,request.content(),now));
         UUID token = UUID.randomUUID();
-        var answer = messages.saveAndFlush(ChatMessage.answer(question,selection.records().size(),request.retryOfMessageId(),token,now.plusSeconds(150)));
+        var answer = messages.saveAndFlush(ChatMessage.answer(question,selection.records().size(),request.retryOfMessageId(),token,now.plus(ChatLimits.GENERATION_LEASE)));
         requests.save(new IdempotencyRequest(owner,SEND,key,hash,answer.getId(),now));
         return new GenerationTicket(owner,roomId,question.getId(),answer.getId(),key,token,selection.records());
     }
@@ -75,6 +79,21 @@ public class ChatGenerationStore {
         var message = current(ticket);
         if (message == null) return null;
         message.fail(text,code,retryable); return message.getStatus();
+    }
+    @Transactional
+    public boolean complete(GenerationTicket ticket, String text, FinishReason reason, List<ChatCitation> input) {
+        var room=rooms.lockOwned(ticket.conversationId(),ticket.ownerId()).orElseThrow(()->new ChatProtocolException());
+        var message=current(ticket);
+        if(message==null) return false;
+        if(text.isBlank() || reason==null || (reason==FinishReason.INSUFFICIENT_EVIDENCE && !input.isEmpty())
+                || (reason!=FinishReason.INSUFFICIENT_EVIDENCE && input.isEmpty())) throw new ChatProtocolException();
+        var current=scopes.resolve(ticket.ownerId(),scopes.readScope(room.getScopeJson()));
+        var verified=citations.validate(ticket,input,current.records());
+        int used=(int)verified.stream().map(ChatMessageSource::getRecordId).distinct().count();
+        sources.saveAll(verified);
+        var now=clock.instant().truncatedTo(ChronoUnit.MICROS);
+        message.complete(text,reason,used,now); room.touch(now);
+        return true;
     }
     private ChatMessage current(GenerationTicket ticket) {
         var message = messages.lock(ticket.assistantMessageId()).orElse(null);

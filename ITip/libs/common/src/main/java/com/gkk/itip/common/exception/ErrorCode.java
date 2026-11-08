@@ -10,6 +10,8 @@ public enum ErrorCode {
     INVALID_CHAT_MESSAGE("질문 내용을 확인해 주세요."),
     CHAT_MESSAGE_NOT_RETRYABLE("현재 답변은 다시 요청할 수 없어요."),
     SCOPE_UNAVAILABLE("기존 참고 범위를 사용할 수 없어요."),
+    CHAT_AI_NOT_CONFIGURED("AI 서버 연결 설정이 필요해요."),
+    CHAT_CAPACITY_EXCEEDED("잠시 후 다시 질문해 주세요."),
     RESOURCE_NOT_FOUND("요청한 항목을 찾을 수 없어요."),
     IDEMPOTENCY_CONFLICT("같은 요청 키로 다른 요청을 보낼 수 없어요."),
     STATE_CONFLICT("현재 상태에서는 요청을 처리할 수 없어요."),
