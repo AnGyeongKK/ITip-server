@@ -64,6 +64,7 @@ gkk/
 | 이슈·브랜치·커밋·push·PR·리뷰·병합 | [GitHub 협업 규칙](.agents/rules/github.md) |
 | 기능 구현·폴더·모듈·책임 분리·공통화·리팩터링 | [아키텍처·설계 규칙](.agents/rules/architecture.md) |
 | 커밋 직후 독립 코드 리뷰 | [커밋 리뷰 에이전트](.agents/reviewers/commit-reviewer.md) |
+| PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 
