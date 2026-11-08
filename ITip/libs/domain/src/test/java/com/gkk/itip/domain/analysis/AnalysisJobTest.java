@@ -87,21 +87,6 @@ class AnalysisJobTest {
     }
 
     @Test
-    void anExpiredThirdLeaseBecomesFinalFailureInsteadOfStayingProcessing() {
-        AnalysisJob job = queued();
-        job.claim(now, lease);
-        job.claim(now.plus(lease), lease);
-        job.claim(now.plus(lease.multipliedBy(2)), lease);
-
-        assertFalse(job.expireExhaustedLease(now.plus(lease.multipliedBy(3)).minusMillis(1)));
-        assertTrue(job.expireExhaustedLease(now.plus(lease.multipliedBy(3))));
-        assertEquals(JobStatus.FAILED, job.getStatus());
-        assertEquals("WORKER_LEASE_EXPIRED", job.getErrorCode());
-        assertTrue(job.getRetryable());
-        assertNull(job.getLeaseUntil());
-    }
-
-    @Test
     void completionRequiresFinishingStageAndLiveToken() {
         AnalysisJob job = queued();
         UUID token = job.claim(now, lease);

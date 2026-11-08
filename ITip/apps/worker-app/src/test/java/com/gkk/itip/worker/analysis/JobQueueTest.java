@@ -70,13 +70,23 @@ class JobQueueTest {
         UUID id = fixture();
         queue.claim(NOW, LEASE).orElseThrow();
         queue.claim(NOW.plusSeconds(30), LEASE).orElseThrow();
-        queue.claim(NOW.plusSeconds(60), LEASE).orElseThrow();
+        var third = queue.claim(NOW.plusSeconds(60), LEASE).orElseThrow();
+        assertThat(queue.claim(NOW.plusSeconds(90).minusMillis(1), LEASE)).isEmpty();
+        var beforeExpiry = jobs.findById(id).orElseThrow();
+        assertThat(beforeExpiry.getStatus()).isEqualTo(JobStatus.PROCESSING);
+        assertThat(beforeExpiry.getAttempt()).isEqualTo(3);
+        assertThat(beforeExpiry.getRunToken()).isEqualTo(third.runToken());
+        assertThat(beforeExpiry.getLeaseUntil()).isEqualTo(NOW.plusSeconds(90));
         assertThat(queue.claim(NOW.plusSeconds(90), LEASE)).isEmpty();
         var ended = jobs.findById(id).orElseThrow();
         assertThat(ended.getStatus()).isEqualTo(JobStatus.FAILED);
         assertThat(ended.getAttempt()).isEqualTo(3);
         assertThat(ended.getErrorCode()).isEqualTo("WORKER_LEASE_EXPIRED");
         assertThat(ended.getRetryable()).isTrue();
+        assertThat(ended.getLeaseUntil()).isNull();
+        assertThat(ended.getRunToken()).isNull();
+        assertThat(ended.getNextAttemptAt()).isNull();
+        assertThat(ended.getUpdatedAt()).isEqualTo(NOW.plusSeconds(90));
     }
 
     @Test void retryWaitIsNotClaimedEarlyAndKeepsTheSuccessfulStage() {

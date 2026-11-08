@@ -176,20 +176,6 @@ public class AnalysisJob {
         this.updatedAt = now;
     }
 
-    public boolean expireExhaustedLease(Instant now) {
-        if (status != JobStatus.PROCESSING || attempt < maxAttempts || leaseUntil == null || now.isBefore(leaseUntil)) {
-            return false;
-        }
-        this.status = JobStatus.FAILED;
-        this.errorCode = "WORKER_LEASE_EXPIRED";
-        this.errorMessage = "분석 실행이 중단됐어요. 다시 시도해 주세요.";
-        this.retryable = true;
-        this.nextAttemptAt = null;
-        clearLease();
-        this.updatedAt = now;
-        return true;
-    }
-
     public void complete(UUID token, UUID analysisId, UUID recordId, Instant now) {
         requireLease(token, now);
         if (stage != AnalysisStage.FINISHING) {
