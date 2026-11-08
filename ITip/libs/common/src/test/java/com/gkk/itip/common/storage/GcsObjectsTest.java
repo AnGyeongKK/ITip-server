@@ -4,6 +4,7 @@ import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.*;
 import org.junit.jupiter.api.Test;
 import java.nio.ByteBuffer;
+import java.net.SocketTimeoutException;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -57,5 +58,17 @@ class GcsObjectsTest {
         var client = new GcsObjects(() -> { throw new IllegalStateException("no credentials"); });
         assertThatThrownBy(() -> client.metadata("b", "k", null))
                 .isInstanceOf(GcsAccessException.class).hasMessage("STORAGE_NOT_CONFIGURED");
+    }
+
+    @Test void preservesTransientNetworkAnd408ButDoesNotRetryForbidden() {
+        assertRetryable(new StorageException(new SocketTimeoutException("timeout")), true);
+        assertRetryable(new StorageException(408, "timeout"), true);
+        assertRetryable(new StorageException(403, "forbidden"), false);
+    }
+
+    private void assertRetryable(StorageException failure, boolean expected) {
+        doThrow(failure).when(storage).get(BlobId.of("bucket", "file"));
+        var caught = catchThrowableOfType(GcsAccessException.class, () -> objects.metadata("bucket", "file", null));
+        assertThat(caught.isRetryable()).isEqualTo(expected);
     }
 }

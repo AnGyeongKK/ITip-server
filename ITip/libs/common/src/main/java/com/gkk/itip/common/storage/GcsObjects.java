@@ -56,6 +56,7 @@ public class GcsObjects {
     private GcsAccessException translate(StorageException exception) {
         if (exception.getCode() == 404) return new GcsAccessException(OBJECT_NOT_FOUND, false);
         if (exception.getCode() == 412) return new GcsAccessException(OBJECT_VERSION_CHANGED, false);
-        return new GcsAccessException(STORAGE_UNAVAILABLE, exception.getCode() == 429 || exception.getCode() >= 500);
+        return new GcsAccessException(STORAGE_UNAVAILABLE,
+                exception.isRetryable() || exception.getCode() == 408 || exception.getCode() == 429 || exception.getCode() >= 500);
     }
 }
