@@ -11,3 +11,8 @@
 !apps/worker-app/build/
 !apps/worker-app/build/libs/
 !apps/worker-app/build/libs/*.jar
+!apps/chat-app/
+!apps/chat-app/Dockerfile
+!apps/chat-app/build/
+!apps/chat-app/build/libs/
+!apps/chat-app/build/libs/*.jar

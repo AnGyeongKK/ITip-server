@@ -1,4 +1,4 @@
-package com.gkk.itip.api.exception;
+package com.gkk.itip.common.web;
 
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.common.exception.ErrorCode;

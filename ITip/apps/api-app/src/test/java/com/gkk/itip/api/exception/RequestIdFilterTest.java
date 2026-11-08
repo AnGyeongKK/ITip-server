@@ -1,6 +1,6 @@
 package com.gkk.itip.api.exception;
 
-import com.gkk.itip.api.config.RequestIdFilter;
+import com.gkk.itip.common.web.RequestIdFilter;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

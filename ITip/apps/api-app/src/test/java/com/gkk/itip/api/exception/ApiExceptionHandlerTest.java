@@ -1,5 +1,7 @@
 package com.gkk.itip.api.exception;
 
+import com.gkk.itip.common.web.ApiExceptionHandler;
+
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.common.exception.ErrorCode;
 import com.gkk.itip.common.response.ApiResponse;

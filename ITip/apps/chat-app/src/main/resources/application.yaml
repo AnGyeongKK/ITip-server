@@ -1,0 +1,14 @@
+spring:
+  config:
+    import: classpath:domain.yaml
+  application:
+    name: itip-chat
+  flyway:
+    enabled: false
+
+server:
+  port: ${CHAT_PORT:8082}
+
+itip:
+  demo:
+    owner-id: ${DEMO_USER_ID:demo-user}
