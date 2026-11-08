@@ -6,6 +6,7 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("요청한 항목을 찾을 수 없어요."),
     IDEMPOTENCY_CONFLICT("같은 요청 키로 다른 요청을 보낼 수 없어요."),
     STATE_CONFLICT("현재 상태에서는 요청을 처리할 수 없어요."),
+    ANALYSIS_NOT_READY("아직 분석 중이에요."),
     UPLOAD_NOT_READY("업로드한 자막을 확인할 수 없어요. 업로드 상태를 확인해 주세요."),
     JOB_NOT_RETRYABLE("현재 분석 작업은 다시 시도할 수 없어요."),
     CAPTION_REUPLOAD_REQUIRED("원본 자막을 찾을 수 없어요. 자막을 다시 업로드해 주세요."),

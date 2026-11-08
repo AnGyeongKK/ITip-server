@@ -1,5 +1,7 @@
 package com.gkk.itip.worker.analysis.output;
 
+import com.gkk.itip.domain.analysis.result.ResultDocument;
+
 import com.gkk.itip.worker.analysis.caption.CaptionDocument;
 import org.springframework.stereotype.Component;
 

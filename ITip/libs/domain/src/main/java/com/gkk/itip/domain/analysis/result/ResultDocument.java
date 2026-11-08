@@ -1,4 +1,4 @@
-package com.gkk.itip.worker.analysis.output;
+package com.gkk.itip.domain.analysis.result;
 
 import java.util.List;
 

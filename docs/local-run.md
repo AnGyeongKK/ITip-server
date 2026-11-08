@@ -2,11 +2,20 @@
 
 ## API 호출 구조 보기
 
-[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·관련 커밋을 볼 수 있다. 이번 구현 6개와 후속 설계 32개를 구분하며, 실제 GCS·모델 연동 대기 상태도 표시한다.
+[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·관련 커밋을 볼 수 있다. 구현 8개와 후속 설계 30개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
 
 편집 원본은 [`visualizations/yousum-api-pipelines.fragment.html`](visualizations/yousum-api-pipelines.fragment.html)이다. 배포용 HTML은 이 원본에 테마·미리보기 실행 환경을 포함한 파일이며, 수정 후 두 파일의 동작을 함께 확인한다.
 
 ## 준비
+
+실제 Java 소스와 테스트 위치는 다음과 같다. `ITip/`는 Gradle 집계 루트이며 최상위 `ITip/src/`는 사용하지 않는다. IntelliJ도 `ITip/settings.gradle`의 네 모듈을 기준으로 불러온다.
+
+| 모듈 | 소스·설정 | 테스트 |
+| --- | --- | --- |
+| API | `ITip/apps/api-app/src/main` | `ITip/apps/api-app/src/test` |
+| Worker | `ITip/apps/worker-app/src/main` | `ITip/apps/worker-app/src/test` |
+| 공통 응답·예외 | `ITip/libs/common/src/main` | `ITip/libs/common/src/test` |
+| Entity·Repository·공유 결과 | `ITip/libs/domain/src/main` | `ITip/libs/domain/src/test` |
 
 - Java 21과 Docker Desktop을 실행한다. IntelliJ의 Project SDK·Gradle JVM도 21로 맞춘다.
 - `ITip/`에서 명령을 실행한다. 비밀값은 각자 로컬 환경변수로 설정하며 `.env` 파일을 생성·공유·커밋하지 않는다.
@@ -37,7 +46,7 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 스키마는 Flyway가 생성·변경하고 두 앱은 `ddl-auto=validate`로 검사한다. Worker는 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
-영상 분석을 완료하려면 GCS 인증과 **`ChatModel`·`EmbeddingModel` Bean**이 필요하다. 현재 저장소는 공급자 공통 Spring AI 어댑터까지 포함하며 특정 공급자 starter·모델·API 키 자동 설정은 포함하지 않는다. AI 파트와 공급자·모델을 정한 뒤 Worker에 두 Bean과 HTTP 타임아웃·SDK 재시도 1회를 설정한다. 키 환경변수만 추가해도 모델 Bean이 생성되는 구조는 아니다. 설정 전에도 앱·DB 조회는 시작되지만 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. Python 채팅 서버 연동은 별도 기능이다.
+영상 분석을 완료하려면 GCS 인증과 **`ChatModel`·`EmbeddingModel` Bean**이 필요하다. 현재 저장소는 공급자 공통 Spring AI 어댑터까지 포함하며 특정 공급자 starter·모델·API 키 자동 설정은 포함하지 않는다. [AI 문서와 현재 코드의 차이](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한 뒤 Worker에 두 Bean과 HTTP 타임아웃·SDK 총 시도 1회(내부 자동 재시도 0회)를 설정한다. 키 환경변수만 추가해도 모델 Bean이 생성되는 구조는 아니다. 설정 전에도 앱·DB 조회는 시작되지만 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. Python 채팅 서버 연동은 별도 기능이다.
 
 자막·AI 출력 JSON, 환경변수, 단계별 재시도와 함수 흐름은 [분석 Worker 안내](analysis-worker.md)를 따른다. Worker는 기본 2초마다 작업을 조회한다. `WORKER_SCHEDULING_ENABLED=false`는 수동 점검용이며 시연에서는 기본값 `true`로 실행한다.
 
@@ -80,6 +89,17 @@ docker build -f apps/api-app/Dockerfile -t itip-api:local \
 GCS 인증은 이미지에 넣지 않는다. 기존 로컬 인증 파일을 읽기 전용으로 마운트하고 컨테이너의 `GOOGLE_APPLICATION_CREDENTIALS`가 그 경로를 가리키게 설정한다. 파일 소유권 때문에 읽지 못하면 로컬 사용자 UID/GID로 실행하는 방식을 사용한다. 실제 인증 파일·환경변수 파일을 저장소나 팀 채팅으로 공유하지 않는다.
 
 ## 테스트
+
+저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.
+
+```sh
+curl 'http://localhost:8080/api/v1/analyses/<analysisId>'
+curl 'http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>'
+```
+
+`<analysisId>`·`<sectionId>`는 서버에서 받은 실제 UUID로 바꾼다.
+
+첫 응답의 `sections[].sectionId`를 상세 경로에 사용한다. `mindmap.sectionIds` 순서로 주제를 배치하고 `subtopics`를 하위 항목으로 그린다. 두 API는 AI를 재호출하지 않으며 구간 상세에 원본 링크·영상 카드·전체 한 줄 요약을 함께 제공한다. 오류와 저장 경계는 [AI 결과 계약](analysis-ai-contract.md#결과구간-조회-구현-5)을 따른다. 추천 영상 API는 아직 후속 범위다.
 
 ```sh
 ./gradlew test

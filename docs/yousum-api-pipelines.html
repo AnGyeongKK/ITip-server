@@ -1903,9 +1903,9 @@ html&gt;body{padding:0}&lt;/style&gt;
   &lt;/style&gt;
   &lt;div class=&quot;heading&quot;&gt;
     &lt;h2&gt;API별 서버 처리&lt;/h2&gt;
-    &lt;span class=&quot;text-small text-muted&quot;&gt;구현 6개 · 후속 설계 32개&lt;/span&gt;
+    &lt;span class=&quot;text-small text-muted&quot;&gt;구현 8개 · 후속 설계 30개&lt;/span&gt;
   &lt;/div&gt;
-  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Draft PR #10 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/f2db5b3/docs/analysis-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;커밋별 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
   &lt;div class=&quot;selectors&quot;&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;도메인&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;도메인 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;API&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;API 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
@@ -1974,10 +1974,14 @@ html&gt;body{padding:0}&lt;/style&gt;
       &#x27;PUSH-02&#x27;: {...write(&#x27;api&#x27;,&#x27;DeviceService.disconnect()&#x27;,&#x27;해당 설치의 알림 연결 해제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.&#x27;,&#x27;installationId&#x27;),future:true}
     };
     const repo = &#x27;https://github.com/AnGyeongKK/ITip-server&#x27;;
-    const implementation = &#x27;f2db5b3&#x27;;
+    const implementation = &#x27;29c7dfd&#x27;;
     const apiSource = &#x27;ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/&#x27;;
     const workerSource = &#x27;ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/&#x27;;
     const sourceFiles = {
+      AnalysisResultController: apiSource + &#x27;controller/AnalysisResultController.java&#x27;,
+      AnalysisResultQueryService: apiSource + &#x27;service/AnalysisResultQueryService.java&#x27;,
+      AnalysisResultResponse: apiSource + &#x27;dto/response/AnalysisResultResponse.java&#x27;,
+      AnalysisSectionResponse: apiSource + &#x27;dto/response/AnalysisSectionResponse.java&#x27;,
       AnalysisBatchController: apiSource + &#x27;controller/AnalysisBatchController.java&#x27;,
       AnalysisBatchService: apiSource + &#x27;service/AnalysisBatchService.java&#x27;,
       JobController: apiSource + &#x27;controller/JobController.java&#x27;,
@@ -2011,6 +2015,34 @@ html&gt;body{padding:0}&lt;/style&gt;
       implementedStep(&#x27;Worker·DB&#x27;, &#x27;WorkerResultStore.complete()&#x27;, &#x27;사용자 → 작업 잠금 · 결과/개인 기록/COMPLETED 함께 확정&#x27;, &#x27;쓰기 TX&#x27;, &#x27;background&#x27;)
     ];
     Object.assign(flows, {
+      &#x27;ANALYSIS-04&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, readOnly:true, commits:[&#x27;d2b3eac&#x27;,&#x27;7deea59&#x27;,&#x27;df75e7f&#x27;,&#x27;29c7dfd&#x27;],
+        input:&#x27;UUID analysisId · 요청 본문 없음 · 서버 설정 DEMO_USER_ID&#x27;,
+        output:&#x27;200 · analysisId/recordId · summary/keywords · sections · mindmap · chatReady/analyzedAt&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;완료·기록 확인&#x27;,db:&#x27;저장 JSON·영상·기록&#x27;},
+        boundary:&#x27;readOnly·REPEATABLE_READ. 없음/타인/삭제 기록은 404, 본인 미완료는409, 저장 JSON 손상은500. sections는 시간순, 마인드맵·강조 순서는 유지. Worker·AI·GCS 호출 없음.&#x27;,
+        steps:[
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.get()&#x27;,&#x27;UUID 경로 바인딩 · 서버 설정 소유자&#x27;),
+          implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisResultQueryService.completed()&#x27;,&#x27;본인 결과 → 완료 → 현재 개인 기록 → 영상 조회&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.readDocument()&#x27;,&#x27;schema1.0·필수 콘텐츠·구간 참조·키워드 UUID 검증&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.get()&#x27;,&#x27;sections 시간순 정렬 · 목록에서 detail 제외 · 마인드맵 순서 유지&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.get()&#x27;,&#x27;ApiResponse.success() · 저장된 ID/완료 시각 반환&#x27;)
+        ]
+      },
+      &#x27;ANALYSIS-05&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, readOnly:true, commits:[&#x27;d2b3eac&#x27;,&#x27;b636747&#x27;,&#x27;29c7dfd&#x27;],
+        input:&#x27;UUID analysisId / UUID sectionId · 요청 본문 없음&#x27;,
+        output:&#x27;200 · 구간 핵심/설명/팁/도구/예시 · originalUrl · video/videoOneLine&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;같은 분석의 구간 선택&#x27;,db:&#x27;같은 저장 JSON·영상·기록&#x27;},
+        boundary:&#x27;결과 GET과 같은 완료·개인 기록·저장 문서를 사용. 해당 분석에 없는 sectionId는404. 원본 링크는 고정 YouTube 주소와 floor(startMs/1000)으로 생성. AI 재호출·DB 변경 없음.&#x27;,
+        steps:[
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.getSection()&#x27;,&#x27;두 UUID 경로 바인딩 · 서버 설정 소유자&#x27;),
+          implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisResultQueryService.completed()&#x27;,&#x27;본인 완료 결과·개인 기록·영상 확인&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.readDocument()&#x27;,&#x27;같은 저장 형식·구간 참조·키워드 UUID 검증&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.getSection()&#x27;,&#x27;문서 안 sectionId 선택 · 원본 시간 링크 · 영상 카드 결합&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.getSection()&#x27;,&#x27;ApiResponse.success() · SOURCE/AI_SUGGESTION 유지&#x27;)
+        ]
+      },
       &#x27;ANALYSIS-01&#x27;: {
         server:&#x27;api&#x27;, implemented:true, commits:[&#x27;5bb146f&#x27;,&#x27;698e0d5&#x27;,&#x27;a39f94f&#x27;,&#x27;85598e5&#x27;],
         input:&#x27;JSON {batchId, batchItemId, uploadId} + UUID Idempotency-Key&#x27;,
@@ -2065,7 +2097,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     const domainSelect = root.querySelector(&#x27;[aria-label=&quot;도메인 선택&quot;]&#x27;);
     const apiSelect = root.querySelector(&#x27;[aria-label=&quot;API 선택&quot;]&#x27;);
     const svg = root.querySelector(&#x27;.diagram&#x27;);
-    const state = { apiId: &#x27;ANALYSIS-01&#x27; };
+    const state = { apiId: &#x27;ANALYSIS-04&#x27; };
     const ns = &#x27;http://www.w3.org/2000/svg&#x27;;
     const el = (tag, attrs, text) =&gt; {const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
     const selected = () =&gt; catalog.find(a=&gt;a.id===state.apiId);
@@ -2165,7 +2197,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       const a=selected(),f=flows[a.id];
       root.querySelector(&#x27;.method&#x27;).textContent=a.method;
       root.querySelector(&#x27;.endpoint-path&#x27;).textContent=a.path;
-      root.querySelector(&#x27;.scope&#x27;).textContent=a.id+&#x27; · &#x27;+(f.implemented?&#x27;구현 · 실제 외부 연동 대기&#x27;:f.future?&#x27;운영 후속 · 설계&#x27;:&#x27;후속 이슈 · 설계&#x27;);
+      root.querySelector(&#x27;.scope&#x27;).textContent=a.id+&#x27; · &#x27;+(f.readOnly?&#x27;구현 · 저장 결과 조회&#x27;:f.implemented?&#x27;구현 · 실제 외부 연동 대기&#x27;:f.future?&#x27;운영 후속 · 설계&#x27;:&#x27;후속 이슈 · 설계&#x27;);
       const commits=root.querySelector(&#x27;.commits&#x27;);commits.replaceChildren();
       for(const sha of f.commits||[]){const link=document.createElement(&#x27;a&#x27;);link.href=repo+&#x27;/commit/&#x27;+sha;link.target=&#x27;_blank&#x27;;link.rel=&#x27;noreferrer&#x27;;link.textContent=sha;commits.append(link);}
       root.querySelector(&#x27;.source&#x27;).href=a.source;

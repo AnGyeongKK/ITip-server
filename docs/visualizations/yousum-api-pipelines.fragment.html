@@ -58,9 +58,9 @@
   </style>
   <div class="heading">
     <h2>API별 서버 처리</h2>
-    <span class="text-small text-muted">구현 6개 · 후속 설계 32개</span>
+    <span class="text-small text-muted">구현 8개 · 후속 설계 30개</span>
   </div>
-  <div class="revision text-small"><a href="https://github.com/AnGyeongKK/ITip-server/pull/10" target="_blank" rel="noreferrer">Draft PR #10 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/f2db5b3/docs/analysis-review-log.md" target="_blank" rel="noreferrer">커밋별 검토 기록 ↗</a><span>GCS·실제 모델 연결 미확인</span></div>
+  <div class="revision text-small"><a href="https://github.com/AnGyeongKK/ITip-server/pull/11" target="_blank" rel="noreferrer">결과 조회 PR #11 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/10" target="_blank" rel="noreferrer">분석 처리 PR #10 · 병합 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md" target="_blank" rel="noreferrer">결과 조회 검토 기록 ↗</a><span>GCS·실제 모델 연결 미확인</span></div>
   <div class="selectors">
     <label class="choice"><span class="form-label">도메인</span><select class="form-select" aria-label="도메인 선택"></select></label>
     <label class="choice"><span class="form-label">API</span><select class="form-select" aria-label="API 선택"></select></label>
@@ -129,10 +129,14 @@
       'PUSH-02': {...write('api','DeviceService.disconnect()','해당 설치의 알림 연결 해제','200 · 성공 메시지','운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.','installationId'),future:true}
     };
     const repo = 'https://github.com/AnGyeongKK/ITip-server';
-    const implementation = 'f2db5b3';
+    const implementation = '29c7dfd';
     const apiSource = 'ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/';
     const workerSource = 'ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/';
     const sourceFiles = {
+      AnalysisResultController: apiSource + 'controller/AnalysisResultController.java',
+      AnalysisResultQueryService: apiSource + 'service/AnalysisResultQueryService.java',
+      AnalysisResultResponse: apiSource + 'dto/response/AnalysisResultResponse.java',
+      AnalysisSectionResponse: apiSource + 'dto/response/AnalysisSectionResponse.java',
       AnalysisBatchController: apiSource + 'controller/AnalysisBatchController.java',
       AnalysisBatchService: apiSource + 'service/AnalysisBatchService.java',
       JobController: apiSource + 'controller/JobController.java',
@@ -166,6 +170,34 @@
       implementedStep('Worker·DB', 'WorkerResultStore.complete()', '사용자 → 작업 잠금 · 결과/개인 기록/COMPLETED 함께 확정', '쓰기 TX', 'background')
     ];
     Object.assign(flows, {
+      'ANALYSIS-04': {
+        server:'api', implemented:true, readOnly:true, commits:['d2b3eac','7deea59','df75e7f','29c7dfd'],
+        input:'UUID analysisId · 요청 본문 없음 · 서버 설정 DEMO_USER_ID',
+        output:'200 · analysisId/recordId · summary/keywords · sections · mindmap · chatReady/analyzedAt',
+        edges:['appApi','apiDb'], labels:{api:'완료·기록 확인',db:'저장 JSON·영상·기록'},
+        boundary:'readOnly·REPEATABLE_READ. 없음/타인/삭제 기록은 404, 본인 미완료는409, 저장 JSON 손상은500. sections는 시간순, 마인드맵·강조 순서는 유지. Worker·AI·GCS 호출 없음.',
+        steps:[
+          implementedStep('API','AnalysisResultController.get()','UUID 경로 바인딩 · 서버 설정 소유자'),
+          implementedStep('API·DB','AnalysisResultQueryService.completed()','본인 결과 → 완료 → 현재 개인 기록 → 영상 조회','조회 TX'),
+          implementedStep('API','AnalysisResultQueryService.readDocument()','schema1.0·필수 콘텐츠·구간 참조·키워드 UUID 검증','조회 TX'),
+          implementedStep('API','AnalysisResultQueryService.get()','sections 시간순 정렬 · 목록에서 detail 제외 · 마인드맵 순서 유지','조회 TX'),
+          implementedStep('API','AnalysisResultController.get()','ApiResponse.success() · 저장된 ID/완료 시각 반환')
+        ]
+      },
+      'ANALYSIS-05': {
+        server:'api', implemented:true, readOnly:true, commits:['d2b3eac','b636747','29c7dfd'],
+        input:'UUID analysisId / UUID sectionId · 요청 본문 없음',
+        output:'200 · 구간 핵심/설명/팁/도구/예시 · originalUrl · video/videoOneLine',
+        edges:['appApi','apiDb'], labels:{api:'같은 분석의 구간 선택',db:'같은 저장 JSON·영상·기록'},
+        boundary:'결과 GET과 같은 완료·개인 기록·저장 문서를 사용. 해당 분석에 없는 sectionId는404. 원본 링크는 고정 YouTube 주소와 floor(startMs/1000)으로 생성. AI 재호출·DB 변경 없음.',
+        steps:[
+          implementedStep('API','AnalysisResultController.getSection()','두 UUID 경로 바인딩 · 서버 설정 소유자'),
+          implementedStep('API·DB','AnalysisResultQueryService.completed()','본인 완료 결과·개인 기록·영상 확인','조회 TX'),
+          implementedStep('API','AnalysisResultQueryService.readDocument()','같은 저장 형식·구간 참조·키워드 UUID 검증','조회 TX'),
+          implementedStep('API','AnalysisResultQueryService.getSection()','문서 안 sectionId 선택 · 원본 시간 링크 · 영상 카드 결합','조회 TX'),
+          implementedStep('API','AnalysisResultController.getSection()','ApiResponse.success() · SOURCE/AI_SUGGESTION 유지')
+        ]
+      },
       'ANALYSIS-01': {
         server:'api', implemented:true, commits:['5bb146f','698e0d5','a39f94f','85598e5'],
         input:'JSON {batchId, batchItemId, uploadId} + UUID Idempotency-Key',
@@ -220,7 +252,7 @@
     const domainSelect = root.querySelector('[aria-label="도메인 선택"]');
     const apiSelect = root.querySelector('[aria-label="API 선택"]');
     const svg = root.querySelector('.diagram');
-    const state = { apiId: 'ANALYSIS-01' };
+    const state = { apiId: 'ANALYSIS-04' };
     const ns = 'http://www.w3.org/2000/svg';
     const el = (tag, attrs, text) => {const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
     const selected = () => catalog.find(a=>a.id===state.apiId);
@@ -320,7 +352,7 @@
       const a=selected(),f=flows[a.id];
       root.querySelector('.method').textContent=a.method;
       root.querySelector('.endpoint-path').textContent=a.path;
-      root.querySelector('.scope').textContent=a.id+' · '+(f.implemented?'구현 · 실제 외부 연동 대기':f.future?'운영 후속 · 설계':'후속 이슈 · 설계');
+      root.querySelector('.scope').textContent=a.id+' · '+(f.readOnly?'구현 · 저장 결과 조회':f.implemented?'구현 · 실제 외부 연동 대기':f.future?'운영 후속 · 설계':'후속 이슈 · 설계');
       const commits=root.querySelector('.commits');commits.replaceChildren();
       for(const sha of f.commits||[]){const link=document.createElement('a');link.href=repo+'/commit/'+sha;link.target='_blank';link.rel='noreferrer';link.textContent=sha;commits.append(link);}
       root.querySelector('.source').href=a.source;

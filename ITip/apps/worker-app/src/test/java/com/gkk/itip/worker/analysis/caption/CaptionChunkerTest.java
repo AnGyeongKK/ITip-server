@@ -1,6 +1,6 @@
 package com.gkk.itip.worker.analysis.caption;
 
-import com.gkk.itip.worker.analysis.output.ResultDocument;
+import com.gkk.itip.domain.analysis.result.ResultDocument;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;
