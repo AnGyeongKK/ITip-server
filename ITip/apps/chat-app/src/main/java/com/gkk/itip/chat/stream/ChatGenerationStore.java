@@ -28,11 +28,13 @@ public class ChatGenerationStore {
     private final Clock clock;
     private final ChatCitationQuery citations;
     private final ChatMessageSourceRepository sources;
+    private final ChatHistoryQuery history;
     public ChatGenerationStore(ChatConversationRepository rooms, ChatMessageRepository messages,
             IdempotencyRequestRepository requests, ChatScopeQuery scopes, JdbcTemplate jdbc, JsonMapper mapper, Clock clock,
-            ChatCitationQuery citations, ChatMessageSourceRepository sources) {
+            ChatCitationQuery citations, ChatMessageSourceRepository sources,ChatHistoryQuery history) {
         this.rooms=rooms; this.messages=messages; this.requests=requests; this.scopes=scopes; this.jdbc=jdbc; this.mapper=mapper; this.clock=clock;
         this.citations=citations; this.sources=sources;
+        this.history=history;
     }
     private record Request(UUID room, SendMessageRequest body) {}
 
@@ -58,7 +60,7 @@ public class ChatGenerationStore {
         UUID token = UUID.randomUUID();
         var answer = messages.saveAndFlush(ChatMessage.answer(question,selection.records().size(),request.retryOfMessageId(),token,now.plus(ChatLimits.GENERATION_LEASE)));
         requests.save(new IdempotencyRequest(owner,SEND,key,hash,answer.getId(),now));
-        return new GenerationTicket(owner,roomId,question.getId(),answer.getId(),key,token,selection.records());
+        return new GenerationTicket(owner,roomId,question.getId(),answer.getId(),key,token,selection.records(),history.select(owner,roomId,selection.records()));
     }
     private void validateRetry(UUID room, SendMessageRequest request) {
         if (request.retryOfMessageId() == null) return;

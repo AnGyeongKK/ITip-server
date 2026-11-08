@@ -42,7 +42,7 @@ public class PythonChatClient {
         requireConfigured();
         return client.post().uri("/v1/chat/stream").contentType(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_EVENT_STREAM)
             .bodyValue(Map.of("schemaVersion","1.0","requestId",ticket.clientRequestId(),"conversationId",ticket.conversationId(),
-                "ownerId",ticket.ownerId(),"question",question,"records",ticket.records()))
+                "ownerId",ticket.ownerId(),"question",question,"records",ticket.records(),"history",ticket.history()))
             .retrieve().bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<JsonNode>>() {})
             .timeout(ChatLimits.IDLE_TIMEOUT).take(ChatLimits.STREAM_DURATION);
     }

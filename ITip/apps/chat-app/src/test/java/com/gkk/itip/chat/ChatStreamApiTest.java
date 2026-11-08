@@ -138,6 +138,33 @@ class ChatStreamApiTest {
                 .andExpect(jsonPath("data.items[1].status").value("FAILED"))
                 .andExpect(jsonPath("data.items[1].retryable").value(false));
     }
+    @Test void passesCompletedQuestionAnswerContextForFollowUp() throws Exception {
+        send(UUID.randomUUID());send(UUID.randomUUID());
+        var history=mapper.readTree(INPUT.get()).path("history");
+        assertThat(history.size()).isEqualTo(2);
+        assertThat(history.get(0).path("role").asString()).isEqualTo("USER");
+        assertThat(history.get(0).path("content").asString()).isEqualTo("설명해 줘");
+        assertThat(history.get(1).path("role").asString()).isEqualTo("ASSISTANT");
+        assertThat(history.get(1).path("content").asString()).isEqualTo("한국어 답변");
+    }
+    @Test void doesNotSendDeletedSourcesOldAnswerAsFollowUpContext() throws Exception {
+        RESPONSE.set(event("delta","{\"text\":\"삭제될 기록의 답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
+                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        UUID old=UUID.randomUUID();send(old);
+        jdbc.update("delete from analysis_records where id=?",a.recordId());f.analysis("demo-user","새 기록");
+        RESPONSE.set(event("delta","{\"text\":\"새 안내\"}")+event("sources","{\"items\":[]}")+event("done","{\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}"));
+        send(UUID.randomUUID());assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+        mvc.perform(get(path()).param("clientRequestId",old.toString())).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[1].content").value("삭제될 기록의 답변"));
+    }
+    @Test void contextNeverCrossesConversationAndSkipsOversizedPairs() throws Exception {
+        send(UUID.randomUUID());room=f.room("demo-user");
+        UUID key=UUID.randomUUID();UUID question=f.question(room,key,1,"이전 질문");
+        UUID answer=f.answer(room,key,question,2,"COMPLETED","긴".repeat(32001),1);
+        jdbc.update("update chat_messages set finish_reason='INSUFFICIENT_EVIDENCE' where id=?",answer);
+        send(UUID.randomUUID());
+        assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+    }
     @Test void activeStreamBlocksSecondQuestionAndDeletionButAllowsReads() throws Exception {
         var gate=new CountDownLatch(1);HOLD.set(gate);UUID key=UUID.randomUUID();
         var initial=mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)

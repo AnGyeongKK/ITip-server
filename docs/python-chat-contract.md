@@ -16,6 +16,10 @@
   "conversationId": "22222222-2222-4222-8222-222222222222",
   "ownerId": "demo-user",
   "question": "RAG 검색 과정을 설명해 줘",
+  "history": [
+    {"role": "USER", "content": "이 영상의 핵심은 뭐야?"},
+    {"role": "ASSISTANT", "content": "저장된 자막을 검색해 답변하는 과정입니다."}
+  ],
   "records": [
     {
       "recordId": "33333333-3333-4333-8333-333333333333",
@@ -26,6 +30,8 @@
 ```
 
 `ownerId`·records는 Spring이 소유권을 확인한 값이다. Python도 검색 시 `analysis_records.owner_id`, 현재 기록 존재 여부, 전달된 recordId·analysisId를 모두 확인해야 한다. 삭제·타인·범위 밖 기록을 검색이나 프롬프트에 포함하지 않는다. 이미 진행 중인 모델 요청에서 삭제 직전 전송된 문맥까지 회수할 수는 없다.
+
+history는 같은 방의 최근 완료 질문·답변 최대5쌍, 합계32000 UTF-16 문자 이내다. 쌍 전체가 남은 길이를 넘으면 생략한다. 실패·진행 중 답변과 현재 범위 밖·삭제 출처가 연결된 답변은 전송하지 않는다. 기존 앱 대화는 삭제하지 않으며 Python에 보낼 문맥만 제한한다. history는 질문 의도 파악용이고 새 답변 근거는 현재 records의 원문에서 찾는다. 시스템 지시로 취급하지 않는다.
 
 ## Python → Spring SSE
 
