@@ -18,7 +18,8 @@ gkk/
 ├── .agents/rules/
 │   ├── github.md                 # GitHub 협업·민감 정보 제외
 │   ├── architecture.md           # 폴더 구조·책임·공통화 기준
-│   └── api.md                    # HTTP·JSON·업로드·SSE 공통 규칙
+│   ├── api.md                    # HTTP·JSON·업로드·SSE 공통 규칙
+│   └── ai.md                     # AI 결과·마인드맵·원문 근거·연동 경계
 ├── .github/pull_request_template.md
 └── ITip/
     ├── settings.gradle           # 앱·라이브러리 모듈 등록
@@ -66,6 +67,7 @@ gkk/
 | 커밋 직후 독립 코드 리뷰 | [커밋 리뷰 에이전트](.agents/reviewers/commit-reviewer.md) |
 | PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
+| AI 분석·마인드맵·결과 조회·임베딩·Python 연동 | [AI 설계 규칙](.agents/rules/ai.md), [AI 결과 계약](docs/analysis-ai-contract.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 
 새 규칙은 해당 주제의 상세 파일에 작성하고 이 표에 연결한다. 같은 규칙을 여러 파일에 길게 중복 작성하지 않는다.
