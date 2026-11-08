@@ -121,6 +121,8 @@ API의 Flyway 완료 뒤 Chat을 실행한다. API·Chat의 `DEMO_USER_ID`를 �
 
 Python을 연결하려면 [내부 계약 초안](python-chat-contract.md)을 AI 파트와 맞추고 CHAT_AI_BASE_URL을 로컬에서 지정한다. 현재 실제 Python 주소·스키마가 확인되지 않았으며 키만 넣어서 GPT·RAG가 구현되는 구조가 아니다. HTTP fixture 테스트와 실제 AI 시연을 구분한다.
 
+Chat 테스트는 기본 AI 주소·토큰을 비우고 각 HTTP fixture 주소만 사용한다. 개발자가 export한 CHAT_AI_BASE_URL·CHAT_AI_TOKEN으로 실제 AI를 호출하지 않는다.
+
 Chat 이미지도 `./gradlew :apps:chat-app:bootJar` 후 `docker build -f apps/chat-app/Dockerfile -t itip-chat:local .`로 만든다. API와 같은 네트워크·DB 환경변수를 전달하고 8082를 로컬에 노출한다. 컨테이너에서 Python이 호스트에 있으면 localhost 대신 해당 Docker 환경의 호스트 주소를 사용한다. [코드 읽기 안내](chat-code-reading.md)에서 함수·잠금·TX·테스트 순서로 따라갈 수 있다.
 
 ```sh

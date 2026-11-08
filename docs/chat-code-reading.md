@@ -105,4 +105,6 @@ Docker를 켠 뒤 `ITip/`에서 실행한다. 테스트는 Testcontainers가 별
 
 생성은 `ChatGenerationStoreTest`의 실제 동시 접수부터 본다. `ChatStreamApiTest`는 별도 HTTP 서버가 UTF-8을 쪼개 보내고 EOF·30초 idle·잘못된 출처를 재현한다. 출력 IOException과 DB 장애 경계 대역 테스트는 실제 모바일·DB 중단 시연과 구분한다. [Python 계약 초안](python-chat-contract.md)은 실제 AI 파트와 아직 맞춰야 한다.
 
+`ChatHttpStreamingTest`는 완료 전 첫 조각 수신을 실제 포트에서 확인한다. `ChatCompletionConcurrencyTest`는 SQL 이후 잠시 대기시켜 삭제와 완료의 순서를 확인하고, 테스트 Clock으로 lease를 넘겨 만료 복구가 완료된 답변을 덮지 않는지 확인한다. [검토 기록](chat-review-log.md)에 발견 문제·수정 커밋·258개 전체 테스트 결과가 있다.
+
 현재 PR 순서는 채팅방·대화 저장 [PR #12](https://github.com/AnGyeongKK/ITip-server/pull/12) → Python 연동이다. #7은 #6 코드를 기반으로 하며 #6을 팀 승인 없이 병합하지 않는다. 실제 Python·GPT 응답 확인 전에는 이슈 #7 완료로 표시하지 않는다.

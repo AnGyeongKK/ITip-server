@@ -33,7 +33,23 @@
 | 66ff1cc | PASS · JSON 오류 분류·끊김·idle·동시 요청 실패 검증 |
 | 76059ca | PASS · 완료 이력·현재 범위의 후속 질문 문맥 |
 | 7ecdad0 | PASS · 실패 상태도 저장할 수 없는 DB 장애 경계 |
+| ce1a171 | PASS · 실제 함수 호출·TX·실행 안내 |
+| ad82441 | PASS · 실제 HTTP 증분 SSE flush |
+| 30c547a | PASS · 출처 확인 후 삭제 경합 잠금 |
+| 67b1558 | PASS · heartbeat·완료와 만료 복구의 동시 실행 |
+| 2e052c1 | PASS · 로컬 AI 환경변수와 테스트 분리 |
 
-Java21 전체 `./gradlew build`는 254개 테스트, 실패·오류·skip0으로 통과했다. 정상 HTTP 응답은 실제 로컬 HTTP 서버와 PostgreSQL을 사용했고, 앱 출력 IOException·DB 장애 경계는 대역으로 재현했다. 실제 30초 idle timeout을 실행했다. 실제 모바일 끊김·Python/GPT 응답 품질·RAG·GCS는 검증하지 않았다.
+Java21 최종 `./gradlew build`는 258개 테스트, 실패·오류·skip0으로 통과했다. 가짜 AI 주소·토큰 환경변수가 있는 조건에서도 같은 전체 빌드를 확인했다. 정상 HTTP 응답은 실제 로컬 HTTP 서버와 PostgreSQL을 사용했고, 앱 출력 IOException·DB 장애 경계는 대역으로 재현했다. 실제 30초 idle timeout을 실행했다. 실제 모바일 끊김·Python/GPT 응답 품질·RAG·GCS는 검증하지 않았다.
+
+전체 검토: `5a130cf..ce1a171`, 실행 ID `20261109-030525-5d1ce60f`, 결과 `complete / Ready with fixes`. 아래 두 지적을 각각 작은 수정 커밋과 독립 재검토로 반영했다.
+
+| 지적 | 수정·확인 |
+| --- | --- |
+| #1 P1 · Spring7 callback flush가 실제 HTTP에 전달되지 않음 | ad82441. 실제 포트 테스트 실패→통과. Docker Chat에서도 upstream 완료 전 첫 delta·GENERATING 부분 저장을 확인하고 완료 후 본문 일치를 확인 |
+| #2 P2 · 출처 확인 후 commit 전 기록 삭제 가능 | 30c547a. FOR SHARE·일관된 잠금 순서. 실제 SQL 직후 DELETE가 잠금 대기하고 완료 후 삭제되며 출처는 보존됨 |
+
+리뷰의 heartbeat·만료 복구 검증 공백도 테스트로 추가 확인했다. 단순화 검토는 정확한 #7 diff의 프로덕션 코드 676줄 상한·cutoff5000의 결합 리뷰로 수행했고 추가 수정 제안은 없었다. 외부 모델 검토는 #6과 같은 범위 제외 제약으로 수행하지 않았고 독립 로컬 검토를 사용했다. 현재 코드 지적 미반영 항목은 없다.
+
+컨테이너 검증은 임시 전용 PostgreSQL과 합성 완료 분석·로컬 HTTP AI fixture를 사용했다. Chat JAR로 방 생성201·목록200·POST SSE200·첫 조각 전송·최종 GET 일치를 확인했다. 이 별도 실행에서는 V1~V5 DDL을 직접 적용했으며 Flyway 적용 이력 자체의 검증은 기존 통합 테스트에서 수행했다. 임시 컨테이너·네트워크는 삭제했다.
 
 이슈 #7의 실제 Python 답변 시연 조건은 아직 충족하지 않았다. endpoint·내부 JSON/SSE 형식·인증을 AI 파트와 맞춘 뒤 실제 서버에서 추가 확인해야 한다. 내부 계약은 `docs/python-chat-contract.md`의 초안이다.
