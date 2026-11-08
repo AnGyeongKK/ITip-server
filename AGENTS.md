@@ -3,7 +3,7 @@
 ## 프로젝트 범위
 
 - Spring Boot 프로젝트는 `ITip/`에 있다. Gradle 명령은 이 디렉터리에서 실행한다.
-- `ITip/`는 Gradle 집계 루트이며 `ITip/src/main`, `ITip/src/test`를 사용하지 않는다. 실제 소스·테스트는 `apps/api-app/src`, `apps/worker-app/src`, `libs/common/src`, `libs/domain/src`에 둔다. 초기 단일 모듈의 빈 `ITip/src/`는 제거했으며 이 경로에 새 코드를 작성하지 않는다.
+- `ITip/`는 Gradle 집계 루트이며 `ITip/src/main`, `ITip/src/test`를 사용하지 않는다. 실제 소스·테스트는 `apps/api-app/src`, `apps/worker-app/src`, `apps/chat-app/src`, `libs/common/src`, `libs/domain/src`에 둔다. 초기 단일 모듈의 빈 `ITip/src/`는 제거했으며 이 경로에 새 코드를 작성하지 않는다.
 - Java 21, Spring Boot 4.1.2, Gradle Wrapper, Spring MVC, JPA를 기준으로 개발한다.
 - 현재 시연용 MVP는 영상·재생목록 가져오기, 분석·결과, 기록·폴더, 검색, AI 대화, 기기·알림이다. 로그인·결제·요금제·이용 한도는 구현 범위에서 제외한다.
 - 데모는 로컬 PostgreSQL(pgvector)·DB 작업 조회·Spring Worker로 실행한다. 파일은 실제 GCS의 presigned URL로 업로드한다. GPT·RAG 채팅은 AI 파트의 Python 서버와 연동한다.
@@ -11,7 +11,7 @@
 
 ## 폴더 구조와 실행 경계
 
-API·Worker와 `common`·`domain`은 Gradle 멀티모듈로 구성하며 API·Worker는 각각 Dockerfile을 사용한다. 아래 Chat 앱은 채팅 기능 구현 시 추가할 목표 구조다. 실제 실행 파일은 Gradle task와 Docker 빌드로 확인한다.
+API·Worker·Chat과 `common`·`domain`은 Gradle 멀티모듈로 구성하며 세 앱은 각각 Dockerfile을 사용한다. 실제 실행 파일은 Gradle task와 Docker 빌드로 확인한다.
 
 ```text
 gkk/
@@ -69,6 +69,7 @@ gkk/
 | PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
 | AI 분석·마인드맵·결과 조회·임베딩·Python 연동 | [AI 설계 규칙](.agents/rules/ai.md), [AI 결과 계약](docs/analysis-ai-contract.md) |
+| 채팅 범위·기록·출처 보존·Python 연동 경계 | [채팅 계약](docs/chat-contract.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 
 새 규칙은 해당 주제의 상세 파일에 작성하고 이 표에 연결한다. 같은 규칙을 여러 파일에 길게 중복 작성하지 않는다.
@@ -82,6 +83,7 @@ gkk/
 ./gradlew build                      # 테스트를 포함한 전체 빌드
 ./gradlew :apps:api-app:bootRun        # API 실행
 ./gradlew :apps:worker-app:bootRun     # Worker 실행
+./gradlew :apps:chat-app:bootRun       # Chat 실행
 ```
 
 - 코드 변경 범위에 맞는 검증을 실행한다. 문서·ignore 규칙만 변경했다면 링크·규칙 적용 여부를 확인한다.

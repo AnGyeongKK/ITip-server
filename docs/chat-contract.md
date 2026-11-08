@@ -15,3 +15,26 @@ Notion CHAT-01·06은 고정된 조건을 질문 시점에 재평가하는 방�
 ## 외부 AI
 
 현재 Notion AI 페이지는 RAG 채팅 미착수이며 Python endpoint·스트림 계약은 확인되지 않았다. #7은 내부 HTTP/SSE 계약 초안과 로컬 연동 fixture로 개발하고, 실제 Python과 GPT 검증을 구분한다. 주소·키를 임의로 만들거나 실제 AI가 연결됐다고 표시하지 않는다.
+
+## 채팅방·기록 API (#6)
+
+Chat 기본 주소는 `http://localhost:8082`다. API가 Flyway V4·V5를 적용한 후 실행한다. 로그인 제외 시연에서는 API·Chat의 `DEMO_USER_ID`를 같게 설정한다.
+
+| 메서드·경로 | 동작 |
+| --- | --- |
+| POST /api/v1/conversations | Idempotency-Key UUID로 방 생성. 같은 키·본문은 최초 응답, 다른 본문은 409 |
+| GET /api/v1/conversations | updatedAt/id 내림차순 커서 목록 |
+| GET /api/v1/conversations/{id} | 현재 recordCount·scopeStatus·활성 답변 ID |
+| DELETE /api/v1/conversations/{id} | 생성 중이면 409, 그 외 방·메시지·출처 삭제. 분석 결과 유지 |
+| GET /api/v1/conversations/{id}/messages | 최신 페이지를 가져오고 items는 과거→최근. clientRequestId 조회와 cursor는 함께 사용 불가 |
+| GET /api/v1/conversations/{id}/messages/{messageId} | 부분 답변·상태·실패 사유·다음 조회 간격 |
+
+```json
+{"scope":{"type":"FILTERED","folderId":null,"keywordIds":[],"q":"RAG"}}
+```
+
+일반 성공은 `code/message/data`, 오류는 `code/message`다. 생성은 201·Location, 삭제는 200이다. limit은 기본20·최대50이며 서버의 nextCursor를 그대로 다음 요청에 보낸다. 잘못된 커서는 400, 타인·없는 방은 404, 최초 참고 기록이 없으면 422 EMPTY_CHAT_SCOPE다.
+
+메시지 순서는 방별 position이며 동일 시각에도 질문→답변 순서를 유지한다. 출처는 당시 제목·영상·구간을 저장하고 원본 기록 삭제 시 availability=DELETED를 반환한다. 기존 답변·출처·당시 사용 개수는 유지한다. 목록 조회는 출처·현재 기록을 일괄 조회한다.
+
+공통 RequestIdFilter·ApiExceptionHandler·DemoUserProvider는 libs/common에 있다. 각 앱에 같은 처리 코드를 다시 만들지 않는다.
