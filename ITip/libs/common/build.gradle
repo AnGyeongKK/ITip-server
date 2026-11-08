@@ -8,4 +8,5 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     api 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'tools.jackson.core:jackson-databind'
 }

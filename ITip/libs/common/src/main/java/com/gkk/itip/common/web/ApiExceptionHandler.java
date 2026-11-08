@@ -24,7 +24,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case CAPTION_REUPLOAD_REQUIRED -> HttpStatus.GONE;
             case CAPTION_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE;
             case STORAGE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
-            case VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_CONTENT;
+            case VALIDATION_FAILED, EMPTY_CHAT_SCOPE -> HttpStatus.UNPROCESSABLE_CONTENT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         return ResponseEntity.status(status)

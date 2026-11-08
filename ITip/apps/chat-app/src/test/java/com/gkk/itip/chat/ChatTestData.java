@@ -10,7 +10,7 @@ final class ChatTestData {
     static final Instant NOW = Instant.parse("2026-11-09T00:00:00Z");
     final JdbcTemplate jdbc;
     ChatTestData(JdbcTemplate jdbc) { this.jdbc = jdbc; }
-    void clear() { jdbc.execute("truncate chat_conversations, videos, analysis_batches, idempotency_requests cascade"); }
+    void clear() { jdbc.execute("truncate chat_conversations, folders, videos, analysis_batches, idempotency_requests cascade"); }
 
     UUID room(String owner) {
         UUID id = UUID.randomUUID();
