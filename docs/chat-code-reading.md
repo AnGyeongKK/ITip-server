@@ -107,4 +107,4 @@ Docker를 켠 뒤 `ITip/`에서 실행한다. 테스트는 Testcontainers가 별
 
 `ChatHttpStreamingTest`는 완료 전 첫 조각 수신을 실제 포트에서 확인한다. `ChatCompletionConcurrencyTest`는 SQL 이후 잠시 대기시켜 삭제와 완료의 순서를 확인하고, 테스트 Clock으로 lease를 넘겨 만료 복구가 완료된 답변을 덮지 않는지 확인한다. [검토 기록](chat-review-log.md)에 발견 문제·수정 커밋·258개 전체 테스트 결과가 있다.
 
-현재 PR 순서는 채팅방·대화 저장 [PR #12](https://github.com/AnGyeongKK/ITip-server/pull/12) → Python 연동이다. #7은 #6 코드를 기반으로 하며 #6을 팀 승인 없이 병합하지 않는다. 실제 Python·GPT 응답 확인 전에는 이슈 #7 완료로 표시하지 않는다.
+현재 PR 순서는 채팅방·대화 저장 [PR #12](https://github.com/AnGyeongKK/ITip-server/pull/12) → [Python·SSE Draft PR #13](https://github.com/AnGyeongKK/ITip-server/pull/13)이다. #7은 #6 코드를 기반으로 하며 #6을 팀 승인 없이 병합하지 않는다. 실제 Python·GPT 응답 확인 전에는 이슈 #7 완료로 표시하지 않는다. [API 호출 구조](yousum-api-pipelines.html)에서 CHAT-04를 선택하면 함수·트랜잭션·커밋을 함께 볼 수 있다.
