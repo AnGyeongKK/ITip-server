@@ -24,6 +24,24 @@ Worker → 자막 검증 → AI 분석 → 검색용 임베딩 → 결과·개�
 
 GCS 업로드 URL 만료와 객체 보관 기간은 다르다. 이미 업로드한 객체는 URL 만료 시각만으로 삭제·재업로드 대상으로 판단하지 않는다. 접수 때 확인한 generation을 고정해 Worker가 같은 버전을 읽는다.
 
+## 채팅 검색에 전달할 범위
+
+`analysis_results.chat_ready`만으로 개인 기록의 유효성을 판단하지 않는다. 보관 기록을 삭제해도 원문·분석 결과가 남을 수 있으므로, 검색할 때 현재 `analysis_records`와 연결한다.
+
+```sql
+SELECT c.id, c.analysis_id, r.id AS record_id,
+       c.section_ids, c.source_segment_ids, c.text, c.start_ms, c.end_ms
+FROM analysis_chunks c
+JOIN analysis_records r
+  ON r.analysis_id = c.analysis_id AND r.owner_id = c.owner_id
+JOIN analysis_results a ON a.id = c.analysis_id
+WHERE r.owner_id = :ownerId
+  AND r.id = ANY(:allowedRecordIds)
+  AND a.chat_ready = TRUE;
+```
+
+위 SQL은 권한 범위만 보여주는 예시다. 실제 검색에서는 같은 임베딩 모델·버전·차원의 벡터끼리 비교하고, 폴더·키워드 조건에서 허용한 recordId만 전달한다. 저장된 sectionId·시간을 출처로 사용하며 AI가 새 DB ID나 시간을 만들지 않는다.
+
 ## 시연용 범위
 
 - 로그인·한도·결제·FCM·Cloud Tasks는 제외한다. 한도 필드는 가짜 수치로 채우지 않는다.
