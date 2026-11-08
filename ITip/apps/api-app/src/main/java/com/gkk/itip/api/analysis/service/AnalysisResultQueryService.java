@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +42,9 @@ public class AnalysisResultQueryService {
         var document = stored.document();
         return new AnalysisResultResponse(analysisId, stored.record().getId(), "COMPLETED", document.schemaVersion(),
                 AnalysisResultResponse.VideoInfo.from(stored.video()), document.summary(),
-                document.sections().stream().map(AnalysisResultResponse.SectionItem::from).toList(),
+                document.sections().stream().sorted(Comparator.comparingLong(ResultDocument.Section::startMs)
+                                .thenComparingLong(ResultDocument.Section::endMs).thenComparing(ResultDocument.Section::sectionId))
+                        .map(AnalysisResultResponse.SectionItem::from).toList(),
                 document.mindmap(), true, stored.result().getCompletedAt());
     }
 

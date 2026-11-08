@@ -106,6 +106,18 @@ class AnalysisResultApiTest {
         assertThat(data.path("sections").path(1).path("subtopics").size()).isZero();
     }
 
+    @Test void sortsSectionListByTimeWhilePreservingMindmapAndHighlightOrder() throws Exception {
+        var f = fixture(OWNER, true);
+        var document = document();
+        corrupt(f, mapper.writeValueAsString(new ResultDocument(document.schemaVersion(), document.summary(),
+                document.sections().reversed(), document.mindmap())));
+        result(f).andExpect(status().isOk())
+                .andExpect(jsonPath("data.sections[0].sectionId").value(FIRST.toString()))
+                .andExpect(jsonPath("data.sections[1].sectionId").value(SECOND.toString()))
+                .andExpect(jsonPath("data.mindmap.sectionIds[0]").value(SECOND.toString()))
+                .andExpect(jsonPath("data.summary.highlightSectionIds[0]").value(SECOND.toString()));
+    }
+
     @Test void repeatedReadsDoNotChangeResultsRecordsJobsOrCallStorage() throws Exception {
         var f = fixture(OWNER, true);
         var beforeResult = jdbc.queryForMap("select * from analysis_results where id=?", f.analysisId());
