@@ -18,6 +18,11 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import com.gkk.itip.chat.stream.*;
+import com.gkk.itip.domain.chat.*;
+import java.io.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,14 +35,21 @@ class ChatStreamApiTest {
     static final AtomicReference<String> RESPONSE=new AtomicReference<>();
     static final AtomicReference<String> INPUT=new AtomicReference<>();
     static final AtomicInteger CALLS=new AtomicInteger();
+    static final AtomicReference<CountDownLatch> HOLD=new AtomicReference<>();
+    static final AtomicLong PAUSE=new AtomicLong();
     static HttpServer python;
     @DynamicPropertySource static void config(DynamicPropertyRegistry r) throws Exception {
         python=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         python.createContext("/v1/chat/stream", e->{
             CALLS.incrementAndGet(); INPUT.set(new String(e.getRequestBody().readAllBytes(),StandardCharsets.UTF_8));
             e.getResponseHeaders().add("Content-Type","text/event-stream"); e.sendResponseHeaders(200,0);
+            String response=RESPONSE.get();
+            try {
+                var hold=HOLD.get(); if(hold!=null)hold.await(5,TimeUnit.SECONDS);
+                if(PAUSE.get()>0)Thread.sleep(PAUSE.get());
+            } catch(InterruptedException interrupted){Thread.currentThread().interrupt();}
             try(var out=e.getResponseBody()) {
-                for(byte b:RESPONSE.get().getBytes(StandardCharsets.UTF_8)){out.write(b); out.flush();}
+                for(byte b:response.getBytes(StandardCharsets.UTF_8)){out.write(b); out.flush();}
             } catch(java.io.IOException disconnected) { }
         });
         python.start();
@@ -47,6 +59,7 @@ class ChatStreamApiTest {
     }
     @AfterAll static void stop(){if(python!=null)python.stop(0);}
     @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired JsonMapper mapper;
+    @Autowired ChatGenerationStore store; @Autowired ChatStreamBridge bridge; @Autowired ChatMessageRepository messages;
     ChatTestData f; UUID room; ChatTestData.Analysis a; UUID chunk;
     @BeforeEach void clear(){
         f=new ChatTestData(jdbc);f.clear();a=f.analysis("demo-user","근거 영상");room=f.room("demo-user");chunk=UUID.randomUUID();
@@ -56,15 +69,18 @@ class ChatStreamApiTest {
             values (?,'demo-user',?,array[?]::uuid[],array['segment-1'],'원문',0,1000,'CAPTION','[0.1,0.2]','fixture',2)
             """,chunk,a.analysisId(),a.sectionId());
         RESPONSE.set(event("delta","{\"text\":\"한국어 답변\"}")+event("sources","{\"items\":[]}")+event("done","{\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}"));
-        CALLS.set(0);INPUT.set(null);
+        CALLS.set(0);INPUT.set(null);HOLD.set(null);PAUSE.set(0);
     }
     static String event(String type,String json){return "event: "+type+"\ndata: "+json+"\n\n";}
     String path(){return "/api/v1/conversations/"+room+"/messages";}
     String body(UUID key){return "{\"clientRequestId\":\""+key+"\",\"content\":\"설명해 줘\"}";}
     String send(UUID key) throws Exception {
+        return send(key,10000);
+    }
+    String send(UUID key,long waitMs) throws Exception {
         var initial=mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.TEXT_EVENT_STREAM).content(body(key))).andExpect(request().asyncStarted()).andReturn();
-        initial.getAsyncResult(10000);
+        initial.getAsyncResult(waitMs);
         return mvc.perform(asyncDispatch(initial)).andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
     }
@@ -114,5 +130,70 @@ class ChatStreamApiTest {
                 .content("{\"clientRequestId\":\""+key+"\",\"content\":\"   \"}"))
                 .andExpect(status().is(422)).andExpect(jsonPath("code").value("INVALID_CHAT_MESSAGE"));
         assertThat(CALLS.get()).isZero();assertThat(jdbc.queryForObject("select count(*) from chat_messages",Integer.class)).isZero();
+    }
+    @Test void malformedJsonIsNotMarkedAsRetryableTransportFailure() throws Exception {
+        RESPONSE.set("event: delta\ndata: {broken}\n\n"); UUID key=UUID.randomUUID();
+        assertThat(send(key)).contains("CHAT_INVALID_AI_RESPONSE","event: error").doesNotContain("event: done");
+        mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[1].status").value("FAILED"))
+                .andExpect(jsonPath("data.items[1].retryable").value(false));
+    }
+    @Test void activeStreamBlocksSecondQuestionAndDeletionButAllowsReads() throws Exception {
+        var gate=new CountDownLatch(1);HOLD.set(gate);UUID key=UUID.randomUUID();
+        var initial=mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)
+                .content(body(key))).andExpect(request().asyncStarted()).andReturn();
+        try {
+            mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
+                    .andExpect(jsonPath("data.items[1].status").value("GENERATING"));
+            UUID other=UUID.randomUUID();
+            mvc.perform(post(path()).header("Idempotency-Key",other).contentType(MediaType.APPLICATION_JSON).content(body(other)))
+                    .andExpect(status().isConflict()).andExpect(jsonPath("code").value("CHAT_GENERATION_IN_PROGRESS"));
+            mvc.perform(delete("/api/v1/conversations/"+room)).andExpect(status().isConflict());
+        } finally {gate.countDown();}
+        initial.getAsyncResult(10000);mvc.perform(asyncDispatch(initial)).andExpect(status().isOk());
+        assertThat(CALLS.get()).isEqualTo(1);
+    }
+    @Test void deletingRecordDuringGenerationPreventsFinalCitationPublication() throws Exception {
+        RESPONSE.set(event("delta","{\"text\":\"답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
+                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        var gate=new CountDownLatch(1);HOLD.set(gate);UUID key=UUID.randomUUID();
+        var initial=mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)
+                .content(body(key))).andExpect(request().asyncStarted()).andReturn();
+        try {jdbc.update("delete from analysis_records where id=?",a.recordId());}finally{gate.countDown();}
+        initial.getAsyncResult(10000);String text=mvc.perform(asyncDispatch(initial)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(text).contains("event: error").doesNotContain("event: sources","event: done");
+        assertThat(jdbc.queryForObject("select count(*) from chat_message_sources",Integer.class)).isZero();
+    }
+    @Test void clientWriteFailureKeepsPartialAnswerAndClosesStream() {
+        UUID key=UUID.randomUUID();var ticket=store.begin("demo-user",room,key,new SendMessageRequest(key,"질문",null));
+        bridge.write(ticket,"질문",rejectEvent("delta"));
+        var answer=messages.findById(ticket.assistantMessageId()).orElseThrow();
+        assertThat(answer.getStatus()).isEqualTo(MessageStatus.INCOMPLETE);
+        assertThat(answer.getContent()).isEqualTo("한국어 답변");assertThat(answer.getGenerationToken()).isNull();
+    }
+    @Test void doneWriteFailureDoesNotUndoCommittedAnswer() {
+        UUID key=UUID.randomUUID();var ticket=store.begin("demo-user",room,key,new SendMessageRequest(key,"질문",null));
+        bridge.write(ticket,"질문",rejectEvent("done"));
+        var answer=messages.findById(ticket.assistantMessageId()).orElseThrow();
+        assertThat(answer.getStatus()).isEqualTo(MessageStatus.COMPLETED);
+        assertThat(answer.getFinishReason()).isEqualTo(FinishReason.INSUFFICIENT_EVIDENCE);
+    }
+    @Test void upstreamIdleTimeoutPersistsFailureAndReleasesRoom() throws Exception {
+        PAUSE.set(31000);UUID key=UUID.randomUUID();
+        assertThat(send(key,35000)).contains("event: error","CHAT_STREAM_FAILED").doesNotContain("event: done");
+        var pair=messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key);
+        assertThat(pair.getLast().getStatus()).isEqualTo(MessageStatus.FAILED);
+        assertThat(pair.getLast().getGenerationToken()).isNull();
+        UUID next=UUID.randomUUID();
+        assertThat(store.begin("demo-user",room,next,new SendMessageRequest(next,"다시 질문",null))).isNotNull();
+    }
+    private OutputStream rejectEvent(String event) {
+        return new OutputStream(){
+            @Override public void write(int value) { }
+            @Override public void write(byte[] bytes,int offset,int length) throws IOException {
+                if(new String(bytes,offset,length,StandardCharsets.UTF_8).startsWith("event: "+event+"\n"))
+                    throw new IOException("simulated closed client");
+            }
+        };
     }
 }

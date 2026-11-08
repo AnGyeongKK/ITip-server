@@ -6,6 +6,8 @@ import com.gkk.itip.chat.infrastructure.PythonChatClient;
 import com.gkk.itip.domain.chat.FinishReason;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.core.codec.DecodingException;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import java.io.*;
@@ -70,7 +72,8 @@ public class ChatStreamBridge {
             throw new EOFException("AI stream ended without done");
         } catch(Exception failure) {
             if(committed) return;
-            boolean invalid=failure instanceof ChatProtocolException || failure instanceof IllegalArgumentException;
+            boolean invalid=failure instanceof ChatProtocolException || failure instanceof IllegalArgumentException
+                || failure instanceof DecodingException || failure instanceof DataBufferLimitException;
             boolean retryable=!invalid && (!(failure instanceof WebClientResponseException http) || http.getStatusCode().value()==429 || http.getStatusCode().is5xxServerError());
             String code=invalid?"CHAT_INVALID_AI_RESPONSE":"CHAT_STREAM_FAILED";
             var status=store.fail(ticket,text.toString(),code,retryable);
