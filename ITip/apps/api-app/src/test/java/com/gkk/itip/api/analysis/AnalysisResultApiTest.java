@@ -243,6 +243,31 @@ class AnalysisResultApiTest {
     private ResultActions section(Fixture f, UUID id) throws Exception {
         return mvc.perform(get(BASE + f.analysisId() + "/sections/" + id));
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"not-a-uuid", "41"})
+    void malformedStoredKeywordIdsAreNotExposedByEitherGet(String keywordId) throws Exception {
+        var f = fixture(OWNER, true);
+        String valid = jdbc.queryForObject("select result_json from analysis_results where id=?", String.class, f.analysisId());
+        String invalid = valid.replace("\"keywordId\":\"33333333-3333-4333-8333-333333333333\"", "\"keywordId\":\"" + keywordId + "\"");
+        assertThat(invalid).isNotEqualTo(valid);
+        corrupt(f, invalid);
+        error(result(f), 500, "INTERNAL_ERROR");
+        error(section(f, FIRST), 500, "INTERNAL_ERROR");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void missingOrNullStoredStartTimeDoesNotBecomeZero(boolean missing) throws Exception {
+        var f = fixture(OWNER, true);
+        String valid = jdbc.queryForObject("select result_json from analysis_results where id=?", String.class, f.analysisId());
+        String invalid = missing ? valid.replace("\"startMs\":1500,", "")
+                : valid.replace("\"startMs\":1500", "\"startMs\":null");
+        assertThat(invalid).isNotEqualTo(valid);
+        corrupt(f, invalid);
+        error(result(f), 500, "INTERNAL_ERROR");
+        error(section(f, FIRST), 500, "INTERNAL_ERROR");
+    }
     private JsonNode data(ResultActions action) throws Exception {
         return mapper.readTree(action.andReturn().getResponse().getContentAsString()).path("data");
     }

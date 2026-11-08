@@ -107,7 +107,10 @@ public class AnalysisResultQueryService {
 
     private static void texts(List<String> values) { values.forEach(AnalysisResultQueryService::text); }
     private static void keywords(List<ResultDocument.Keyword> values) {
-        values.forEach(keyword -> { text(keyword.keywordId()); text(keyword.name()); });
+        values.forEach(keyword -> {
+            require(UUID.fromString(keyword.keywordId()).toString().equals(keyword.keywordId()));
+            text(keyword.name());
+        });
     }
     private static void points(List<ResultDocument.TextPoint> values) {
         values.forEach(point -> { text(point.text()); origin(point.origin()); });
