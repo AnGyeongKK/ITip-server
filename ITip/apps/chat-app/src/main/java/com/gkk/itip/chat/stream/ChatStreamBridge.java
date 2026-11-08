@@ -10,12 +10,16 @@ import org.springframework.core.codec.DecodingException;
 import org.springframework.core.io.buffer.DataBufferLimitException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.gkk.itip.domain.chat.MessageStatus;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
 public class ChatStreamBridge {
+    private static final Logger LOG=LoggerFactory.getLogger(ChatStreamBridge.class);
     private final PythonChatClient python;
     private final ChatGenerationStore store;
     private final MessageQueryService messages;
@@ -76,7 +80,13 @@ public class ChatStreamBridge {
                 || failure instanceof DecodingException || failure instanceof DataBufferLimitException;
             boolean retryable=!invalid && (!(failure instanceof WebClientResponseException http) || http.getStatusCode().value()==429 || http.getStatusCode().is5xxServerError());
             String code=invalid?"CHAT_INVALID_AI_RESPONSE":"CHAT_STREAM_FAILED";
-            var status=store.fail(ticket,text.toString(),code,retryable);
+            MessageStatus status;
+            try {status=store.fail(ticket,text.toString(),code,retryable);}
+            catch(RuntimeException persistenceFailure) {
+                LOG.warn("chat failure state could not be saved messageId={} failureType={}",
+                    ticket.assistantMessageId(),persistenceFailure.getClass().getSimpleName());
+                return;
+            }
             if(status!=null) try {
                 event(out,"error",Map.of("assistantMessageId",ticket.assistantMessageId(),"status",status,"code",code,
                     "message","답변 생성이 중단됐어요.","retryable",retryable));
