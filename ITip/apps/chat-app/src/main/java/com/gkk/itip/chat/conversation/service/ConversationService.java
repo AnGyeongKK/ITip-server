@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import static com.gkk.itip.common.exception.ErrorCode.*;
 
@@ -42,7 +43,7 @@ public class ConversationService {
         var selection = scopes.resolve(owner, request.scope());
         if (selection.status().equals("UNAVAILABLE")) throw new BusinessException(RESOURCE_NOT_FOUND);
         if (selection.records().isEmpty()) throw new BusinessException(EMPTY_CHAT_SCOPE);
-        var now = clock.instant();
+        var now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         var room = rooms.saveAndFlush(ChatConversation.create(owner, mapper.writeValueAsString(request.scope()),
                 selection.label(), selection.records().size(), now));
         requests.save(new IdempotencyRequest(owner, CREATE, key, hash, room.getId(), now));

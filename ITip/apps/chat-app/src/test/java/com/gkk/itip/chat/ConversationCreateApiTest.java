@@ -4,8 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -18,6 +22,9 @@ import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.UUID;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +36,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {"spring.flyway.enabled=true", "itip.demo.owner-id=demo-user"})
 @AutoConfigureMockMvc @Testcontainers
+@Import(ConversationCreateApiTest.NanosecondClock.class)
 class ConversationCreateApiTest {
+    @TestConfiguration(proxyBeanMethods = false) static class NanosecondClock {
+        @Bean @Primary Clock fixedClock() {
+            return Clock.fixed(Instant.parse("2026-11-09T00:00:00.123456789Z"), ZoneOffset.UTC);
+        }
+    }
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
             DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"));
     @DynamicPropertySource static void database(DynamicPropertyRegistry r) {
@@ -123,5 +136,12 @@ class ConversationCreateApiTest {
                 .andExpect(status().isNotFound());
         assertThatThrownBy(() -> jdbc.update("insert into folder_records(folder_id,record_id,owner_id) values (?,?,'demo-user')", folder, other.recordId()))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test void literalSearchPreservesInternalSpaces() throws Exception {
+        f.analysis("demo-user", "큰  그림");
+        create(UUID.randomUUID(), "{\"scope\":{\"type\":\"FILTERED\",\"q\":\"큰  그림\"}}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("data.recordCount").value(1))
+                .andExpect(jsonPath("data.scope.q").value("큰  그림"));
     }
 }

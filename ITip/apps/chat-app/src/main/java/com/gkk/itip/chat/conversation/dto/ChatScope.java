@@ -11,7 +11,7 @@ public record ChatScope(@NotNull Type type, UUID folderId, @Size(max = 50) List<
     public enum Type { ALL, FILTERED }
     public ChatScope {
         keywordIds = keywordIds == null ? List.of() : keywordIds.stream().distinct().sorted(Comparator.comparing(UUID::toString)).toList();
-        q = q == null ? null : q.strip().replaceAll("\\s+", " ");
+        q = q == null ? null : q.strip();
         if (q != null && q.isEmpty()) q = null;
         if (type == Type.ALL && (folderId != null || !keywordIds.isEmpty() || q != null))
             throw new IllegalArgumentException("ALL scope cannot have filters");
