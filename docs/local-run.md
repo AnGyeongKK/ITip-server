@@ -93,9 +93,11 @@ GCS 인증은 이미지에 넣지 않는다. 기존 로컬 인증 파일을 읽�
 저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.
 
 ```sh
-curl http://localhost:8080/api/v1/analyses/<analysisId>
-curl http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>
+curl 'http://localhost:8080/api/v1/analyses/<analysisId>'
+curl 'http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>'
 ```
+
+`<analysisId>`·`<sectionId>`는 서버에서 받은 실제 UUID로 바꾼다.
 
 첫 응답의 `sections[].sectionId`를 상세 경로에 사용한다. `mindmap.sectionIds` 순서로 주제를 배치하고 `subtopics`를 하위 항목으로 그린다. 두 API는 AI를 재호출하지 않으며 구간 상세에 원본 링크·영상 카드·전체 한 줄 요약을 함께 제공한다. 오류와 저장 경계는 [AI 결과 계약](analysis-ai-contract.md#결과구간-조회-구현-5)을 따른다. 추천 영상 API는 아직 후속 범위다.
 
