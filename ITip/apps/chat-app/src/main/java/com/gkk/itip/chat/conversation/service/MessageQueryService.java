@@ -63,7 +63,7 @@ public class MessageQueryService {
                 return new MessageView.Source(s.getSourceId(), s.getRecordId(), s.getAnalysisId(), s.getSectionId(),
                         s.getTitle(), s.getVideoId(), s.getStartMs(), s.getEndMs(), exists ? "AVAILABLE" : "DELETED", s.getAnalyzedAt());
             }).toList();
-            boolean active = m.getStatus() == MessageStatus.QUEUED || m.getStatus() == MessageStatus.GENERATING;
+            boolean active = m.getStatus().active();
             var error = m.getErrorCode() == null ? null : new MessageView.Failure(m.getErrorCode(), m.getErrorMessage(), Boolean.TRUE.equals(m.getRetryable()));
             return new MessageView.Assistant(m.getId(), m.getRole(), m.getReplyToMessageId(), m.getClientRequestId(),
                     m.getStatus(), m.getContent(), mapped, m.getFinishReason(), m.getCreatedAt(), m.getCompletedAt(),

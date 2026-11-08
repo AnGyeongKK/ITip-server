@@ -7,6 +7,8 @@ import com.gkk.itip.domain.analysis.IdempotencyRequest;
 import com.gkk.itip.domain.analysis.IdempotencyRequestRepository;
 import com.gkk.itip.domain.chat.ChatConversation;
 import com.gkk.itip.domain.chat.ChatConversationRepository;
+import com.gkk.itip.domain.chat.ChatMessageRepository;
+import com.gkk.itip.domain.chat.MessageStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,14 +22,15 @@ import static com.gkk.itip.common.exception.ErrorCode.*;
 public class ConversationService {
     private static final String CREATE = "CREATE_CHAT_CONVERSATION";
     private final ChatConversationRepository rooms;
+    private final ChatMessageRepository messages;
     private final IdempotencyRequestRepository requests;
     private final ChatScopeQuery scopes;
     private final JdbcTemplate jdbc;
     private final JsonMapper mapper;
     private final Clock clock;
-    public ConversationService(ChatConversationRepository rooms, IdempotencyRequestRepository requests,
+    public ConversationService(ChatConversationRepository rooms, ChatMessageRepository messages, IdempotencyRequestRepository requests,
             ChatScopeQuery scopes, JdbcTemplate jdbc, JsonMapper mapper, Clock clock) {
-        this.rooms = rooms; this.requests = requests; this.scopes = scopes; this.jdbc = jdbc; this.mapper = mapper; this.clock = clock;
+        this.rooms = rooms; this.messages = messages; this.requests = requests; this.scopes = scopes; this.jdbc = jdbc; this.mapper = mapper; this.clock = clock;
     }
 
     @Transactional
@@ -51,5 +54,12 @@ public class ConversationService {
     }
     private static ConversationCreated created(ChatConversation room, ChatScope scope) {
         return new ConversationCreated(room.getId(), scope, room.getScopeLabel(), room.getInitialRecordCount(), room.getCreatedAt(), null);
+    }
+    @Transactional
+    public void delete(String owner, UUID id) {
+        var room = rooms.lockOwned(id, owner).orElseThrow(() -> new BusinessException(RESOURCE_NOT_FOUND));
+        if (messages.existsByConversationIdAndStatusIn(id, MessageStatus.ACTIVE)) throw new BusinessException(CHAT_GENERATION_IN_PROGRESS);
+        rooms.delete(room);
+        rooms.flush();
     }
 }

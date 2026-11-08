@@ -19,6 +19,14 @@ public class ChatScopeQuery {
     private final JsonMapper mapper;
     public ChatScopeQuery(JdbcTemplate jdbc, JsonMapper mapper) { this.jdbc = jdbc; this.mapper = mapper; }
 
+    public ChatScope readScope(String json) {
+        try {
+            var scope = mapper.readValue(json, ChatScope.class);
+            if (scope == null || scope.type() == null) throw new IllegalArgumentException("missing stored scope");
+            return scope;
+        } catch (RuntimeException exception) { throw new BusinessException(INTERNAL_ERROR); }
+    }
+
     public Selection resolve(String owner, ChatScope scope) {
         String folder = null;
         if (scope.folderId() != null) {
