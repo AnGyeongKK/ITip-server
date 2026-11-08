@@ -16,6 +16,8 @@ public interface AnalysisJobRepository extends JpaRepository<AnalysisJob, UUID> 
     Optional<AnalysisJob> findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(
             String ownerId, String videoId, Collection<JobStatus> statuses);
     List<AnalysisJob> findAllByBatchId(UUID batchId);
+    List<AnalysisJob> findAllByOwnerIdAndVideoIdInAndStatusIn(String ownerId, Collection<String> videoIds,
+                                                           Collection<JobStatus> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select job from AnalysisJob job where job.id = :id")
