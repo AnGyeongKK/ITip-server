@@ -5,7 +5,7 @@ import com.gkk.itip.domain.upload.CaptionUpload;
 import com.gkk.itip.domain.upload.UploadStatus;
 import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.worker.analysis.caption.CaptionChunker.Chunk;
-import com.gkk.itip.worker.analysis.output.ResultDocument;
+import com.gkk.itip.domain.analysis.result.ResultDocument;
 import jakarta.persistence.EntityManager;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;

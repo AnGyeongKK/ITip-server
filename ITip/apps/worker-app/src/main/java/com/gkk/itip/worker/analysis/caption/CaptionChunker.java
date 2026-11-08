@@ -1,6 +1,6 @@
 package com.gkk.itip.worker.analysis.caption;
 
-import com.gkk.itip.worker.analysis.output.ResultDocument;
+import com.gkk.itip.domain.analysis.result.ResultDocument;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
