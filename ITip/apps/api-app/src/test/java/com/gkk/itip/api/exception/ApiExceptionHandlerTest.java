@@ -43,6 +43,11 @@ class ApiExceptionHandlerTest {
             "RESOURCE_NOT_FOUND,404",
             "IDEMPOTENCY_CONFLICT,409",
             "STATE_CONFLICT,409",
+            "UPLOAD_NOT_READY,409",
+            "JOB_NOT_RETRYABLE,409",
+            "CAPTION_REUPLOAD_REQUIRED,410",
+            "CAPTION_TOO_LARGE,413",
+            "STORAGE_UNAVAILABLE,503",
             "VALIDATION_FAILED,422",
             "INTERNAL_ERROR,500"
     })

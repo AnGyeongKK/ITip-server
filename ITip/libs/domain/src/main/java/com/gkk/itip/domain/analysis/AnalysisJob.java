@@ -137,6 +137,28 @@ public class AnalysisJob {
         this.updatedAt = now;
     }
 
+    public void attachDraft(UUID token, UUID analysisId, Instant now) {
+        requireLease(token, now);
+        UUID draftId = Objects.requireNonNull(analysisId);
+        if (this.analysisId != null && !this.analysisId.equals(draftId))
+            throw new IllegalStateException("a saved draft cannot be replaced");
+        this.analysisId = draftId;
+        if (stage.ordinal() < AnalysisStage.INDEXING.ordinal()) this.stage = AnalysisStage.INDEXING;
+        this.updatedAt = now;
+    }
+
+    public void reuseProgress(AnalysisJob previous) {
+        if (status != JobStatus.QUEUED || attempt != 0 || analysisId != null || stage != null
+                || !Objects.equals(previousJobId, previous.id) || previous.status != JobStatus.FAILED
+                || !ownerId.equals(previous.ownerId) || !videoId.equals(previous.videoId)
+                || !uploadId.equals(previous.uploadId) || generation != previous.generation)
+            throw new IllegalStateException("progress can only be copied to a fresh retry of the same source");
+        if (previous.analysisId != null) {
+            this.analysisId = previous.analysisId;
+            this.stage = AnalysisStage.INDEXING;
+        }
+    }
+
     public void fail(UUID token, String code, String message, boolean retryable, Instant now, Duration retryDelay) {
         requireLease(token, now);
         if (retryDelay.isNegative()) {

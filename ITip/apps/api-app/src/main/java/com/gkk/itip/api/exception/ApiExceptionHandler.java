@@ -20,7 +20,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         HttpStatus status = switch (exception.getErrorCode()) {
             case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case IDEMPOTENCY_CONFLICT, STATE_CONFLICT -> HttpStatus.CONFLICT;
+            case IDEMPOTENCY_CONFLICT, STATE_CONFLICT, UPLOAD_NOT_READY, JOB_NOT_RETRYABLE -> HttpStatus.CONFLICT;
+            case CAPTION_REUPLOAD_REQUIRED -> HttpStatus.GONE;
+            case CAPTION_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE;
+            case STORAGE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
             case VALIDATION_FAILED -> HttpStatus.UNPROCESSABLE_CONTENT;
             case INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

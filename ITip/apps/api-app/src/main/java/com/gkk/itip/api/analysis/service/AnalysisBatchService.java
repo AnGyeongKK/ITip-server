@@ -13,9 +13,6 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.*;
@@ -55,7 +52,7 @@ public class AnalysisBatchService {
     @Transactional
     public BatchCreatedResponse create(String ownerId, UUID key, CreateBatchRequest request) {
         ownerLock.lock(ownerId);
-        String hash = fingerprint(request);
+        String hash = RequestFingerprint.of(mapper, request);
         var replay = requests.findByOwnerIdAndOperationAndKey(ownerId, CREATE_OPERATION, key);
         if (replay.isPresent()) {
             if (!replay.get().matches(hash)) throw new BusinessException(IDEMPOTENCY_CONFLICT);
@@ -183,13 +180,6 @@ public class AnalysisBatchService {
         if (counts.completed() + counts.failed() == counts.total()) return "PARTIALLY_FAILED";
         if (counts.queued() + counts.processing() + counts.retryWait() > 0) return "PROCESSING";
         return "PREPARING";
-    }
-
-    private String fingerprint(CreateBatchRequest request) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(
-                    mapper.writeValueAsString(request).getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }
     }
 
     private record Snapshot(AnalysisBatch batch, List<AnalysisBatchItem> items, List<BatchStatusResponse.Item> views,

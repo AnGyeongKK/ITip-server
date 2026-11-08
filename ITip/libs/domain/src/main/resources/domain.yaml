@@ -10,3 +10,7 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+
+itip:
+  analysis:
+    max-caption-bytes: ${ANALYSIS_MAX_CAPTION_BYTES:1048576}

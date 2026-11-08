@@ -13,6 +13,8 @@ import java.util.UUID;
 
 public interface AnalysisJobRepository extends JpaRepository<AnalysisJob, UUID> {
     Optional<AnalysisJob> findByIdAndOwnerId(UUID id, String ownerId);
+    Optional<AnalysisJob> findFirstByOwnerIdAndAnalysisIdAndStatusOrderByCreatedAtDescIdDesc(
+            String ownerId, UUID analysisId, JobStatus status);
     Optional<AnalysisJob> findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(
             String ownerId, String videoId, Collection<JobStatus> statuses);
     List<AnalysisJob> findAllByBatchId(UUID batchId);

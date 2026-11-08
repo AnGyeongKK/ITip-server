@@ -96,6 +96,19 @@ public class AnalysisBatchItem {
         this.updatedAt = Objects.requireNonNull(now);
     }
 
+    public void reuseResult(UUID jobId, UUID analysisId, UUID recordId, Instant now) {
+        requireAwaitingUpload();
+        UUID completedJob = Objects.requireNonNull(jobId);
+        UUID completedAnalysis = Objects.requireNonNull(analysisId);
+        UUID completedRecord = Objects.requireNonNull(recordId);
+        this.action = ItemAction.OPEN_RESULT;
+        this.status = ItemStatus.COMPLETED;
+        this.jobId = completedJob;
+        this.analysisId = completedAnalysis;
+        this.recordId = completedRecord;
+        this.updatedAt = Objects.requireNonNull(now);
+    }
+
     public boolean expireAwaitingUpload(Instant now) {
         if (status != ItemStatus.AWAITING_UPLOAD || now.isBefore(uploadDeadlineAt)) {
             return false;

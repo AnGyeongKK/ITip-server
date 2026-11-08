@@ -146,4 +146,31 @@ class AnalysisJobTest {
         return AnalysisJob.queued("demo", UUID.randomUUID(), UUID.randomUUID(), "dQw4w9WgXcQ",
                 UUID.randomUUID(), 123L, null, now);
     }
+
+    @Test
+    void attachedDraftRequiresLiveLeaseAndIsRetainedOnAutomaticRetry() {
+        AnalysisJob job = queued(); UUID token = job.claim(now, lease); UUID draft = UUID.randomUUID();
+        job.changeStage(token, AnalysisStage.SUMMARIZING, now);
+        assertThrows(IllegalStateException.class, () -> job.attachDraft(UUID.randomUUID(), draft, now));
+        assertNull(job.getAnalysisId());
+        job.attachDraft(token, draft, now);
+        assertEquals(draft, job.getAnalysisId()); assertEquals(AnalysisStage.INDEXING, job.getStage());
+        assertThrows(IllegalStateException.class, () -> job.attachDraft(token, UUID.randomUUID(), now));
+        job.fail(token, "INDEX_TIMEOUT", "검색 저장 실패", true, now, Duration.ZERO);
+        job.claim(now, lease);
+        assertEquals(draft, job.getAnalysisId()); assertEquals(AnalysisStage.INDEXING, job.getStage());
+    }
+
+    @Test
+    void manualRetryCopiesDraftAndStartsIndexingWithFreshAttempts() {
+        AnalysisJob previous = queued(); UUID token = previous.claim(now, lease); UUID draft = UUID.randomUUID();
+        previous.attachDraft(token, draft, now); previous.changeStage(token, AnalysisStage.FINISHING, now);
+        previous.fail(token, "FINISH_FAILED", "완료 저장 실패", false, now, Duration.ZERO);
+        AnalysisJob next = AnalysisJob.queued(previous.getOwnerId(), UUID.randomUUID(), UUID.randomUUID(), previous.getVideoId(),
+                previous.getUploadId(), previous.getGeneration(), previous.getId(), now);
+        next.reuseProgress(previous);
+        assertEquals(0, next.getAttempt()); assertEquals(3, next.getMaxAttempts()); assertEquals(draft, next.getAnalysisId());
+        next.claim(now, lease); assertEquals(AnalysisStage.INDEXING, next.getStage());
+        assertThrows(IllegalStateException.class, () -> next.reuseProgress(previous));
+    }
 }
