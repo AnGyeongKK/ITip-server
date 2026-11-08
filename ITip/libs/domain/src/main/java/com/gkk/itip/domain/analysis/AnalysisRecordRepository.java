@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AnalysisRecordRepository extends JpaRepository<AnalysisRecord, UUID> {
+    List<AnalysisRecord> findAllByIdInAndOwnerId(Collection<UUID> ids, String ownerId);
     Optional<AnalysisRecord> findFirstByOwnerIdAndVideoIdOrderByAnalyzedAtDescIdDesc(String ownerId, String videoId);
     Optional<AnalysisRecord> findByIdAndOwnerId(UUID id, String ownerId);
     Optional<AnalysisRecord> findByOwnerIdAndAnalysisId(String ownerId, UUID analysisId);

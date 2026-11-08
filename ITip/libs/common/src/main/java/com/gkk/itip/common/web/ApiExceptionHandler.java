@@ -18,7 +18,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
         HttpStatus status = switch (exception.getErrorCode()) {
-            case INVALID_REQUEST -> HttpStatus.BAD_REQUEST;
+            case INVALID_REQUEST, INVALID_CURSOR -> HttpStatus.BAD_REQUEST;
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case IDEMPOTENCY_CONFLICT, STATE_CONFLICT, ANALYSIS_NOT_READY, UPLOAD_NOT_READY, JOB_NOT_RETRYABLE -> HttpStatus.CONFLICT;
             case CAPTION_REUPLOAD_REQUIRED -> HttpStatus.GONE;
