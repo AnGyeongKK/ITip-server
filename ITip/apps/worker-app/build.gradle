@@ -1,0 +1,8 @@
+plugins { id 'org.springframework.boot' }
+
+dependencies {
+    implementation project(':libs:common')
+    implementation project(':libs:domain')
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

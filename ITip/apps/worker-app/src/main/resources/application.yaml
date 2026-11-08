@@ -1,0 +1,5 @@
+server:
+  port: ${WORKER_PORT:8081}
+spring:
+  application:
+    name: itip-worker

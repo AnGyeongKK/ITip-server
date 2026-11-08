@@ -1,10 +1,10 @@
-package com.gkk.Itip;
+package com.gkk.itip;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ITipApplicationTests {
+class ApiApplicationTests {
 
     @Test
     void contextLoads() {
