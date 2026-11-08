@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:15432/itip}
+    username: ${DB_USER:itip}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:5}
+      minimum-idle: 0
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate

@@ -1,3 +1,7 @@
 spring:
+  config:
+    import: classpath:domain.yaml
   application:
     name: itip-api
+  flyway:
+    enabled: true
