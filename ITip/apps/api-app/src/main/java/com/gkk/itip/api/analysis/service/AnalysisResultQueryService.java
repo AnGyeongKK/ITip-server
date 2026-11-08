@@ -1,6 +1,7 @@
 package com.gkk.itip.api.analysis.service;
 
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse;
+import com.gkk.itip.api.analysis.dto.response.AnalysisSectionResponse;
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.domain.analysis.AnalysisRecord;
 import com.gkk.itip.domain.analysis.AnalysisRecordRepository;
@@ -12,6 +13,7 @@ import com.gkk.itip.domain.video.VideoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashSet;
@@ -57,6 +59,19 @@ public class AnalysisResultQueryService {
         if (!record.getVideoId().equals(result.getVideoId())) throw new BusinessException(INTERNAL_ERROR);
         var video = videos.findById(result.getVideoId()).orElseThrow(() -> new BusinessException(INTERNAL_ERROR));
         return new CompletedResult(result, record, video, readDocument(result.getResultJson()));
+    }
+
+    public AnalysisSectionResponse getSection(String ownerId, UUID analysisId, UUID sectionId) {
+        var stored = completed(ownerId, analysisId);
+        var section = stored.document().sections().stream().filter(s -> s.sectionId().equals(sectionId.toString()))
+                .findFirst().orElseThrow(() -> new BusinessException(RESOURCE_NOT_FOUND));
+        String videoId = stored.video().getVideoId();
+        String originalUrl = UriComponentsBuilder.fromUriString("https://www.youtube.com/watch")
+                .queryParam("v", videoId).queryParam("t", section.startMs() / 1000).build().encode().toUriString();
+        return new AnalysisSectionResponse(analysisId, stored.record().getId(), section.sectionId(), section.title(),
+                section.startMs(), section.endMs(), section.summary(), section.subtopics(), section.keywords(),
+                videoId, originalUrl, section.detail(), AnalysisResultResponse.VideoInfo.from(stored.video()),
+                stored.document().summary().oneLine());
     }
 
     private record CompletedResult(AnalysisResult result, AnalysisRecord record, Video video, ResultDocument document) {}

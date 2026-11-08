@@ -1,6 +1,7 @@
 package com.gkk.itip.api.analysis.controller;
 
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse;
+import com.gkk.itip.api.analysis.dto.response.AnalysisSectionResponse;
 import com.gkk.itip.api.analysis.service.AnalysisResultQueryService;
 import com.gkk.itip.api.config.DemoUserProvider;
 import com.gkk.itip.common.response.ApiResponse;
@@ -25,5 +26,10 @@ public class AnalysisResultController {
     @GetMapping("/{analysisId}")
     public ApiResponse<AnalysisResultResponse> get(@PathVariable UUID analysisId) {
         return ApiResponse.success(results.get(user.ownerId(), analysisId));
+    }
+
+    @GetMapping("/{analysisId}/sections/{sectionId}")
+    public ApiResponse<AnalysisSectionResponse> getSection(@PathVariable UUID analysisId, @PathVariable UUID sectionId) {
+        return ApiResponse.success(results.getSection(user.ownerId(), analysisId, sectionId));
     }
 }

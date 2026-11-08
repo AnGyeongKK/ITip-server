@@ -28,6 +28,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -174,6 +175,74 @@ class AnalysisResultApiTest {
     }
 
     private ResultActions result(Fixture f) throws Exception { return mvc.perform(get(BASE + f.analysisId())); }
+    @Test void returnsMatchingSectionDetailsAndServerBuiltPlaybackPosition() throws Exception {
+        var f = fixture(OWNER, true);
+        var listed = data(result(f).andExpect(status().isOk())).path("sections").path(0);
+        var response = section(f, FIRST).andExpect(status().isOk())
+                .andExpect(jsonPath("data.analysisId").value(f.analysisId().toString()))
+                .andExpect(jsonPath("data.recordId").value(f.recordId().toString()))
+                .andExpect(jsonPath("data.sectionId").value(FIRST.toString()))
+                .andExpect(jsonPath("data.startMs").value(1500))
+                .andExpect(jsonPath("data.endMs").value(60000))
+                .andExpect(jsonPath("data.videoId").value(VIDEO))
+                .andExpect(jsonPath("data.originalUrl").value("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1"))
+                .andExpect(jsonPath("data.detail.takeaway").value("구간 핵심"))
+                .andExpect(jsonPath("data.detail.explanation").value("구간 설명"))
+                .andExpect(jsonPath("data.detail.applicationTips[0].origin").value("AI_SUGGESTION"))
+                .andExpect(jsonPath("data.detail.recommendedTools[0].name").value("Spring AI"))
+                .andExpect(jsonPath("data.detail.examples[0].origin").value("SOURCE"))
+                .andExpect(jsonPath("data.video.title").value("RAG 원본 영상"))
+                .andExpect(jsonPath("data.videoOneLine").value("영상 전체 한 줄 요약"));
+        JsonNode detail = data(response);
+        for (String field : List.of("sectionId", "title", "startMs", "endMs", "summary", "subtopics", "keywords"))
+            assertThat(detail.path(field)).isEqualTo(listed.path(field));
+        assertThat(data(section(f, FIRST).andExpect(status().isOk()))).isEqualTo(detail);
+        verifyNoInteractions(gcs);
+    }
+
+    @Test void sectionCanBeOpenedDirectlyWithUnknownVideoMetadata() throws Exception {
+        var f = fixture(OWNER, true);
+        jdbc.update("update videos set channel_image_url=null, thumbnail_url=null, published_at=null, duration_ms=null");
+        JsonNode detail = data(section(f, SECOND).andExpect(status().isOk())
+                .andExpect(jsonPath("data.originalUrl").value("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=60"))
+                .andExpect(jsonPath("data.subtopics").isEmpty()).andExpect(jsonPath("data.keywords").isEmpty()));
+        assertThat(detail.path("video").path("durationMs").isNull()).isTrue();
+        assertThat(detail.path("videoOneLine").asString()).isEqualTo("영상 전체 한 줄 요약");
+    }
+
+    @Test void rejectsOtherAnalysisSectionEvenWhenTheOtherResultIsVisible() throws Exception {
+        var f = fixture(OWNER, true);
+        var other = fixture(OWNER, true);
+        UUID anotherSection = UUID.randomUUID();
+        String otherJson = jdbc.queryForObject("select result_json from analysis_results where id=?", String.class, other.analysisId());
+        corrupt(other, otherJson.replace(FIRST.toString(), anotherSection.toString()));
+        error(section(f, anotherSection), 404, "RESOURCE_NOT_FOUND");
+        section(other, anotherSection).andExpect(status().isOk());
+        var privateResult = fixture("another-user", true);
+        error(section(privateResult, FIRST), 404, "RESOURCE_NOT_FOUND");
+        error(section(f, UUID.randomUUID()), 404, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test void sectionDoesNotRestoreDeletedRecordsOrExposeDrafts() throws Exception {
+        var f = fixture(OWNER, true);
+        jdbc.update("delete from analysis_records where id=?", f.recordId());
+        error(section(f, FIRST), 404, "RESOURCE_NOT_FOUND");
+        var draft = fixture(OWNER, false);
+        error(section(draft, FIRST), 409, "ANALYSIS_NOT_READY");
+    }
+
+    @Test void malformedSectionIdAndCorruptSectionDetailsReturnTypedErrors() throws Exception {
+        var f = fixture(OWNER, true);
+        error(mvc.perform(get(BASE + f.analysisId() + "/sections/not-a-uuid")), 400, "INVALID_REQUEST");
+        error(mvc.perform(get(BASE + "not-a-uuid/sections/" + FIRST)), 400, "INVALID_REQUEST");
+        String valid = jdbc.queryForObject("select result_json from analysis_results where id=?", String.class, f.analysisId());
+        corrupt(f, valid.replace("\"applicationTips\":[{\"text\":\"실무 팁\",\"origin\":\"AI_SUGGESTION\"}]", "\"applicationTips\":null"));
+        error(section(f, FIRST), 500, "INTERNAL_ERROR");
+    }
+
+    private ResultActions section(Fixture f, UUID id) throws Exception {
+        return mvc.perform(get(BASE + f.analysisId() + "/sections/" + id));
+    }
     private JsonNode data(ResultActions action) throws Exception {
         return mapper.readTree(action.andReturn().getResponse().getContentAsString()).path("data");
     }
@@ -202,9 +271,11 @@ class AnalysisResultApiTest {
             if (ready) {
                 result.markReady(NOW.plusSeconds(10));
                 var record = AnalysisRecord.fromCompleted(result); em.persist(record); recordId = record.getId();
+                var token = job.claim(NOW, Duration.ofMinutes(1));
+                job.changeStage(token, AnalysisStage.FINISHING, NOW);
+                job.complete(token, result.getId(), recordId, NOW.plusSeconds(10));
             }
             em.flush();
-            // A source job fixture is enough for read APIs; Worker completion behavior has separate integration tests.
             return new Fixture(result.getId(), recordId, job.getId());
         });
     }
