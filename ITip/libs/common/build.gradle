@@ -1,5 +1,9 @@
 plugins { id 'java-library' }
 
 dependencies {
+    implementation 'com.google.cloud:google-cloud-storage:2.75.0'
+    implementation 'org.springframework:spring-context'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
     api 'com.fasterxml.jackson.core:jackson-annotations'
 }
