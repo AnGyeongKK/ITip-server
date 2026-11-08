@@ -27,6 +27,7 @@
 | [f88ddc6](https://github.com/AnGyeongKK/ITip-server/commit/f88ddc6) | PASS | 준비 항목 만료를 사용자별 별도 트랜잭션으로 처리. 실제 DB 테스트 3개 성공. |
 | [85598e5](https://github.com/AnGyeongKK/ITip-server/commit/85598e5) | PASS | 실행 흐름·heartbeat·lease·단계 재사용·실패/로그. Worker 시나리오 31개, 전체 186개 성공. |
 | [b4f1f16](https://github.com/AnGyeongKK/ITip-server/commit/b4f1f16) | PASS | Docker 빌드·비root 실행·컨텍스트 제외·독립 시작 순서. 최신 이미지/임시 DB 실행 확인. |
+| [f2db5b3](https://github.com/AnGyeongKK/ITip-server/commit/f2db5b3) | PASS | 리뷰 기록의 SHA 21개·문서 링크·XML 수치와 미확인 범위 일치 확인. |
 
 ## 최종 검증
 
@@ -38,6 +39,7 @@
 - 최신 API·Worker 이미지 빌드 및 임시 DB에서 각각 시작: Flyway V1~V3, 배치 생성 201·수집 실패 보고 200·배치 실패 조회 200·서버 UUID 요청 ID·UID/GID 10001 확인. 테스트 컨테이너·네트워크만 정리했다.
 - `git diff --check`, 민감 파일 추적 제외, 변경 소스의 키 패턴 검사 통과. 이 검사는 모든 종류의 비밀값 탐지를 보장하지 않는다.
 - `a058ff5` 본문 테스트 수 8개는 오기이며 실제 성공 수는 **7개**다.
+- [Draft PR #10](https://github.com/AnGyeongKK/ITip-server/pull/10) 생성 후 [API 호출 구조](yousum-api-pipelines.html)에 실제 함수·PR·커밋을 연결했다. API 선택 38개·폭/테마 배치 60조합을 브라우저로 확인했으며 실행 오류·가로 넘침이 없었다. 후속 설계 32개는 이번 구현으로 표시하지 않는다.
 
 ## 외부 연동 확인 전 조건
 

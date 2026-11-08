@@ -1,0 +1,346 @@
+<div id="yousum-api-pipelines">
+  <style>
+    #yousum-api-pipelines { color: var(--foreground); }
+    #yousum-api-pipelines [hidden] { display: none !important; }
+    #yousum-api-pipelines .heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .5); padding-right: 90px; }
+    #yousum-api-pipelines .selectors { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: var(--font-size-base); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .choice { display: grid; gap: calc(var(--font-size-base) * .25); min-width: 0; }
+    #yousum-api-pipelines .endpoint { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .5); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .endpoint code { overflow-wrap: anywhere; min-width: 0; }
+    #yousum-api-pipelines .scope-line { margin-top: calc(var(--font-size-base) * .4); display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .75); }
+    #yousum-api-pipelines .revision, #yousum-api-pipelines .commits { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .75); margin-top: calc(var(--font-size-base) * .5); overflow-wrap: anywhere; }
+    #yousum-api-pipelines .diagram { display: block; width: 100%; margin-top: calc(var(--font-size-base) * .5); }
+    #yousum-api-pipelines .diagram text { fill: var(--foreground); font-weight: 400; }
+    #yousum-api-pipelines .diagram .secondary { fill: var(--muted-foreground); }
+    #yousum-api-pipelines .diagram .silhouette { fill: var(--background); stroke: color-mix(in srgb, var(--foreground) 46%, var(--background)); stroke-width: 1; }
+    #yousum-api-pipelines .diagram .inactive .silhouette { stroke: var(--border); }
+    #yousum-api-pipelines .diagram .inactive text { fill: var(--muted-foreground); }
+    #yousum-api-pipelines .diagram .active-fill { fill: color-mix(in srgb, var(--viz-series-1) 8%, var(--background)); }
+    #yousum-api-pipelines .diagram .background-fill { fill: color-mix(in srgb, var(--viz-series-2) 9%, var(--background)); }
+    #yousum-api-pipelines .diagram .rule { fill: none; stroke: color-mix(in srgb, var(--foreground) 20%, var(--background)); stroke-width: 1; }
+    #yousum-api-pipelines .diagram .edge { fill: none; stroke: var(--viz-series-1); stroke-width: 1.6; }
+    #yousum-api-pipelines .diagram .edge.background { stroke: var(--viz-series-2); stroke-dasharray: 6 4; }
+    #yousum-api-pipelines .diagram .edge.pending { stroke: var(--muted-foreground); stroke-dasharray: 2 4; }
+    #yousum-api-pipelines .legend { display: flex; flex-wrap: wrap; gap: var(--font-size-base); margin-top: calc(var(--font-size-base) * .25); }
+    #yousum-api-pipelines .legend-item { display: inline-flex; align-items: center; gap: calc(var(--font-size-base) * .4); }
+    #yousum-api-pipelines .legend-line { display: inline-block; width: 24px; border-top: 2px solid var(--viz-series-1); }
+    #yousum-api-pipelines .legend-line.background { border-color: var(--viz-series-2); border-top-style: dashed; }
+    #yousum-api-pipelines .legend-line.pending { border-color: var(--muted-foreground); border-top-style: dotted; }
+    #yousum-api-pipelines .io { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: calc(var(--font-size-base) * .3) calc(var(--font-size-base) * .5); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .io code { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .steps-title { margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .steps { list-style: none; padding: 0; margin: calc(var(--font-size-base) * .5) 0 0; }
+    #yousum-api-pipelines .step { display: grid; grid-template-columns: 26px 88px minmax(0, 1fr) 68px; gap: calc(var(--font-size-base) * .5); align-items: baseline; position: relative; padding: calc(var(--font-size-base) * .5) 0; }
+    #yousum-api-pipelines .step-index { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+    #yousum-api-pipelines .step:not(:last-child) .step-index::after { content: '↓'; display: block; color: var(--muted-foreground); }
+    #yousum-api-pipelines .step[data-phase="background"] .step-index::after { color: var(--viz-series-2); }
+    #yousum-api-pipelines .step-actor { color: var(--muted-foreground); }
+    #yousum-api-pipelines .step-content { display: grid; gap: calc(var(--font-size-base) * .2); min-width: 0; }
+    #yousum-api-pipelines .step-content code, #yousum-api-pipelines .route-row code { display: block; white-space: normal; overflow-wrap: anywhere; }
+    #yousum-api-pipelines .step-content a, #yousum-api-pipelines .route-content a { min-width: 0; }
+    #yousum-api-pipelines .step-tx { white-space: nowrap; color: var(--muted-foreground); }
+    #yousum-api-pipelines .step-note { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .boundary { border-top: 1px solid var(--border); padding-top: calc(var(--font-size-base) * .65); margin-top: calc(var(--font-size-base) * .65); overflow-wrap: anywhere; }
+    #yousum-api-pipelines .mobile-route { display: none; }
+    #yousum-api-pipelines .mobile-route .route-row { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: calc(var(--font-size-base) * .5); padding: calc(var(--font-size-base) * .5) 0; }
+    #yousum-api-pipelines .route-row code { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .route-content { display: grid; gap: calc(var(--font-size-base) * .2); }
+    #yousum-api-pipelines .route-arrow { color: var(--viz-series-1); }
+    #yousum-api-pipelines .route-row[data-phase="background"] .route-arrow { color: var(--viz-series-2); }
+    #yousum-api-pipelines .route-row[data-phase="pending"] .route-arrow { color: var(--muted-foreground); }
+    #yousum-api-pipelines .mobile-other { color: var(--muted-foreground); margin-top: calc(var(--font-size-base) * .5); }
+    @media (max-width: 679px) {
+      #yousum-api-pipelines .selectors { grid-template-columns: minmax(0, 1fr); gap: calc(var(--font-size-base) * .5); }
+      #yousum-api-pipelines .diagram { display: none; }
+      #yousum-api-pipelines .mobile-route { display: block; margin-top: var(--font-size-base); }
+      #yousum-api-pipelines .steps-title, #yousum-api-pipelines .steps { display: none; }
+    }
+  </style>
+  <div class="heading">
+    <h2>API별 서버 처리</h2>
+    <span class="text-small text-muted">구현 6개 · 후속 설계 32개</span>
+  </div>
+  <div class="revision text-small"><a href="https://github.com/AnGyeongKK/ITip-server/pull/10" target="_blank" rel="noreferrer">Draft PR #10 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/f2db5b3/docs/analysis-review-log.md" target="_blank" rel="noreferrer">커밋별 검토 기록 ↗</a><span>GCS·실제 모델 연결 미확인</span></div>
+  <div class="selectors">
+    <label class="choice"><span class="form-label">도메인</span><select class="form-select" aria-label="도메인 선택"></select></label>
+    <label class="choice"><span class="form-label">API</span><select class="form-select" aria-label="API 선택"></select></label>
+  </div>
+  <div class="endpoint"><span class="viz-badge method"></span><code class="endpoint-path"></code></div>
+  <div class="scope-line text-small"><span class="scope"></span><a class="source" target="_blank" rel="noreferrer">Notion 명세 ↗</a></div>
+  <div class="commits text-small" aria-label="선택 API 구현 커밋"></div>
+  <svg class="diagram" role="img" aria-label="선택한 API의 전체 서버 경로"></svg>
+  <div class="mobile-route" aria-label="선택한 API의 처리 경로"></div>
+  <div class="legend text-small">
+    <span class="legend-item"><span class="legend-line"></span>현재 HTTP 요청</span>
+    <span class="legend-item"><span class="legend-line background"></span>별도 Worker 처리</span>
+    <span class="legend-item"><span class="legend-line pending"></span>후속 설계·연동 협의</span>
+  </div>
+  <div class="io text-small" aria-live="polite" aria-atomic="true"><span class="text-muted">입력</span><code class="input"></code><span class="text-muted">반환</span><span class="output"></span></div>
+  <h3 class="steps-title">핵심 로직</h3>
+  <ol class="steps" aria-label="핵심 함수 처리 순서"></ol>
+  <div class="boundary text-small" aria-live="polite"></div>
+  <script>
+  (() => {
+    const root = document.getElementById('yousum-api-pipelines');
+    const catalog = [{"id":"IMPORT-01","name":"YouTube 링크 확인·기존 분석 조회","method":"GET","path":"/api/v1/youtube-resources","domain":"02 영상·재생목록 가져오기","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81d4a8b5e8af57a6710f"},{"id":"IMPORT-02","name":"링크 재생목록 영상 목록 조회","method":"GET","path":"/api/v1/youtube-playlists/{playlistId}/items","domain":"02 영상·재생목록 가져오기","scope":"연동 협의","source":"https://app.notion.com/40c46c2fafdf81f19ff5df851f1257a5"},{"id":"UPLOAD-01","name":"자막 업로드 URL 발급","method":"POST","path":"/api/v1/caption-uploads","domain":"02 영상·재생목록 가져오기","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf818d87d1e1374d528ae0"},{"id":"UPLOAD-02","name":"GCS 자막 파일 직접 업로드","method":"PUT","path":"{uploadUrl}","domain":"02 영상·재생목록 가져오기","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf81cc9779f9d40de093e4"},{"id":"UPLOAD-03","name":"자막 업로드 상태 조회","method":"GET","path":"/api/v1/caption-uploads/{uploadId}","domain":"02 영상·재생목록 가져오기","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf812eb8f2c91517b92a92"},{"id":"ANALYSIS-01","name":"업로드 자막 분석 접수","method":"POST","path":"/api/v1/analysis-jobs","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81e0bcdfe6f6aa6aef28"},{"id":"ANALYSIS-02","name":"영상별 분석 상태 조회","method":"GET","path":"/api/v1/analysis-jobs/{jobId}","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81be8477c45c330bccab"},{"id":"ANALYSIS-03","name":"실패한 분석 수동 재시도","method":"POST","path":"/api/v1/analysis-jobs/{jobId}/retries","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf810797a1fdc39efe4524"},{"id":"ANALYSIS-04","name":"분석 결과 조회","method":"GET","path":"/api/v1/analyses/{analysisId}","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81b8aeebcea510c56abf"},{"id":"ANALYSIS-05","name":"구간 상세 조회","method":"GET","path":"/api/v1/analyses/{analysisId}/sections/{sectionId}","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8119bad7ff51231eacf8"},{"id":"ANALYSIS-06","name":"구간 관련 영상 추천 조회","method":"GET","path":"/api/v1/analyses/{analysisId}/sections/{sectionId}/recommendations","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81488088c144a56940d0"},{"id":"ANALYSIS-07","name":"분석 배치 생성·한도 예약","method":"POST","path":"/api/v1/analysis-batches","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf81299f61f7e2a3a7d443"},{"id":"ANALYSIS-08","name":"분석 배치 상태 조회","method":"GET","path":"/api/v1/analysis-batches/{batchId}","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf81549020d524063ea046"},{"id":"ANALYSIS-09","name":"기기 자막 수집 실패 보고","method":"PATCH","path":"/api/v1/analysis-batches/{batchId}/items/{itemId}","domain":"03 영상 분석·결과","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf81febd2bd362ab139f47"},{"id":"ARCHIVE-02","name":"분석 기록 상세 조회","method":"GET","path":"/api/v1/records/{recordId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8133acc7f6a9b60a8154"},{"id":"ARCHIVE-03","name":"분석 기록 삭제","method":"DELETE","path":"/api/v1/records/{recordId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81778f52d24850731b24"},{"id":"ARCHIVE-04","name":"마지막 열람 위치 저장","method":"PUT","path":"/api/v1/records/{recordId}/reading-position","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81359778da25e5e2f60e"},{"id":"ARCHIVE-05","name":"폴더 목록 조회","method":"GET","path":"/api/v1/folders","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81c28f6afb98d1fd5630"},{"id":"ARCHIVE-06","name":"폴더 생성","method":"POST","path":"/api/v1/folders","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf811982a0dbcaaa715cdd"},{"id":"ARCHIVE-07","name":"폴더 상세 조회","method":"GET","path":"/api/v1/folders/{folderId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8174a3eae99c9f72dbc8"},{"id":"ARCHIVE-08","name":"폴더 이름 수정","method":"PATCH","path":"/api/v1/folders/{folderId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81529a0fdec180f1a24c"},{"id":"ARCHIVE-09","name":"폴더 삭제","method":"DELETE","path":"/api/v1/folders/{folderId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf818f9dc4f534ab15be34"},{"id":"ARCHIVE-10","name":"폴더에 기록 추가","method":"POST","path":"/api/v1/folders/{folderId}/records","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81f99414f8027bccc664"},{"id":"ARCHIVE-11","name":"폴더에서 기록 제외","method":"DELETE","path":"/api/v1/folders/{folderId}/records/{recordId}","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8148a5ebe46b0544aec1"},{"id":"ARCHIVE-12","name":"보관 재생목록 그룹 조회","method":"GET","path":"/api/v1/playlist-groups","domain":"04 분석 기록·아카이브","scope":"연동 협의","source":"https://app.notion.com/40c46c2fafdf8140a0bae33859274353"},{"id":"ARCHIVE-13","name":"보관 재생목록 그룹 상세","method":"GET","path":"/api/v1/playlist-groups/{groupId}","domain":"04 분석 기록·아카이브","scope":"연동 협의","source":"https://app.notion.com/40c46c2fafdf81bc8d66e6d8a0ab7dcd"},{"id":"ARCHIVE-14","name":"홈 화면 조회","method":"GET","path":"/api/v1/users/me/home","domain":"04 분석 기록·아카이브","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf8130a115d076c2ad55e8"},{"id":"SEARCH-01","name":"분석 기록 목록·검색","method":"GET","path":"/api/v1/records","domain":"05 검색·탐색","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf817395a0c0109462cd36"},{"id":"SEARCH-02","name":"필터용 관련 키워드 조회","method":"GET","path":"/api/v1/record-keywords","domain":"05 검색·탐색","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81ec9536de068a5c1fbc"},{"id":"CHAT-01","name":"채팅방 생성","method":"POST","path":"/api/v1/conversations","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8193b05fc0e5a0cff597"},{"id":"CHAT-02","name":"채팅방 목록 조회","method":"GET","path":"/api/v1/conversations","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8147b844f57212e12749"},{"id":"CHAT-03","name":"대화 메시지 목록 조회","method":"GET","path":"/api/v1/conversations/{conversationId}/messages","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf8118a678cddeb3f28e54"},{"id":"CHAT-04","name":"질문 전송·답변 SSE 스트리밍","method":"POST","path":"/api/v1/conversations/{conversationId}/messages","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf81069e84ffd0fd5fd1bc"},{"id":"CHAT-05","name":"답변 상태·부분 결과 조회","method":"GET","path":"/api/v1/conversations/{conversationId}/messages/{messageId}","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40c46c2fafdf814faad2f4e17ebb63f0"},{"id":"CHAT-06","name":"채팅방 상세·생성 상태 조회","method":"GET","path":"/api/v1/conversations/{conversationId}","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf81549510e53cc081a4b9"},{"id":"CHAT-07","name":"채팅방 삭제","method":"DELETE","path":"/api/v1/conversations/{conversationId}","domain":"06 AI 질문·대화 기록","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf8169942be7f83279efa8"},{"id":"PUSH-01","name":"알림 기기 등록·토큰 갱신","method":"PUT","path":"/api/v1/users/me/devices/{installationId}","domain":"08 기기·알림","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf812384d8e6c432468887"},{"id":"PUSH-02","name":"현재 기기 알림 연결 해제","method":"DELETE","path":"/api/v1/users/me/devices/{installationId}","domain":"08 기기·알림","scope":"MVP","source":"https://app.notion.com/40d46c2fafdf8120b6c8c1d67c2c471d"}];
+    const s = (actor, fn, note, tx = 'TX 밖', phase = 'sync') => ({actor, fn, note, tx, phase});
+    const read = (server, fn, data, output, boundary, input) => ({
+      server, input, output, boundary, edges: [server === 'chat' ? 'appChat' : 'appApi', server === 'chat' ? 'chatDb' : 'apiDb'],
+      labels: {[server]: '소유권·조회 조건 확인', db: data},
+      steps: [s(server === 'chat' ? 'Chat' : 'API', fn, '소유권·조회 조건 확인', '조회 TX'), s('PostgreSQL', 'repository.findAsDto()', data, '조회 TX'), s(server === 'chat' ? 'Chat' : 'API', 'ApiResponse.ok()', output)]
+    });
+    const write = (server, fn, change, output, boundary, input) => ({
+      server, input, output, boundary, edges: [server === 'chat' ? 'appChat' : 'appApi', server === 'chat' ? 'chatDb' : 'apiDb'],
+      labels: {[server]: '소유권·변경 조건 확인', db: change},
+      steps: [s(server === 'chat' ? 'Chat' : 'API', fn, '소유권·업무 조건 확인', '쓰기 TX'), s('PostgreSQL', 'repository.saveOrDelete()', change, '쓰기 TX'), s(server === 'chat' ? 'Chat' : 'API', 'commit → response', output)]
+    });
+    const flows = {
+      'IMPORT-01': read('api', 'YouTubeLinkService.resolve()', 'videoId로 내 결과·작업 조회', '200 · type / metadata / existing', 'URL 정규화·기존 분석 확인만 수행. 자막 수집·분석은 시작하지 않음. 메타데이터 수집 수단은 협의.', 'url'),
+      'IMPORT-02': {...read('api', 'PlaylistImportService.list()', '후보별 내 기존 분석 연결', '200 · items / nextCursor / hasNext', '서버 API 제공안과 기기 직접 조회 중 선택 필요. 서버 yt-dlp 수집으로 확정한 흐름이 아님.', 'playlistId / cursor / limit'), pending: true, provider: 'YouTube 목록', extraPending: ['apiProvider'], steps: [s('연동 협의', 'PlaylistSourcePort.list()', '영상 후보 조회 주체·수단 결정', 'TX 밖', 'pending'), s('API·DB', 'ExistingAnalysisQuery.find()', '영상별 내 기존 결과·작업 매핑', '조회 TX'), s('API', 'toPlaylistPage()', '200 · 후보 목록과 다음 커서')]},
+      'UPLOAD-01': {server:'api', input:'batchId / batchItemId / videoId / contentType / sizeBytes', output:'201 · uploadId / uploadUrl / headers / expiresAt', edges:['appApi','apiDb'], labels:{api:'업로드 예약·GCS URL 서명',db:'업로드 참조 저장'}, boundary:'예약 커밋 후 로컬 또는 IAM 방식으로 URL 서명. 여기서 GCS 객체를 업로드하지 않음. 실제 PUT은 UPLOAD-02.', steps:[s('API·DB','UploadReservationService.reserve()','배치 항목 확인·서버 objectKey 저장','쓰기 TX'),s('API','GcsUploadSigner.sign()','서명 URL 생성 · IAM 호출 여부는 서명 방식에 따름'),s('API','toUploadResponse()','201 · 앱이 사용할 업로드 주소')]},
+      'UPLOAD-02': {server:'gcs', input:'발급된 uploadUrl / headers / UTF-8 자막 JSON', output:'GCS 2xx · 본문이 없을 수 있음', edges:['appGcs'], labels:{app:'자막 JSON 직접 PUT',gcs:'자막 객체 저장'}, boundary:'Spring·DB를 거치지 않음. GCS 성공 후 앱이 ANALYSIS-01을 별도로 호출. ApiResponse·YouSum 토큰 사용 안 함.', steps:[s('Android','PUT uploadUrl','발급받은 헤더·자막 JSON 전송'),s('GCS','writeObject()','서명 검증 후 객체 저장'),s('Android','onUploadSuccess()','다음 호출: ANALYSIS-01')]},
+      'UPLOAD-03': {...read('api','UploadQueryService.get()','내 업로드 참조·연결 작업','200 · status / expiresAt / jobId','객체 존재는 자막 내용 검증·분석 완료와 다름. 조회로 작업을 생성하지 않음. GCS 확인 방식은 구현 제안.','uploadId'),edges:['appApi','apiDb','apiGcs'],labels:{api:'업로드 상태 확인',db:'업로드 참조·작업',gcs:'객체 메타데이터 확인'},steps:[s('API·DB','UploadQueryService.findOwned()','소유 업로드·연결 jobId 조회','조회 TX'),s('API·GCS','GcsObjectVerifier.head()','객체 존재·만료 상태 확인'),s('API','toUploadStatus()','200 · 상태와 기존 jobId')]},
+      'ANALYSIS-04': read('api','AnalysisResultQuery.get()','완료 결과·구간·키워드','200 · summary / mindmap / sections / chatReady','준비 전은 409. 저장된 결과를 읽으며 AI를 다시 호출하지 않음.','analysisId'),
+      'ANALYSIS-05': read('api','SectionQueryService.get()','해당 분석의 구간 상세','200 · 핵심 / 설명 / 팁 / 도구 / 시간','analysisId와 sectionId의 소속을 함께 검증. SOURCE와 AI_SUGGESTION을 구분.','analysisId / sectionId'),
+      'ANALYSIS-06': {...read('api','RecommendationQuery.get()','검증된 추천·준비 상태','200 · READY 또는 PENDING / items','추천 생성 주체·시점은 협의. GET이 분석 작업을 새로 만들지는 않음. 추천 영상은 아직 내 RAG 근거가 아님.','analysisId / sectionId'),pending:true,provider:'추천 정보 · 협의',extraPending:['apiProvider']},
+      'ARCHIVE-02': read('api','RecordQueryService.get()','내 기록·폴더 연결·열람 위치','200 · record / analysis / folders / readingPosition','완료 시 기록 자동 생성. 조회 때문에 새 기록이나 열람 시각을 저장하지 않음.','recordId'),
+      'ARCHIVE-03': write('api','RecordService.delete()','개인 기록·결과·폴더 연결 삭제','200 · 성공 메시지','공유 자막·영상 정보를 함께 지우지 않음. 향후 RAG에서 즉시 제외하고 과거 대화 텍스트는 유지.','recordId'),
+      'ARCHIVE-04': write('api','ReadingPositionService.put()','탭·구간·lastViewedAt 저장','200 · readingPosition','tab·sectionId 필수, sectionId:null 허용. positionMs는 복원 정책 확정 전 null. 분석 최신순은 유지.','recordId / tab / sectionId / positionMs'),
+      'ARCHIVE-05': read('api','FolderQueryService.list()','내 폴더·고유 기록 수','200 · items / nextCursor / hasNext','createdAt·folderId로 커서 조회. 조인 중복으로 기록 수가 부풀지 않게 집계.','cursor / limit'),
+      'ARCHIVE-06': write('api','FolderService.create()','새 폴더 저장','201 · folderId / name / createdAt','동일 사용자 동작의 재전송은 같은 멱등 키 사용. 기록을 복제하지 않음.','name + Idempotency-Key'),
+      'ARCHIVE-07': read('api','FolderQueryService.get()','폴더 이름·기록 개수','200 · folderId / name / recordCount','폴더 안 실제 기록 목록은 SEARCH-01에 folderId를 전달해 별도 조회.','folderId'),
+      'ARCHIVE-08': write('api','FolderService.rename()','해당 폴더 이름 변경','200 · 갱신된 폴더','본인 폴더 확인 후 이름만 변경. 폴더 안 기록·분석은 변경하지 않음.','folderId / name'),
+      'ARCHIVE-09': write('api','FolderService.delete()','폴더·연결 관계 삭제','200 · 성공 메시지','원본 기록·분석은 유지. 해당 범위의 기존 대화는 읽을 수 있으며 새 질문 범위는 다시 검증.','folderId'),
+      'ARCHIVE-10': write('api','FolderRecordService.add()','folderId·recordId 연결 저장','200 · addedRecordIds / alreadyIncludedRecordIds','전체 기록의 소유권을 먼저 검증. 잘못된 항목은 전체 거절. 연결 UNIQUE로 중복만 제외.','folderId / recordIds'),
+      'ARCHIVE-11': write('api','FolderRecordService.remove()','해당 폴더의 연결 1건 제거','200 · 성공 메시지','원본 기록과 다른 폴더의 연결은 유지.','folderId / recordId'),
+      'ARCHIVE-12': {...read('api','PlaylistGroupQuery.list()','내 보관 재생목록 그룹·개수','200 · items / nextCursor / hasNext','내부 groupId로 조회. 그룹 생성·합치기·자동 동기화 정책은 협의. YouTube 원본 목록 조회와 구분.','cursor / limit'),pending:true},
+      'ARCHIVE-13': {...read('api','PlaylistGroupQuery.get()','그룹 이름·원본 링크·기록 수','200 · groupId / playlistId / recordCount','기록 목록은 SEARCH-01의 playlistGroupId로 조회. 내부 groupId와 YouTube playlistId를 구분.','groupId'),pending:true},
+      'ARCHIVE-14': read('api','HomeQueryService.get()','최근 분석·이어서 볼 구간','200 · recentAnalyses / continueReading','피그마 10/23 명세 필드 기준. 이어보기 없으면 null. 조회로 lastViewedAt을 바꾸지 않음.','별도 본문 없음 · 시연 사용자 문맥'),
+      'SEARCH-01': read('api','RecordSearchService.search()','AND 필터·최신순 기록','200 · items / matchedCount / nextCursor / hasNext','analyzedAt·recordId 커서, limit+1 조회. 컬렉션 fetch join 페이지네이션 주의. 자막 전체·벡터 검색 아님.','q / folderId / keywordIds / playlistGroupId / targetFolderId / cursor'),
+      'SEARCH-02': read('api','RecordKeywordQuery.list()','현재 범위 키워드·고유 기록 수','200 · keywords / matchedCount','SEARCH-01과 같은 필터 의미·집계 기준. RAG 임베딩 유사도 검색 API가 아님.','q / folderId / keywordIds / playlistGroupId'),
+      'CHAT-01': write('chat','ConversationService.create()','검색 범위·채팅방 저장','201 · conversationId / scope / recordCount','생성만으로 GPT를 호출하지 않음. 범위 변경은 새 방. 범위 고정·재평가 정책은 협의.','scope + Idempotency-Key'),
+      'CHAT-02': read('chat','ConversationQueryService.list()','내 대화방·최근 활동 정보','200 · items / nextCursor / hasNext','updatedAt·conversationId 커서. 방 목록 조회는 Python·GPT를 호출하지 않음.','cursor / limit'),
+      'CHAT-03': read('chat','MessageQueryService.list()','저장 메시지·상태·출처','200 · items / nextCursor / hasNext','오래된 메시지 방향으로 커서 조회하되 items는 과거→최근. clientRequestId 조회와 cursor는 함께 사용하지 않음.','conversationId / cursor 또는 clientRequestId'),
+      'CHAT-04': {server:'chat', input:'conversationId / content / clientRequestId / retryOfMessageId + Idempotency-Key', output:'200 text/event-stream · meta → delta → sources → done', edges:['appChat','chatDb','chatPython','pythonDb','pythonGpt'], labels:{chat:'질문 저장·SSE 중계',db:'허용 기록·대화·벡터',python:'권한 필터 RAG·스트림',gpt:'답변 조각 생성'}, boundary:'같은 HTTP 응답으로 스트리밍. 방당 생성 1개·중복 409. 최종 DB 커밋 후 done. Worker·작업큐를 거치지 않음.',steps:[s('Chat·DB','ChatRequestService.begin()','범위·중복·진행 중 검사 → 질문 저장','쓰기 TX'),s('Chat→Python','PythonChatClient.stream()','서버가 확인한 사용자·허용 기록 전달'),s('Python·DB','RagRetriever.search()','소유권·삭제 필터 후 chunk 검색','짧은 조회'),s('Python→GPT','GptClient.stream()','근거와 질문으로 토큰 생성'),s('Chat→앱','ChatEventRelay.onDelta()','이벤트 조립·SSE 전송·부분 저장','짧은 저장'),s('Chat·DB','ChatCompletionService.finish()','답변·출처 커밋 → done 전송','쓰기 TX')]},
+      'CHAT-05': read('chat','ChatMessageQueryService.get()','부분·최종 답변과 생성 상태','200 · content / status / sources / finishReason','재접속 상태 확인용. 조회로 GPT를 다시 호출하거나 SSE를 재생하지 않음.','conversationId / messageId'),
+      'CHAT-06': read('chat','ConversationQueryService.get()','대화 범위·생성 중 메시지 ID','200 · scope / generation / activeAssistantMessageId','생성 중이면 CHAT-05로 상태 조회. 범위가 UNAVAILABLE이어도 기존 대화는 읽을 수 있음.','conversationId'),
+      'CHAT-07': write('chat','ConversationService.delete()','대화방·메시지·출처 삭제','200 · 성공 메시지','생성 중인 방 삭제는 409. 분석 기록·폴더·GCS 자막은 유지.','conversationId'),
+      'PUSH-01': {...write('api','DeviceService.upsert()','앱 설치·FCM 토큰 연결','200 · installationId / notificationPermission','운영 후속. 데모 분석 완료 표시는 상태 조회 사용. 기기 등록이 FCM 알림 발송을 뜻하지 않음.','installationId / platform / fcmToken / notificationPermission'),future:true},
+      'PUSH-02': {...write('api','DeviceService.disconnect()','해당 설치의 알림 연결 해제','200 · 성공 메시지','운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.','installationId'),future:true}
+    };
+    const repo = 'https://github.com/AnGyeongKK/ITip-server';
+    const implementation = 'f2db5b3';
+    const apiSource = 'ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/';
+    const workerSource = 'ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/';
+    const sourceFiles = {
+      AnalysisBatchController: apiSource + 'controller/AnalysisBatchController.java',
+      AnalysisBatchService: apiSource + 'service/AnalysisBatchService.java',
+      JobController: apiSource + 'controller/JobController.java',
+      JobService: apiSource + 'service/JobService.java',
+      JobDbService: apiSource + 'service/JobDbService.java',
+      AnalysisOwnerLock: 'ITip/libs/domain/src/main/java/com/gkk/itip/domain/analysis/AnalysisOwnerLock.java',
+      GcsObjects: 'ITip/libs/common/src/main/java/com/gkk/itip/common/storage/GcsObjects.java',
+      AnalysisScheduler: workerSource + 'analysis/AnalysisScheduler.java',
+      AnalysisWorker: workerSource + 'analysis/AnalysisWorker.java',
+      JobQueue: workerSource + 'analysis/JobQueue.java',
+      CaptionParser: workerSource + 'analysis/caption/CaptionParser.java',
+      CaptionChunker: workerSource + 'analysis/caption/CaptionChunker.java',
+      SpringAiAnalysisClient: workerSource + 'analysis/ai/SpringAiAnalysisClient.java',
+      AnalysisOutputValidator: workerSource + 'analysis/output/AnalysisOutputValidator.java',
+      WorkerResultStore: workerSource + 'analysis/WorkerResultStore.java'
+    };
+    const implementedStep = (actor, fn, note, tx = 'TX 밖', phase = 'sync') => {
+      const step = s(actor, fn, note, tx, phase);
+      const path = sourceFiles[fn.split('.')[0]];
+      if (path) step.source = repo + '/blob/' + implementation + '/' + path;
+      return step;
+    };
+    const backgroundSteps = () => [
+      implementedStep('Worker', 'AnalysisScheduler.poll() → AnalysisWorker.runNext()', '별도 프로세스 · 준비 기한 만료 처리 후 한 작업 실행', 'TX 밖', 'background'),
+      implementedStep('Worker·DB', 'JobQueue.claim()', 'SKIP LOCKED · runToken/lease 발급 · heartbeat는 renew()', '쓰기 TX', 'background'),
+      implementedStep('Worker·GCS', 'AnalysisWorker.readCaptions()', '고정 generation 다운로드 → CaptionParser.parse() · 한국어/크기/60분', 'TX 밖', 'background'),
+      implementedStep('Worker·AI', 'SpringAiAnalysisClient.generate()', '모델 Bean 필요 · AnalysisOutputValidator.validate()로 근거 검증', 'TX 밖', 'background'),
+      implementedStep('Worker·DB', 'WorkerResultStore.saveDraft()', 'analysisId·sectionId·검증된 요약 저장 · 재시도 때 재사용', '쓰기 TX', 'background'),
+      implementedStep('Worker·AI', 'CaptionChunker.split() → SpringAiAnalysisClient.embed()', '원문·시간·sectionId 연결 · 벡터 순서/모델/차원 검증', 'TX 밖', 'background'),
+      implementedStep('Worker·DB', 'WorkerResultStore.saveIndex()', '원문 조각·임베딩을 한 번에 저장 · 저장된 index 재사용', '쓰기 TX', 'background'),
+      implementedStep('Worker·DB', 'WorkerResultStore.complete()', '사용자 → 작업 잠금 · 결과/개인 기록/COMPLETED 함께 확정', '쓰기 TX', 'background')
+    ];
+    Object.assign(flows, {
+      'ANALYSIS-01': {
+        server:'api', implemented:true, commits:['5bb146f','698e0d5','a39f94f','85598e5'],
+        input:'JSON {batchId, batchItemId, uploadId} + UUID Idempotency-Key',
+        output:'202 + Location/statusUrl · 기존 완료 기록은 200',
+        edges:['appApi','apiDb','apiGcs'], background:['dbWorker','workerGcs','workerProvider','workerDb'],
+        labels:{api:'검증 → GCS 확인 → 등록',db:'QUEUED → 결과·기록',worker:'선점·검증·분석·완료',gcs:'generation 고정 자막',provider:'ChatModel / EmbeddingModel'},
+        boundary:'작업 커밋 후 202. GCS·AI 대기 중 DB TX 없음. 성공한 draft/index는 건너뛰고, 오래된 runToken의 저장은 차단. 실제 GCS·모델 통신은 미확인.',
+        steps:[
+          implementedStep('API', 'JobController.submit() → JobService.submit()', '서버 고정 시연 사용자 · DTO/멱등 키 검증'),
+          implementedStep('API·DB', 'JobDbService.prepareSubmit()', '소유권·업로드 연결·중복/완료 기록 확인', '쓰기 TX'),
+          implementedStep('API·GCS', 'GcsObjects.metadata()', 'generation·실제 크기·Content-Type 확인'),
+          implementedStep('API·DB', 'JobDbService.admitSubmit()', '사용자 잠금 후 재검사 · 작업/업로드 소비/멱등 키 커밋', '쓰기 TX'),
+          ...backgroundSteps()
+        ]
+      },
+      'ANALYSIS-02': {
+        server:'api', implemented:true, commits:['5bb146f'], input:'jobId', output:'200 · status / stage / attempt / error / nextPollAfterMs',
+        edges:['appApi','apiDb'], labels:{api:'내 작업 상태 조회',db:'작업·영상·완료 ID'},
+        boundary:'GET은 Worker를 시작하지 않음. FAILED도 조회 성공은 200. 결과 ID는 COMPLETED에서만 공개. 종료 상태의 nextPollAfterMs는 null.',
+        steps:[implementedStep('API','JobController.get()','서버 고정 시연 사용자'),implementedStep('API·DB','JobService.get() → JobDbService.get()','소유 작업·영상 조회 · 타인/없는 작업은 404','조회 TX'),implementedStep('API','JobDbService.get()','ApiResponse.success() · 미완료 draft ID 숨김')]
+      },
+      'ANALYSIS-03': {
+        server:'api', implemented:true, commits:['5bb146f','bebbc8b','85598e5'], input:'jobId + UUID Idempotency-Key + JSON {}', output:'202 · 새 jobId/previousJobId/batchId · 기존 완료는 200',
+        edges:['appApi','apiDb','apiGcs'], background:['dbWorker','workerGcs','workerProvider','workerDb'],
+        labels:{api:'최종 실패·중복 재검사',db:'새 작업·이전 draft 연결',worker:'성공 단계 재사용',gcs:'동일 원본 generation',provider:'필요한 실패 단계만 실행'},
+        boundary:'FAILED + retryable만 허용. 원본 없음/버전 변경은 410, 서명 URL 만료만으로 차단하지 않음. 삭제한 완료 기록은 과거 실패 작업으로 복구할 수 없음.',
+        steps:[implementedStep('API','JobController.retry() → JobService.retry()','원본 jobId와 새 멱등 키'),implementedStep('API·DB','JobDbService.prepareRetry()','최종 실패·현재 중복 작업·삭제된 완료 결과 검사','쓰기 TX'),implementedStep('API·GCS','GcsObjects.metadata()','같은 generation의 원본 확인'),implementedStep('API·DB','JobDbService.admitRetry()','새 배치·항목·작업/previousJobId · draft/index 재사용','쓰기 TX'),...backgroundSteps()]
+      },
+      'ANALYSIS-07': {
+        server:'api', implemented:true, commits:['f19461d','d177cbe'], input:'JSON {videoIds, playlistId?} + UUID Idempotency-Key', output:'201 + Location · batchId / items / selectionSummary',
+        edges:['appApi','apiDb'], labels:{api:'완료·진행·신규 분류',db:'배치·항목·멱등 키'},
+        boundary:'Video가 먼저 저장되어 있어야 함. OPEN_RESULT / OPEN_JOB / COLLECT_CAPTIONS로 분기. 다른 준비 배치가 있으면 409이므로 앱이 batchId를 보관해야 함. 로그인·한도 제외.',
+        steps:[implementedStep('API','AnalysisBatchController.create()','영상 목록·UUID 멱등 키 검증'),implementedStep('API·DB','AnalysisBatchService.create()','사용자 잠금 → videoId 중복 제거 → 기존 기록/진행 작업 분류','쓰기 TX'),implementedStep('API·DB','AnalysisBatchService.create()','배치·항목·멱등 키를 함께 저장 · 준비 기한 발급','쓰기 TX'),implementedStep('API','AnalysisBatchController.create()','커밋 후 201 · Location · 앱의 다음 행동 반환')]
+      },
+      'ANALYSIS-08': {
+        server:'api', implemented:true, commits:['f19461d','f88ddc6'], input:'batchId', output:'200 · status / items / counts / nextPollAfterMs',
+        edges:['appApi','apiDb'], labels:{api:'내 배치 상태 조회',db:'항목·현재 job·영상 일괄 조회'},
+        boundary:'total = items.length = 상태별 개수 합. 연결 job이 다른 배치에서 생겼어도 현재 상태를 반영. 종료 시 polling 간격 null. GET은 상태를 변경하지 않음.',
+        steps:[implementedStep('API','AnalysisBatchController.get()','서버 고정 시연 사용자'),implementedStep('API·DB','AnalysisBatchService.get()','REPEATABLE_READ · 항목/작업/영상 snapshot·counts','조회 TX'),implementedStep('API','AnalysisBatchController.get()','200 · 준비/진행/완료/부분 실패 반환')]
+      },
+      'ANALYSIS-09': {
+        server:'api', implemented:true, commits:['f19461d'], input:'JSON {collectionFailure:{code}} + batchId / itemId', output:'200 · batchId / itemId / status:FAILED / error',
+        edges:['appApi','apiDb'], labels:{api:'기기 수집 실패 접수',db:'AWAITING_UPLOAD → FAILED'},
+        boundary:'AWAITING_UPLOAD에서만 허용. 접수된 분석의 취소 API가 아님. retryable:false이며 기기 수집·업로드를 다시 시작해야 함.',
+        steps:[implementedStep('API','AnalysisBatchController.report()','허용된 수집 실패 코드 검증'),implementedStep('API·DB','AnalysisBatchService.reportCollectionFailure()','사용자 잠금·배치 소유권·대기 상태 확인 후 실패 저장','쓰기 TX'),implementedStep('API','AnalysisBatchController.report()','200 · 해당 항목 반환 · 배치 전체는 GET으로 조회')]
+      }
+    });
+    for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
+    const labels = {app:'Android',api:'Spring API',worker:'Spring Worker',chat:'Spring Chat',db:'PostgreSQL',gcs:'Cloud Storage',provider:'분석·임베딩 모델',python:'Python AI',gpt:'GPT API'};
+    const fallback = {app:'요청·결과',api:'일반 API · 로컬',worker:'DB Poller · 로컬',chat:'채팅 API · 로컬',db:'pgvector · 로컬 Docker',gcs:'실제 GCS',provider:'연동 대상 협의',python:'AI 파트 · 별도 서버',gpt:'Python에서 호출'};
+    const edgeNodes = {appApi:['app','api'],appChat:['app','chat'],appGcs:['app','gcs'],apiDb:['api','db'],apiGcs:['api','gcs'],apiProvider:['api','provider'],dbWorker:['db','worker'],workerDb:['worker','db'],workerGcs:['worker','gcs'],workerProvider:['worker','provider'],chatDb:['chat','db'],chatPython:['chat','python'],pythonDb:['python','db'],pythonGpt:['python','gpt']};
+    const domainSelect = root.querySelector('[aria-label="도메인 선택"]');
+    const apiSelect = root.querySelector('[aria-label="API 선택"]');
+    const svg = root.querySelector('.diagram');
+    const state = { apiId: 'ANALYSIS-01' };
+    const ns = 'http://www.w3.org/2000/svg';
+    const el = (tag, attrs, text) => {const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+    const selected = () => catalog.find(a=>a.id===state.apiId);
+    function selectOptions() {
+      const api=selected(); domainSelect.replaceChildren(); apiSelect.replaceChildren();
+      [...new Set(catalog.map(a=>a.domain))].forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d+(d.startsWith('08')?' · 운영 후속':'');domainSelect.append(o);});
+      domainSelect.value=api.domain;
+      catalog.filter(a=>a.domain===api.domain).forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.id+' · '+(a.id==='ANALYSIS-07'?'분석 배치 생성':a.name)+(flows[a.id].implemented?' · 구현':' · 설계');apiSelect.append(o);});
+      apiSelect.value=api.id;
+    }
+    function phasesFor(flow) {
+      const map=new Map();
+      for(const key of flow.edges||[]) for(const n of edgeNodes[key])map.set(n,flow.future||flow.planned?'pending':'sync');
+      for(const key of flow.background||[])for(const n of edgeNodes[key])if(!map.has(n))map.set(n,'background');
+      for(const key of flow.extraPending||[])for(const n of edgeNodes[key])if(!map.has(n))map.set(n,'pending');
+      return map;
+    }
+    function draw() {
+      const a=selected(); if(!a)return; const f=flows[a.id];
+      const width=Math.max(680,Math.round(root.clientWidth));
+      svg.setAttribute('viewBox',`0 0 ${width} 497`);svg.setAttribute('height','497');svg.replaceChildren();
+      const title=el('title',{},a.id+' · '+a.name);svg.append(title);
+      const desc=el('desc',{},(f.edges||[]).map(k=>edgeNodes[k].map(n=>labels[n]).join(' ↔ ')).join(' / ')+(f.background?' / 접수 커밋 후 별도 Worker 실행':''));svg.append(desc);
+      const defs=el('defs');
+      for(const kind of ['sync','background','pending']) {
+        const m=el('marker',{id:'yap-head-'+kind,markerWidth:9,markerHeight:9,refX:8,refY:4.5,orient:'auto-start-reverse',markerUnits:'userSpaceOnUse'});
+        m.append(el('path',{d:'M1 1 L8 4.5 L1 8',fill:'none',stroke:kind==='sync'?'var(--viz-series-1)':kind==='background'?'var(--viz-series-2)':'var(--muted-foreground)','stroke-width':1.4}));defs.append(m);
+      }
+      svg.append(defs);
+      const x1=Math.round(width*.2),x2=Math.round(width*.5),x3=width-150,w1=156,w2=148;
+      const nodes={app:{x:0,y:239,w:96,h:108},api:{x:x1,y:69,w:w1,h:78},worker:{x:x1,y:231,w:w1,h:78},chat:{x:x1,y:393,w:w1,h:78},db:{x:x2,y:231,w:w2,h:88},gcs:{x:x3,y:69,w:150,h:78},provider:{x:x3,y:231,w:150,h:78},python:{x:x2,y:393,w:w2,h:78},gpt:{x:x3,y:393,w:150,h:78}};
+      const t=(x,y,txt,secondary=false)=>svg.append(el('text',{x,y,class:secondary?'secondary text-small':''},txt));
+      t(0,17,'앱',true);t(x1,17,'Spring · 로컬',true);t(x2,17,'로컬 DB · AI',true);t(x3,17,'외부 서비스',true);
+      const springEnd=x1+w1;
+      const paths={
+        appApi:`M106 262 H${x1-24} V108 H${x1-10}`,
+        appChat:`M106 325 H${x1-24} V432 H${x1-10}`,
+        appGcs:`M48 229 V42 H${x3+75} V59`,
+        apiDb:`M${springEnd+10} 108 H${x2-28} V255 H${x2-10}`,
+        apiGcs:`M${springEnd+10} 108 H${x3-10}`,
+        apiProvider:`M${x1+126} 157 V178 H${x3+75} V221`,
+        dbWorker:`M${x2-10} 259 H${springEnd+10}`,
+        workerDb:`M${springEnd+10} 290 H${x2-10}`,
+        workerGcs:`M${x1+120} 221 V196 H${x3+75} V157`,
+        workerProvider:`M${x1+120} 319 V354 H${x3+75} V319`,
+        chatDb:`M${springEnd+10} 432 H${x2-28} V304 H${x2-10}`,
+        chatPython:`M${springEnd+10} 432 H${x2-10}`,
+        pythonDb:`M${x2+74} 383 V329`,
+        pythonGpt:`M${x2+w2+10} 432 H${x3-10}`
+      };
+      const bidirectional=new Set(['appApi','appChat','appGcs','apiDb','apiGcs','chatDb','chatPython','pythonDb','pythonGpt']);
+      const edges=[];
+      for(const k of f.edges||[])edges.push([k,f.future||f.planned?'pending':'sync']);
+      for(const k of f.background||[])edges.push([k,'background']);
+      for(const k of f.extraPending||[])edges.push([k,'pending']);
+      for(const [k,kind] of edges){const attrs={d:paths[k],class:'edge '+kind,'data-edge':k,'data-phase':kind,'marker-end':`url(#yap-head-${kind})`};if(kind==='sync'&&bidirectional.has(k))attrs['marker-start']=`url(#yap-head-${kind})`;svg.append(el('path',attrs));}
+      const phases=phasesFor(f);
+      for(const [key,n] of Object.entries(nodes)) {
+        const phase=phases.get(key);const g=el('g',{class:phase?'':'inactive','data-node':key,'data-active':String(!!phase)});
+        const fill=phase==='sync'?' active-fill':phase==='background'?' background-fill':'';
+        if(key==='db') {
+          g.append(el('path',{d:`M${n.x} ${n.y+12} C${n.x} ${n.y-3} ${n.x+n.w} ${n.y-3} ${n.x+n.w} ${n.y+12} V${n.y+n.h-12} C${n.x+n.w} ${n.y+n.h+3} ${n.x} ${n.y+n.h+3} ${n.x} ${n.y+n.h-12} Z`,class:'silhouette'+fill}));
+          g.append(el('path',{d:`M${n.x} ${n.y+12} C${n.x} ${n.y+27} ${n.x+n.w} ${n.y+27} ${n.x+n.w} ${n.y+12}`,class:'rule'}));
+        } else {
+          g.append(el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:key==='app'?11:4,class:'silhouette'+fill}));
+          if(key==='app')g.append(el('rect',{x:n.x+8,y:n.y+8,width:n.w-16,height:n.h-16,rx:2,class:'rule'}));
+          else g.append(el('line',{x1:n.x+10,y1:n.y+35,x2:n.x+n.w-10,y2:n.y+35,class:'rule'}));
+        }
+        const title=key==='provider'?(f.provider||labels[key]):labels[key];
+        g.append(el('text',{x:n.x+11,y:n.y+(key==='db'?39:24)},title));
+        const note=(f.labels&&f.labels[key])||fallback[key];
+        const mid=key==='db'?n.y+59:key==='app'?n.y+55:n.y+55;
+        const caption=el('text',{x:n.x+11,y:mid,class:'secondary text-small'});g.append(caption);svg.append(g);
+        const lines=[];let line='';
+        for(const char of note){caption.textContent=line+char;if(caption.getComputedTextLength()>n.w-22&&line){lines.push(line);line=char;}else line+=char;}
+        if(line)lines.push(line);caption.textContent='';
+        lines.forEach((part,i)=>caption.append(el('tspan',{x:n.x+11,y:mid+i*17},part)));
+      }
+      if(f.background)t(x1,376,'접수 커밋 후 · DB 작업을 별도 Worker가 처리',true);
+    }
+    function renderSteps(flow) {
+      const ol=root.querySelector('.steps');const mobile=root.querySelector('.mobile-route');ol.replaceChildren();mobile.replaceChildren();
+      flow.steps.forEach((step,index)=>{
+        const li=document.createElement('li');li.className='step';li.dataset.phase=step.phase;
+        const num=document.createElement('span');num.className='step-index text-small';num.textContent=String(index+1).padStart(2,'0');
+        const actor=document.createElement('span');actor.className='step-actor text-small';actor.textContent=step.actor;
+        const content=document.createElement('div');content.className='step-content';const code=document.createElement('code');code.textContent=step.fn;const note=document.createElement('span');note.className='step-note text-small';note.textContent=step.note;let symbol=code;if(step.source){symbol=document.createElement('a');symbol.href=step.source;symbol.target='_blank';symbol.rel='noreferrer';symbol.append(code);}content.append(symbol,note);
+        const tx=document.createElement('span');tx.className='step-tx text-small';tx.textContent=step.tx;
+        li.append(num,actor,content,tx);ol.append(li);
+        const row=document.createElement('div');row.className='route-row';row.dataset.phase=flow.future||flow.planned?'pending':step.phase;
+        const arrow=document.createElement('span');arrow.className='route-arrow';arrow.textContent=index===flow.steps.length-1?'└':'↓';
+        const body=document.createElement('div');body.className='route-content';const heading=document.createElement('span');heading.textContent=step.actor+' · '+step.tx;const fn=document.createElement('code');fn.textContent=step.fn;let symbolMobile=fn;if(step.source){symbolMobile=document.createElement('a');symbolMobile.href=step.source;symbolMobile.target='_blank';symbolMobile.rel='noreferrer';symbolMobile.append(fn);}const label=document.createElement('span');label.className='text-small';label.textContent=step.note;body.append(heading,symbolMobile,label);row.append(arrow,body);mobile.append(row);
+      });
+      const active=phasesFor(flow);const other=document.createElement('div');other.className='mobile-other text-small';other.textContent='이 경로에 참여하지 않음: '+Object.keys(labels).filter(k=>!active.has(k)&&k!=='app').map(k=>labels[k]).join(' · ');mobile.append(other);
+    }
+    function render() {
+      const a=selected(),f=flows[a.id];
+      root.querySelector('.method').textContent=a.method;
+      root.querySelector('.endpoint-path').textContent=a.path;
+      root.querySelector('.scope').textContent=a.id+' · '+(f.implemented?'구현 · 실제 외부 연동 대기':f.future?'운영 후속 · 설계':'후속 이슈 · 설계');
+      const commits=root.querySelector('.commits');commits.replaceChildren();
+      for(const sha of f.commits||[]){const link=document.createElement('a');link.href=repo+'/commit/'+sha;link.target='_blank';link.rel='noreferrer';link.textContent=sha;commits.append(link);}
+      root.querySelector('.source').href=a.source;
+      root.querySelector('.input').textContent=f.input;
+      root.querySelector('.output').textContent=f.output;
+      root.querySelector('.boundary').textContent=f.boundary;
+      root.dataset.apiId=a.id;root.dataset.implemented=String(!!f.implemented);renderSteps(f);draw();
+    }
+    function restore(saved) {
+      const id=saved&&saved.privateContent&&saved.privateContent.apiId;
+      if(catalog.some(a=>a.id===id))state.apiId=id;
+    }
+    function persist() {
+      if(window.openai&&window.openai.setWidgetState)window.openai.setWidgetState({modelContent:{apiId:state.apiId,method:selected().method,path:selected().path},privateContent:{apiId:state.apiId}}).catch(()=>{});
+    }
+    domainSelect.addEventListener('change',()=>{state.apiId=catalog.find(a=>a.domain===domainSelect.value).id;selectOptions();render();persist();});
+    apiSelect.addEventListener('change',()=>{state.apiId=apiSelect.value;render();persist();});
+    restore(window.openai&&window.openai.widgetState);selectOptions();render();
+    window.addEventListener('openai:set_globals',event=>{const saved=event.detail&&event.detail.globals&&event.detail.globals.widgetState;if(saved){restore(saved);selectOptions();render();}});
+    new ResizeObserver(draw).observe(root);
+  })();
+  </script>
+</div>
