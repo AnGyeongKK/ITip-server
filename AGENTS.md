@@ -10,7 +10,7 @@
 
 ## 폴더 구조와 실행 경계
 
-현재 코드는 `ITip/src/`의 단일 앱이다. 아래는 앞으로 구성할 Gradle 멀티모듈 구조이며, 이 문서 작성으로 모듈·Dockerfile이 생성된 것은 아니다. 모듈 전환 작업에서 기존 코드를 이동하고 빌드 설정을 맞춘다.
+API·Worker와 `common`·`domain`은 Gradle 멀티모듈로 구성하며 API·Worker는 각각 Dockerfile을 사용한다. 아래 Chat 앱은 채팅 기능 구현 시 추가할 목표 구조다. 실제 실행 파일은 Gradle task와 Docker 빌드로 확인한다.
 
 ```text
 gkk/
@@ -63,6 +63,8 @@ gkk/
 | --- | --- |
 | 이슈·브랜치·커밋·push·PR·리뷰·병합 | [GitHub 협업 규칙](.agents/rules/github.md) |
 | 기능 구현·폴더·모듈·책임 분리·공통화·리팩터링 | [아키텍처·설계 규칙](.agents/rules/architecture.md) |
+| 커밋 직후 독립 코드 리뷰 | [커밋 리뷰 에이전트](.agents/reviewers/commit-reviewer.md) |
+| PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 
@@ -73,12 +75,13 @@ gkk/
 `ITip/`에서 실행한다.
 
 ```sh
-./gradlew test      # 테스트
-./gradlew build     # 테스트를 포함한 빌드
-./gradlew bootRun   # 로컬 실행
+./gradlew test                       # 모듈별 테스트
+./gradlew build                      # 테스트를 포함한 전체 빌드
+./gradlew :apps:api-app:bootRun        # API 실행
+./gradlew :apps:worker-app:bootRun     # Worker 실행
 ```
 
 - 코드 변경 범위에 맞는 검증을 실행한다. 문서·ignore 규칙만 변경했다면 링크·규칙 적용 여부를 확인한다.
 - DB를 사용하는 실행·테스트는 로컬 PostgreSQL과 필요한 환경변수 설정을 먼저 확인한다. 운영 Supabase를 개발 테스트에 사용하지 않는다.
 - 외부 설정이 없어 검증이 막히면 필요한 변수 이름과 원인을 보고한다. 비밀값을 출력하거나 요청하지 않는다.
-- 위 명령은 현재 단일 앱 기준이다. 멀티모듈 전환 후 실행 명령을 각 앱의 `bootRun`·`bootJar` 경로로 갱신하고, 실제 존재하는 Gradle task를 확인한다.
+- 각 앱의 `bootJar`로 독립 실행 JAR를 만든다. 로컬 실행 전 PostgreSQL과 연결 설정을 준비한다.

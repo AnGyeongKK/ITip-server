@@ -1,0 +1,18 @@
+server:
+  port: ${WORKER_PORT:8081}
+spring:
+  config:
+    import: classpath:domain.yaml
+  application:
+    name: itip-worker
+  flyway:
+    enabled: false
+
+itip:
+  worker:
+    scheduling-enabled: ${WORKER_SCHEDULING_ENABLED:true}
+    poll-delay: ${WORKER_POLL_DELAY:PT2S}
+    lease-duration: ${WORKER_LEASE_DURATION:PT2M}
+    heartbeat-delay: ${WORKER_HEARTBEAT_DELAY:PT20S}
+    retry-delay: ${WORKER_RETRY_DELAY:PT5S}
+    chunk-code-points: ${WORKER_CHUNK_CODE_POINTS:1200}

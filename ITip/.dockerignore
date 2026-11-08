@@ -1,0 +1,13 @@
+# 실행 JAR와 Dockerfile만 빌드 컨텍스트로 전달한다.
+**
+!apps/
+!apps/api-app/
+!apps/api-app/Dockerfile
+!apps/api-app/build/
+!apps/api-app/build/libs/
+!apps/api-app/build/libs/*.jar
+!apps/worker-app/
+!apps/worker-app/Dockerfile
+!apps/worker-app/build/
+!apps/worker-app/build/libs/
+!apps/worker-app/build/libs/*.jar
