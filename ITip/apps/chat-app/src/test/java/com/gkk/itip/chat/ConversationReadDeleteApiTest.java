@@ -43,6 +43,20 @@ class ConversationReadDeleteApiTest {
         return UUID.fromString(mapper.readTree(r.getResponse().getContentAsString()).path("data").path("conversationId").asString());
     }
 
+    @Test void deletedRoomIsNotRecreatedByReplayingItsCreationKey() throws Exception {
+        f.analysis("demo-user", "RAG");
+        UUID key = UUID.randomUUID();
+        String body = "{\"scope\":{\"type\":\"ALL\"}}";
+        var created = mvc.perform(post("/api/v1/conversations").header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated()).andReturn();
+        UUID room = UUID.fromString(mapper.readTree(created.getResponse().getContentAsString()).path("data").path("conversationId").asString());
+        mvc.perform(delete(path(room))).andExpect(status().isOk());
+        mvc.perform(post("/api/v1/conversations").header("Idempotency-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isNotFound())
+                .andExpect(jsonPath("code").value("RESOURCE_NOT_FOUND"));
+        assertThat(jdbc.queryForObject("select count(*) from chat_conversations", Integer.class)).isZero();
+    }
+
     @Test void listsOnlyOwnedRoomsWithStableTimestampTieCursorAndActiveAnswer() throws Exception {
         UUID low = UUID.fromString("11111111-1111-4111-8111-111111111111");
         UUID mid = UUID.fromString("22222222-2222-4222-8222-222222222222");

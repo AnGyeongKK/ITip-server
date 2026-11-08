@@ -22,7 +22,7 @@ Chat 기본 주소는 `http://localhost:8082`다. API가 Flyway V4·V5를 적용
 
 | 메서드·경로 | 동작 |
 | --- | --- |
-| POST /api/v1/conversations | Idempotency-Key UUID로 방 생성. 같은 키·본문은 최초 응답, 다른 본문은 409 |
+| POST /api/v1/conversations | Idempotency-Key UUID로 방 생성. 방이 유지되면 같은 키·본문은 최초 응답, 다른 본문은 409. 삭제된 방의 키 재전송은 404이며 복원하지 않음 |
 | GET /api/v1/conversations | updatedAt/id 내림차순 커서 목록 |
 | GET /api/v1/conversations/{id} | 현재 recordCount·scopeStatus·활성 답변 ID |
 | DELETE /api/v1/conversations/{id} | 생성 중이면 409, 그 외 방·메시지·출처 삭제. 분석 결과 유지 |
