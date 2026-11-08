@@ -28,6 +28,7 @@ public class JobDbService {
     private final AnalysisJobRepository jobs;
     private final CaptionUploadRepository uploads;
     private final AnalysisRecordRepository records;
+    private final AnalysisResultRepository results;
     private final VideoRepository videos;
     private final IdempotencyRequestRepository requests;
     private final AnalysisOwnerLock ownerLock;
@@ -37,14 +38,14 @@ public class JobDbService {
     private final Duration preparationTtl;
 
     public JobDbService(AnalysisBatchRepository batches, AnalysisBatchItemRepository items, AnalysisJobRepository jobs,
-            CaptionUploadRepository uploads, AnalysisRecordRepository records, VideoRepository videos,
+            CaptionUploadRepository uploads, AnalysisRecordRepository records, AnalysisResultRepository results, VideoRepository videos,
             IdempotencyRequestRepository requests, AnalysisOwnerLock ownerLock, JsonMapper mapper, Clock clock,
             @Value("${itip.analysis.max-caption-bytes:1048576}") long maxCaptionBytes,
             @Value("${itip.analysis.next-poll-after-ms:3000}") long pollAfterMs,
             @Value("${itip.analysis.preparation-ttl:PT30M}") Duration preparationTtl) {
         if (maxCaptionBytes <= 0 || pollAfterMs <= 0 || preparationTtl.isNegative() || preparationTtl.isZero())
             throw new IllegalArgumentException("positive analysis limits required");
-        this.batches = batches; this.items = items; this.jobs = jobs; this.uploads = uploads; this.records = records;
+        this.batches = batches; this.items = items; this.jobs = jobs; this.uploads = uploads; this.records = records; this.results = results;
         this.videos = videos; this.requests = requests; this.ownerLock = ownerLock; this.mapper = mapper; this.clock = clock;
         this.maxCaptionBytes = maxCaptionBytes; this.pollAfterMs = pollAfterMs; this.preparationTtl = preparationTtl;
     }
@@ -158,6 +159,8 @@ public class JobDbService {
             remember(ownerId, RETRY, key, previousJobId, completed.getId());
             return new RetryContext(null, null, retried(completed, previousJobId));
         }
+        if (previous.getAnalysisId() != null && results.findByIdAndOwnerIdAndChatReadyTrue(previous.getAnalysisId(), ownerId).isPresent())
+            throw new BusinessException(JOB_NOT_RETRYABLE);
         if (jobs.findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(ownerId, previous.getVideoId(), ACTIVE).isPresent())
             throw new BusinessException(JOB_NOT_RETRYABLE);
         var upload = uploads.findByIdAndOwnerId(previous.getUploadId(), ownerId).orElseThrow(() -> new BusinessException(CAPTION_REUPLOAD_REQUIRED));

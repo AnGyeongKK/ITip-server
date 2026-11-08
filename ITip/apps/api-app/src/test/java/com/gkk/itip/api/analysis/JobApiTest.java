@@ -323,6 +323,28 @@ class JobApiTest {
         assertThat(countJobs()).isEqualTo(2); verifyNoInteractions(gcs);
     }
 
+    @Test void doesNotResurrectDeletedAnalysisThroughOlderFailedJob() throws Exception {
+        UUID oldId = failed(awaiting(OWNER, VIDEO), true);
+        UUID draft = tx.execute(status -> {
+            var result = AnalysisResult.draft(UUID.randomUUID(), OWNER, VIDEO, oldId, "{\"schemaVersion\":\"1.0\"}", NOW);
+            em.persist(result); em.flush(); return result.getId();
+        });
+        jdbc.update("update analysis_jobs set analysis_id=?,stage='INDEXING' where id=?", draft, oldId);
+        UUID newId = UUID.fromString(data(retry(UUID.randomUUID(), oldId)).path("jobId").asString());
+        UUID recordId = tx.execute(status -> {
+            var result = em.find(AnalysisResult.class, draft); result.markReady(NOW);
+            var record = AnalysisRecord.fromCompleted(result); em.persist(record); em.flush();
+            var job = em.find(AnalysisJob.class, newId);
+            UUID token = job.claim(NOW, Duration.ofMinutes(1)); job.changeStage(token, AnalysisStage.FINISHING, NOW);
+            job.complete(token, draft, record.getId(), NOW); return record.getId();
+        });
+        jdbc.update("delete from analysis_records where id=?", recordId);
+        clearInvocations(gcs);
+        error(retry(UUID.randomUUID(), oldId), 409, "JOB_NOT_RETRYABLE");
+        assertThat(countJobs()).isEqualTo(2);
+        verifyNoInteractions(gcs);
+    }
+
     @Test void rechecksDeadlineAfterStorageCallBeforeInsertingJob() throws Exception {
         Fixture f = awaiting(OWNER, VIDEO);
         when(gcs.metadata(anyString(), anyString(), nullable(Long.class))).thenAnswer(call -> {
