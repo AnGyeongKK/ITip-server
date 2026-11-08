@@ -138,6 +138,13 @@ class ChatStreamApiTest {
                 .andExpect(jsonPath("data.items[1].status").value("FAILED"))
                 .andExpect(jsonPath("data.items[1].retryable").value(false));
     }
+    @Test void forwardsCommentHeartbeatWithoutTreatingItAsAnAnswerOrCompletion() throws Exception {
+        RESPONSE.set(": heartbeat\n\n"+RESPONSE.get());
+        UUID key=UUID.randomUUID();String text=send(key);
+        assertThat(text).contains(": heartbeat\n\n","event: delta","event: done").doesNotContain("event: error");
+        mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[1].content").value("한국어 답변"));
+    }
     @Test void passesCompletedQuestionAnswerContextForFollowUp() throws Exception {
         send(UUID.randomUUID());send(UUID.randomUUID());
         var history=mapper.readTree(INPUT.get()).path("history");
