@@ -84,7 +84,7 @@ POST /conversations/{id}/messages
 | `begin()`·`ConversationService.delete()`의 방 잠금 | 생성과 삭제가 같은 순서로 잠겨 생성 중 삭제·동시 질문 경합을 제어 |
 | `GenerationTicket.token`·`ChatMessage.ownedGeneration()` | 만료된 작업의 늦은 callback이 새 상태를 덮지 못함 |
 | `complete()`를 다른 Bean에서 호출 | 메서드 반환 전에 Spring 트랜잭션 프록시가 실제 commit. 그 다음에 done 전송 |
-| `ChatCitationQuery.validate()` | 모델이 보낸 제목·시간·URL을 신뢰하지 않고 소유 DB에서 출처 구성 |
+| `ChatCitationQuery.validate()` | 소유 DB에서 출처 구성. FOR SHARE로 인용 기록 삭제를 완료 commit까지 기다리게 함 |
 | `ChatStreamBridge.write()`의 try-with-resources·committed | 연결 종료 시 upstream 정리. 완료 뒤 전송 실패를 DB 실패로 되돌리지 않음 |
 | `ChatLimits`·전용 executor·semaphore | 인스턴스 자원 제한과 방별 DB 중복 제어를 구분. 시간·크기 값 한곳에서 공유 |
 

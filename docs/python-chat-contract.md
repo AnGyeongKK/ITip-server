@@ -56,6 +56,8 @@ finishReason은 STOP·LENGTH·INSUFFICIENT_EVIDENCE다. 근거 부족은 명시�
 
 출처는 해당 소유자·처음 허용 범위·완료 시 현재 범위·현재 기록·chunk와 section의 연결을 확인한다. 제목·영상 ID·분석일·시간 범위는 DB에서 만들고 chunk와 section의 시간 교집합을 사용한다. 최종 본문·출처·상태를 한 TX에 저장한 뒤 저장 조회 API와 같은 sources·done을 앱에 전송한다.
 
+최종 출처 SQL은 recordId 순서로 해당 analysis_records에 FOR SHARE 잠금을 잡아 완료 TX까지 유지한다. 확인 직후 삭제가 끼어드는 것을 막고, 삭제는 완료 commit 뒤 실행된다. 이후 조회에서는 과거 출처를 DELETED로 표시한다. 이 잠금은 AI 대기·전체 SSE 동안 유지하지 않는다.
+
 ## 실행·실패 경계
 
 ```text

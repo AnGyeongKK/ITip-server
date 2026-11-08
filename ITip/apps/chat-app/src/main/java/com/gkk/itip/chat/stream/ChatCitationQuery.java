@@ -30,6 +30,8 @@ public class ChatCitationQuery {
             where r.owner_id=:owner and r.id in (:records) and c.id in (:chunks) and s.id in (:sections)
               and a.chat_ready=true and a.completed_at is not null
               and c.start_ms<s.end_ms and c.end_ms>s.start_ms
+            order by r.id,c.id,s.id
+            for share of r
             """,Map.of("owner",ticket.ownerId(),"records",citations.stream().map(ChatCitation::recordId).toList(),
                 "chunks",citations.stream().map(ChatCitation::chunkId).toList(),"sections",citations.stream().map(ChatCitation::sectionId).toList()),
             (r,n)->new Evidence(new ChatCitation(r.getObject("id",UUID.class),r.getObject("chunk_id",UUID.class),r.getObject("section_id",UUID.class)),
