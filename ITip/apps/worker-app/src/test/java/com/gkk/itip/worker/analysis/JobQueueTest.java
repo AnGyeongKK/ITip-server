@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = "spring.flyway.enabled=true")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {"spring.flyway.enabled=true", "itip.worker.scheduling-enabled=false"})
 @Testcontainers
 class JobQueueTest {
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
