@@ -41,15 +41,18 @@ public class AnalysisOutputValidator {
         require(start != null && end != null && start <= end);
         for (String reference : section.sourceSegmentIds()) require(sourceIndex.get(reference) >= start && sourceIndex.get(reference) <= end);
         var range = captions.segments().subList(start, end + 1);
+        Map<String, Integer> sectionSources = new HashMap<>();
+        for (int index = start; index <= end; index++)
+            sectionSources.put(captions.segments().get(index).segmentId(), index);
         long startMs = range.getFirst().startMs();
         long endMs = range.stream().mapToLong(CaptionDocument.Segment::endMs).max().orElseThrow();
         require(text(section.title()).length() <= 500);
         var detail = section.detail();
         var mappedDetail = new ResultDocument.Detail(text(detail.takeaway()), text(detail.explanation()),
-                points(detail.applicationTips(), sourceIndex), detail.recommendedTools().stream().map(tool -> {
-                    origin(tool.origin()); references(tool.sourceSegmentIds(), sourceIndex, "SOURCE".equals(tool.origin()));
+                points(detail.applicationTips(), sectionSources), detail.recommendedTools().stream().map(tool -> {
+                    origin(tool.origin()); references(tool.sourceSegmentIds(), sectionSources, "SOURCE".equals(tool.origin()));
                     return new ResultDocument.RecommendedTool(text(tool.name()), text(tool.reason()), tool.origin());
-                }).toList(), texts(detail.usageKeywords()), points(detail.examples(), sourceIndex));
+                }).toList(), texts(detail.usageKeywords()), points(detail.examples(), sectionSources));
         return new ResultDocument.Section(ids.get(section.sectionKey()), section.title(), startMs, endMs,
                 text(section.summary()), texts(section.subtopics()), keywords(section.keywords()), mappedDetail);
     }

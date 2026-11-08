@@ -2,6 +2,8 @@ package com.gkk.itip.worker.analysis.output;
 
 import com.gkk.itip.worker.analysis.caption.CaptionDocument;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +65,25 @@ class AnalysisOutputValidatorTest {
         rejects(VALID.replace("\"sectionKeys\":[\"topic-a\"]", "\"sectionKeys\":[]"));
         rejects(VALID.replace("\"origin\":\"AI_SUGGESTION\",\"sourceSegmentIds\":[\"s000001\"]",
                 "\"origin\":\"SOURCE\",\"sourceSegmentIds\":[]"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"applicationTips", "recommendedTools", "examples"})
+    void detailEvidenceMustBelongToItsSection(String field) {
+        String item = field.equals("recommendedTools")
+                ? "{\"name\":\"도구\",\"reason\":\"다른 구간의 설명\",\"origin\":\"SOURCE\",\"sourceSegmentIds\":[\"s000002\"]}"
+                : "{\"text\":\"다른 구간의 설명\",\"origin\":\"SOURCE\",\"sourceSegmentIds\":[\"s000002\"]}";
+        rejects(firstSectionOnly().replace("\"" + field + "\":[]", "\"" + field + "\":[" + item + "]"));
+    }
+
+    @Test void wholeVideoSummaryCanStillReferenceAnotherSection() {
+        String json = firstSectionOnly().replaceFirst("\\[\"s000001\"\\]", "[\"s000002\"]");
+        assertThatCode(() -> validate(json)).doesNotThrowAnyException();
+    }
+
+    private String firstSectionOnly() {
+        return VALID.replace("\"endSegmentId\":\"s000002\"", "\"endSegmentId\":\"s000001\"")
+                .replace("\"sourceSegmentIds\":[\"s000001\",\"s000002\"]", "\"sourceSegmentIds\":[\"s000001\"]");
     }
 
     private ResultDocument validate(String json) {

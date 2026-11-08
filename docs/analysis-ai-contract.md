@@ -20,7 +20,7 @@ GCS 자막 → CaptionParser → s000001, s000002 …
 | `detail` | takeaway, explanation, applicationTips, recommendedTools, usageKeywords, examples |
 | `mindmap` | rootTitle, 비어 있지 않은 sectionKeys |
 | 문장·추천 도구의 `origin` | SOURCE 또는 AI_SUGGESTION. SOURCE는 입력 자막 근거가 필요 |
-| 원문 참조 | 존재하는 자막 ID만 허용. 구간의 시작·끝 순서와 구간 밖 참조를 확인 |
+| 원문 참조 | 존재하는 자막 ID만 허용. 구간의 시작·끝 순서와 구간 밖 참조를 확인. 상세의 팁·도구·예시도 자기 주제 구간의 자막만 참조 |
 
 전체 필드 타입은 `worker/analysis/output/AnalysisOutput.java`, 저장 형식은 `ResultDocument.java`를 따른다. 구조 필드는 생략하거나 null로 보내지 않으며 해당 항목이 없으면 빈 배열을 사용한다. sections와 마인드맵 주제는 비어 있을 수 없다.
 
