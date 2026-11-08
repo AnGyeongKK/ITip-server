@@ -59,7 +59,7 @@ fix: 분석 실패 상태가 조회되지 않는 오류 수정 (#18)
 ## DB 구조 변경
 
 - DB 구조 변경 SQL과 Flyway 마이그레이션은 관련 코드와 같은 PR에 포함해 Git으로 버전 관리한다.
-- 현재 단일 앱의 마이그레이션 경로는 `ITip/src/main/resources/db/migration/`이다. 멀티모듈 전환 시 실행 앱별 적용 경로와 마이그레이션 실행 주체를 정한다.
+- 공유 마이그레이션 경로와 실행 주체는 [아키텍처 규칙](architecture.md)의 Flyway 절을 따른다. 현재 경로는 `ITip/libs/domain/src/main/resources/db/migration/`이며 API가 적용하고 Worker는 검증만 한다.
 - 파일명은 `V1__create_records.sql`, `V2__add_summary.sql`처럼 `V버전__설명.sql` 형식을 사용한다. 버전과 설명 사이에는 밑줄 두 개를 쓴다.
 - 공유 DB에 적용한 버전 파일은 수정하거나 삭제하지 않고 새 버전 파일로 변경을 추가한다. 병합 전 최신 `dev`와 버전 번호 중복·적용 순서를 확인한다.
 - PR에는 스키마 변경 내용과 로컬 또는 CI의 별도 테스트 DB에서 확인한 적용 결과를 적는다. 운영 DB에 검증용으로 적용하지 않는다.

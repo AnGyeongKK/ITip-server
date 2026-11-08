@@ -10,7 +10,7 @@
 
 ## 폴더 구조와 실행 경계
 
-API·Worker와 `common`·`domain`은 Gradle 멀티모듈로 구성한다. Chat 앱은 채팅 기능 구현 시 추가한다. 아래 Chat·Dockerfile 항목은 목표 구조이며, 실제 생성 여부는 파일과 Gradle task로 확인한다.
+API·Worker와 `common`·`domain`은 Gradle 멀티모듈로 구성하며 API·Worker는 각각 Dockerfile을 사용한다. 아래 Chat 앱은 채팅 기능 구현 시 추가할 목표 구조다. 실제 실행 파일은 Gradle task와 Docker 빌드로 확인한다.
 
 ```text
 gkk/

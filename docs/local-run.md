@@ -31,6 +31,48 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 스키마는 Flyway가 생성·변경하고 두 앱은 `ddl-auto=validate`로 검사한다. Worker는 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
+영상 분석을 완료하려면 GCS 인증과 **`ChatModel`·`EmbeddingModel` Bean**이 필요하다. 현재 저장소는 공급자 공통 Spring AI 어댑터까지 포함하며 특정 공급자 starter·모델·API 키 자동 설정은 포함하지 않는다. AI 파트와 공급자·모델을 정한 뒤 Worker에 두 Bean과 HTTP 타임아웃·SDK 재시도 1회를 설정한다. 키 환경변수만 추가해도 모델 Bean이 생성되는 구조는 아니다. 설정 전에도 앱·DB 조회는 시작되지만 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. Python 채팅 서버 연동은 별도 기능이다.
+
+자막·AI 출력 JSON, 환경변수, 단계별 재시도와 함수 흐름은 [분석 Worker 안내](analysis-worker.md)를 따른다. Worker는 기본 2초마다 작업을 조회한다. `WORKER_SCHEDULING_ENABLED=false`는 수동 점검용이며 시연에서는 기본값 `true`로 실행한다.
+
+## API·Worker를 별도 컨테이너로 실행
+
+`ITip/`를 Docker 빌드 컨텍스트로 사용한다. 각 Dockerfile은 Java 21 JRE와 해당 앱의 실행 JAR만 포함하며 root 사용자로 실행하지 않는다. `.dockerignore`는 JAR·Dockerfile만 허용하므로 소스·환경변수 파일·인증 파일은 빌드 컨텍스트에 보내지 않는다.
+
+```sh
+./gradlew :apps:api-app:bootJar :apps:worker-app:bootJar
+docker build -f apps/api-app/Dockerfile -t itip-api:local .
+docker build -f apps/worker-app/Dockerfile -t itip-worker:local .
+
+docker compose up -d db
+docker run --rm --name itip-api --network itip-local_default \
+  --publish 127.0.0.1:8080:8080 \
+  --env DB_PASSWORD --env DB_USER \
+  --env DB_URL="jdbc:postgresql://db:5432/${DB_NAME:-itip}" \
+  itip-api:local
+```
+
+API가 시작되고 Flyway 적용이 끝나면 다른 터미널에서 Worker를 실행한다. 같은 Docker 네트워크에서는 DB 주소가 `db:5432`이며 호스트의 `localhost:15432`와 다르다.
+
+```sh
+docker run --rm --name itip-worker --network itip-local_default \
+  --publish 127.0.0.1:8081:8081 \
+  --env DB_PASSWORD --env DB_USER \
+  --env DB_URL="jdbc:postgresql://db:5432/${DB_NAME:-itip}" \
+  itip-worker:local
+```
+
+코드를 수정하면 `bootJar`와 두 이미지 빌드를 다시 실행한다. 실행 JAR 이름이 바뀌면 `--build-arg JAR_FILE=...`로 해당 경로를 전달한다.
+
+Docker Hub 인증 문제로 기본 이미지를 받지 못할 때에는 공식 이미지의 공개 미러를 빌드 인수로 지정할 수 있다.
+
+```sh
+docker build -f apps/api-app/Dockerfile -t itip-api:local \
+  --build-arg JAVA_IMAGE=public.ecr.aws/docker/library/eclipse-temurin:21-jre .
+```
+
+GCS 인증은 이미지에 넣지 않는다. 기존 로컬 인증 파일을 읽기 전용으로 마운트하고 컨테이너의 `GOOGLE_APPLICATION_CREDENTIALS`가 그 경로를 가리키게 설정한다. 파일 소유권 때문에 읽지 못하면 로컬 사용자 UID/GID로 실행하는 방식을 사용한다. 실제 인증 파일·환경변수 파일을 저장소나 팀 채팅으로 공유하지 않는다.
+
 ## 테스트
 
 ```sh
