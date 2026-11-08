@@ -17,7 +17,6 @@ public interface AnalysisJobRepository extends JpaRepository<AnalysisJob, UUID> 
             String ownerId, UUID analysisId, JobStatus status);
     Optional<AnalysisJob> findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(
             String ownerId, String videoId, Collection<JobStatus> statuses);
-    List<AnalysisJob> findAllByBatchId(UUID batchId);
     List<AnalysisJob> findAllByOwnerIdAndVideoIdInAndStatusIn(String ownerId, Collection<String> videoIds,
                                                            Collection<JobStatus> statuses);
 
