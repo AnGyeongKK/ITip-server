@@ -28,8 +28,12 @@
 | [85598e5](https://github.com/AnGyeongKK/ITip-server/commit/85598e5) | PASS | 실행 흐름·heartbeat·lease·단계 재사용·실패/로그. Worker 시나리오 31개, 전체 186개 성공. |
 | [b4f1f16](https://github.com/AnGyeongKK/ITip-server/commit/b4f1f16) | PASS | Docker 빌드·비root 실행·컨텍스트 제외·독립 시작 순서. 최신 이미지/임시 DB 실행 확인. |
 | [f2db5b3](https://github.com/AnGyeongKK/ITip-server/commit/f2db5b3) | PASS | 리뷰 기록의 SHA 21개·문서 링크·XML 수치와 미확인 범위 일치 확인. |
+| [df15773](https://github.com/AnGyeongKK/ITip-server/commit/df15773) | PASS | 호출 구조의 구현/설계 구분·함수·링크·외부 연동 미확인 표시 확인. |
+| [8e74421](https://github.com/AnGyeongKK/ITip-server/commit/8e74421) | PASS | PR 전체·과한 추상화·읽기 전용 검토 지침과 AGENTS 연결 확인. |
+| [03ec766](https://github.com/AnGyeongKK/ITip-server/commit/03ec766) | PASS | 호출자 없는 Repository 조회 2개 제거. 실제 배치 조회·만료 쿼리 유지. |
+| [1503b06](https://github.com/AnGyeongKK/ITip-server/commit/1503b06) | PASS | 중복 만료 구현을 제거하고 실제 DB 테스트로 같은 계약과 정리 필드 검증 통합. |
 
-## 최종 검증
+## 최초 구현 검증
 
 - 전체 소스 추가 검토: API 접수·재시도, 잠금·lease/runToken, Worker 완료 저장, 자막·AI 응답 검증, GCS와 V2/V3 SQL에서 추가 차단 결함을 찾지 못했다.
 - `Code review: skipped (ce-code-review unavailable)` — 전체 리뷰 절차를 시도했지만 현재 실행 지침상 독립 merge/report 단계를 실행할 수 없어 완료 receipt를 얻지 못했다. 이 결과를 완료 리뷰로 계산하지 않는다. 위 커밋별 독립 리뷰와 전체 소스 수동 검토가 실제 수행 범위다. 실행 ID: `20261108-105848-792f1ad8`.
@@ -40,6 +44,24 @@
 - `git diff --check`, 민감 파일 추적 제외, 변경 소스의 키 패턴 검사 통과. 이 검사는 모든 종류의 비밀값 탐지를 보장하지 않는다.
 - `a058ff5` 본문 테스트 수 8개는 오기이며 실제 성공 수는 **7개**다.
 - [Draft PR #10](https://github.com/AnGyeongKK/ITip-server/pull/10) 생성 후 [API 호출 구조](yousum-api-pipelines.html)에 실제 함수·PR·커밋을 연결했다. API 선택 38개·폭/테마 배치 60조합을 브라우저로 확인했으며 실행 오류·가로 넘침이 없었다. 후속 설계 32개는 이번 구현으로 표시하지 않는다.
+
+## PR #10 전체 리뷰와 수정
+
+- 초기 검토 범위: base `d139f8e` → head `df15773`. 사용자 미커밋 변경이 없는 임시 복사본에서 검토했다.
+- 전용 [PR 리뷰 에이전트](../.agents/reviewers/pr-reviewer.md): 전체 변경과 API → DB → Worker 흐름, 상태·재시도·SQL·테스트·문서·HTML, 불필요한 구현을 검토했다. 기능 차단 결함은 발견하지 못했고 미사용 조회 2개 제거를 제안했다.
+- 네이티브 Codex `review --base d139f8e…`: 앱 내장 CLI `0.165.0-alpha.1.2`, 읽기 전용, 종료 코드 0으로 완료했다. 기능·동시성·데이터 손실 결함은 발견하지 못했고 중복 만료 구현 제거를 P3로 제안했다. 세션 ID: `01a1baf3-5045-7403-acb1-fa90a3ec011e`.
+- Homebrew CLI `0.132.0`의 첫 시도는 기본 모델 버전 호환 문제로 실패했다. 완료 리뷰로 계산하지 않았고 전역 CLI·계정 설정을 변경하지 않았다. 최초 CE 절차의 미완료 기록과 이번 네이티브 리뷰 완료를 구분한다.
+
+| 제안 | 반영 | 검증 |
+| --- | --- | --- |
+| P3: 호출자 없는 Repository 조회 2개 | `03ec766`: 두 선언만 제거 | source/test/docs 참조 없음·기존 배치 조회/만료 쿼리 유지 |
+| P3: 테스트 전용 `expireExhaustedLease()`가 실제 SQL과 중복 | `1503b06`: 미사용 구현 제거, 단위 테스트 계약을 기존 실제 DB 테스트로 통합 | 만료 1ms 전 상태/token/기한 유지, 정각 실패·3회 제한·retryable·lease/token/nextAttempt 정리·updatedAt 확인 |
+
+`JobService`/`JobDbService` 분리는 GCS 호출과 DB 트랜잭션을 나누기 위해 유지한다. Worker의 소유권·runToken·저장 검증과 실제 사용 중인 공통 타입도 유지했다. 새 추상화·실행 서비스·외부 의존성은 추가하지 않았다.
+
+수정 후 전용 PR 리뷰 에이전트가 초기 전체 범위와 추가 커밋 `8e74421`, `03ec766`, `1503b06`을 합쳐 확인해 **PASS**로 판정했다. 각 추가 커밋도 별도 커밋 리뷰 **PASS**다.
+
+**현재 검증:** Java 21 `./gradlew test build --no-daemon` 성공. **185 tests**, 실패·오류·skip 0(API 61 / Worker 99 / common 6 / domain 19). 기존 186개 중 만료 계약 테스트 1개를 실제 DB 테스트로 통합했다. 삭제 전에 강화한 `JobQueueTest` 4개가 통과했고, 삭제 후 전체 빌드도 통과했다. 실제 GCS·AI 연결은 계속 미검증이다.
 
 ## 외부 연동 확인 전 조건
 
