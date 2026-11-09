@@ -1,0 +1,14 @@
+plugins { id 'org.springframework.boot' }
+
+dependencies {
+    implementation project(':libs:common')
+    implementation project(':libs:domain')
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.ai:spring-ai-model:2.0.2'
+    implementation 'org.springframework.ai:spring-ai-retry:2.0.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-flyway'
+    testRuntimeOnly 'org.flywaydb:flyway-database-postgresql'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+}

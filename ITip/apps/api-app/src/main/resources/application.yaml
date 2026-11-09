@@ -1,0 +1,14 @@
+spring:
+  config:
+    import: classpath:domain.yaml
+  application:
+    name: itip-api
+  flyway:
+    enabled: true
+
+itip:
+  demo:
+    owner-id: ${DEMO_USER_ID:demo-user}
+  analysis:
+    preparation-ttl: ${ANALYSIS_PREPARATION_TTL:PT30M}
+    next-poll-after-ms: ${ANALYSIS_POLL_AFTER_MS:3000}

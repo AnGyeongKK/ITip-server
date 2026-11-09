@@ -1,0 +1,3108 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://persistent.oaistatic.com/plugins/visualize/; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://persistent.oaistatic.com/plugins/visualize/charts/; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Yousum Api Pipelines.fragment</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+
+</head>
+<body>
+<iframe id="codex-visualization" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Yousum Api Pipelines.fragment" data-srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot; data-visualize-standalone&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://persistent.oaistatic.com/plugins/visualize/; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://persistent.oaistatic.com/plugins/visualize/charts/; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Yousum Api Pipelines.fragment&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 16px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans:
+    -apple-system-body, ui-sans-serif, -apple-system, system-ui, &quot;Segoe UI&quot;,
+    Helvetica, &quot;Apple Color Emoji&quot;, Arial, sans-serif, &quot;Segoe UI Emoji&quot;,
+    &quot;Segoe UI Symbol&quot;;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 8px);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--font-size-base);
+  line-height: calc(var(--font-size-base) * 1.625);
+  font-weight: var(--font-weight-normal);
+}
+
+.cursor-interaction {
+  cursor: var(--cursor-interaction, pointer);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: var(--cursor-interaction, pointer);
+  text-decoration: none;
+  text-underline-offset: 2px;
+  font-weight: inherit;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+.table {
+  font-family: var(--font-sans);
+}
+
+h1 {
+  font-size: calc(var(--font-size-base) * 1.5);
+  line-height: 1.3333333333;
+}
+
+h2 {
+  font-size: calc(var(--font-size-base) * 1.25);
+  line-height: 1.4;
+}
+h3 {
+  font-size: calc(var(--font-size-base) * 1.125);
+  line-height: 1.5555555556;
+}
+h4 {
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+h5,
+h6 {
+  font-size: var(--font-size-base);
+  line-height: calc(var(--font-size-base) * 1.625);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+b,
+strong,
+th {
+  font-weight: 600;
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+pre,
+pre code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: calc(var(--font-size-base) * 0.875);
+  line-height: calc(var(--font-size-base) * 1.625);
+  font-family: var(--font-sans);
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.table :is(th, td):not(:last-child) {
+  padding-inline-end: calc(var(--font-size-base) * 1.5);
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead :is(th, td) {
+  border-bottom-color: var(--border-strong, var(--input));
+  padding-block: calc(var(--font-size-base) / 2);
+  line-height: var(--font-size-base);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+.table tbody :is(th, td) {
+  padding-block: calc(var(--font-size-base) * 0.625);
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 8px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+.widget {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  box-shadow: 0 0 0 0.5px var(--border-strong, var(--border));
+  color: var(--foreground);
+  background: var(--background);
+}
+
+#widget &gt; :not(.card, .widget, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  border: 1px solid var(--border);
+  corner-shape: var(--corner-shape);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-sans);
+  padding: 5px 12px;
+  border-color: color-mix(
+    in oklab,
+    light-dark(var(--primary-foreground), var(--foreground)) 5%,
+    transparent
+  );
+  border-radius: var(--radius-2xl);
+  color: light-dark(var(--primary-foreground), var(--foreground));
+  background: light-dark(var(--foreground), var(--popover));
+  box-shadow: 0 8px 18px rgb(15 23 42 / 20%);
+  letter-spacing: -0.15px;
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: color-mix(in srgb, var(--foreground) 40%, var(--muted-foreground));
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  font-family: var(--font-sans);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 1;
+}
+
+small,
+.text-small {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+/* Match inline alignment without overriding a containing flex or grid layout. */
+.btn,
+.nav-link,
+.form-control,
+.form-select,
+.form-range,
+.form-check {
+  vertical-align: middle;
+}
+
+.btn,
+.nav-link {
+  --btn-size: calc(12px + 2 * var(--control-spacing, 12px));
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  corner-shape: var(--corner-shape);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: inherit;
+  font-family: var(--font-sans);
+  height: fit-content;
+  min-height: var(--btn-size);
+  padding-inline: var(--control-spacing, 12px);
+  border-color: transparent;
+  border-radius: var(--radius-full);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+}
+
+.btn {
+  border-color: var(--border);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+}
+
+/* Codex Button size=&quot;compact&quot;; appearance stays with the button variant. */
+.btn-sm {
+  --btn-size: 24px;
+  padding-inline: 8px;
+  font-size: calc(var(--font-size-base) * 12 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 12 / 16), 1px);
+  line-height: 16px;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: var(--cursor-interaction, pointer);
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.nav-link:not(:disabled):not([aria-disabled=&quot;true&quot;]):hover {
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.btn-primary {
+  border-color: var(--border);
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: border-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: border-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--muted-foreground);
+  background: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+/* Shared preview chrome; product styles stay inside each variant. */
+.viz-dotted-background {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--foreground) 14%, transparent) 0.8px,
+    transparent 0.8px
+  );
+  background-position: center;
+  background-size: 16px 16px;
+}
+
+.viz-carousel {
+  position: relative;
+  min-width: 0;
+}
+
+.viz-carousel:has(&gt; .viz-carousel-controls) {
+  min-height: calc(60px + var(--viz-carousel-picker-height, 0px));
+  padding-bottom: 60px;
+}
+
+.viz-carousel &gt; [data-variant][hidden] {
+  display: none !important;
+}
+
+.viz-carousel &gt; [data-variant] {
+  isolation: isolate;
+}
+
+.viz-carousel-controls {
+  --viz-carousel-hover: light-dark(
+    color-mix(in srgb, var(--foreground) 5.4%, transparent),
+    color-mix(in srgb, var(--foreground) 7.8%, transparent)
+  );
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  /* Leave room for the host&#x27;s design-controls launcher at the trailing edge. */
+  max-width: calc(100% - 96px);
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+  /* Match the settings dropdown chrome independently of the content font size. */
+  font-size: 13px;
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+  transform: translateX(-50%);
+  user-select: none;
+}
+
+/* Keep authored mockup button styles out of the shared carousel chrome. */
+.viz-carousel-controls button,
+.viz-carousel-picker &gt; summary {
+  display: flex !important;
+  height: auto !important;
+  min-height: 30px;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px;
+  padding: 0 6px !important;
+  -webkit-app-region: no-drag;
+  border: 0 !important;
+  border-radius: 14px !important;
+  color: inherit !important;
+  background: transparent !important;
+  font: inherit !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.viz-carousel-controls &gt; button,
+.viz-carousel-picker &gt; summary {
+  position: relative;
+  isolation: isolate;
+}
+
+.viz-carousel-controls &gt; button {
+  --icon-size: 16px;
+  width: 30px !important;
+  padding: 0 !important;
+}
+
+.viz-carousel-picker &gt; summary {
+  padding-inline: 12px !important;
+}
+
+.viz-carousel-controls .viz-carousel-caret {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin: 0;
+  color: inherit;
+  transform: rotate(180deg);
+}
+
+.viz-carousel-controls &gt; button &gt; svg,
+.viz-carousel-controls .viz-carousel-caret,
+.viz-carousel-count {
+  opacity: 0.5;
+}
+
+.viz-carousel-controls &gt; button::before,
+.viz-carousel-picker &gt; summary::before {
+  position: absolute;
+  z-index: -1;
+  inset: 3px;
+  border-radius: 12px;
+  content: &quot;&quot;;
+  pointer-events: none;
+}
+
+.viz-carousel-controls &gt; button:hover::before,
+.viz-carousel-picker &gt; summary:hover::before {
+  background: var(--viz-carousel-hover);
+}
+
+.viz-carousel-controls &gt; button,
+.viz-carousel-controls [data-lucide],
+.viz-carousel-controls .lucide {
+  flex-shrink: 0;
+}
+
+.viz-carousel-picker {
+  min-width: 0;
+}
+
+.viz-carousel-picker &gt; summary {
+  min-width: 0;
+  list-style: none;
+}
+
+.viz-carousel-picker &gt; summary::-webkit-details-marker {
+  display: none;
+}
+
+.viz-carousel-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.viz-carousel-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viz-carousel-options {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  max-height: 240px;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 4px 12px light-dark(rgb(0 0 0 / 6%), rgb(0 0 0 / 25%));
+}
+
+.viz-carousel-options &gt; button {
+  border-radius: max(0px, calc(var(--radius-lg) - 5px)) !important;
+  width: 100% !important;
+  min-height: 28px;
+  justify-content: flex-start !important;
+  padding: 4px 8px !important;
+  font-size: var(--font-size-small) !important;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.viz-carousel-options &gt; [aria-current=&quot;true&quot;],
+.viz-carousel-options &gt; button:hover {
+  background: var(--viz-carousel-hover) !important;
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled=&quot;true&quot;] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  padding-inline: calc(4px + var(--control-spacing, 12px) / 2);
+  border-color: var(--input);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--popover) 96%, transparent);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.4285714286;
+}
+.form-control:is(
+  [type=&quot;file&quot;],
+  [type=&quot;date&quot;],
+  [type=&quot;datetime-local&quot;],
+  [type=&quot;month&quot;],
+  [type=&quot;week&quot;],
+  [type=&quot;color&quot;]
+) {
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  line-height: 18px;
+}
+.form-control:is(
+  [type=&quot;date&quot;],
+  [type=&quot;datetime-local&quot;],
+  [type=&quot;month&quot;],
+  [type=&quot;week&quot;]
+) {
+  padding-inline: var(--control-spacing, 12px);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+  padding: 0;
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+  min-height: calc(10px + 2 * var(--control-spacing, 12px));
+  padding-inline: var(--control-spacing, 12px);
+  margin-inline-end: var(--control-spacing, 12px);
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  resize: vertical;
+  min-height: 96px;
+  padding: 8px 10px;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: none;
+}
+.form-control:disabled {
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  opacity: 1;
+}
+.form-control[aria-invalid=&quot;true&quot;] {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 20%, transparent);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: fit-content;
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  margin: 0;
+  /* The secondary icon role is 14px at compact density and 16px at web density. */
+  --icon-size: calc(10px + var(--control-spacing, 12px) / 2);
+  /* Settings dropdowns retain a 12px inset and a 4px text-to-chevron gap. */
+  padding: 0 calc(16px + var(--icon-size)) 0 12px;
+  outline: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.6px),
+      var(--muted-foreground) calc(50% - 0.6px) calc(50% + 0.6px),
+      transparent calc(50% + 0.6px)
+    ),
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 0.6px),
+      var(--muted-foreground) calc(50% - 0.6px) calc(50% + 0.6px),
+      transparent calc(50% + 0.6px)
+    );
+  background-position:
+    calc(100% - 12px - var(--icon-size) / 2) 50%,
+    calc(100% - 12px - var(--icon-size) * 0.18) 50%;
+  background-repeat: no-repeat;
+  background-size: calc(var(--icon-size) * 0.32) calc(var(--icon-size) * 0.32);
+  cursor: var(--cursor-interaction, default);
+  font-size: calc(var(--font-size-base) * 14 / 16);
+  font-size: round(nearest, calc(var(--font-size-base) * 14 / 16), 1px);
+  font-weight: var(--font-weight-normal);
+  line-height: 18px;
+}
+
+.form-select :is(option, optgroup) {
+  color: var(--popover-foreground);
+  background-color: var(--popover);
+}
+
+.form-select :is(option, optgroup):disabled {
+  color: var(--muted-foreground);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: light-dark(
+    color-mix(in srgb, var(--foreground) 5.5%, transparent),
+    color-mix(in srgb, var(--foreground) 8%, transparent)
+  );
+}
+
+.form-select:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.form-select:disabled {
+  opacity: 0.4;
+}
+
+.form-check {
+  display: flex;
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  corner-shape: round;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  width: calc(10px + var(--control-spacing, 12px) / 2);
+  height: calc(10px + var(--control-spacing, 12px) / 2);
+  border-color: var(--border-strong, var(--input));
+  border-radius: calc(var(--radius-sm) / 2);
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:is(:checked, :indeterminate) {
+  border-color: var(--border-strong, var(--input));
+  background-color: color-mix(in srgb, var(--popover) 96%, transparent);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+  background-color: var(--foreground);
+}
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:indeterminate::before {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 65%;
+  height: 6.65%;
+  margin: auto;
+  border-radius: var(--radius-full);
+  background: var(--foreground);
+  mask: none;
+  content: &quot;&quot;;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  border-radius: var(--radius-full);
+  width: 16px;
+  height: 16px;
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--input);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 0;
+  background: radial-gradient(
+    circle,
+    var(--primary-foreground) 0 3px,
+    var(--foreground) 3px
+  );
+  box-shadow: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:focus-visible {
+  border-color: var(--ring);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+.form-check:not(.form-switch) .form-check-input[type=&quot;radio&quot;]:disabled,
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;radio&quot;]:disabled
+  + .form-check-label {
+  opacity: 0.5;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  border-color: #fff;
+  background: #fff;
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--blue);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+  outline: none;
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  accent-color: var(--primary);
+  height: calc(12px + 2 * var(--control-spacing, 12px));
+  min-height: calc(12px + 2 * var(--control-spacing, 12px));
+  outline: none;
+  border-radius: var(--radius-full);
+  color: var(--foreground);
+  background: transparent;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  background: var(--form-range-track, var(--border));
+  height: 2px;
+  border-radius: var(--radius-full);
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  margin-top: -9px;
+  border-color: transparent;
+  background: currentColor;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Outline the native track and thumb, preserving the larger input hit area. */
+.form-range:focus-visible::-webkit-slider-runnable-track {
+  outline: 2px auto Highlight;
+  outline-color: -webkit-focus-ring-color;
+}
+
+.form-range::-moz-range-track {
+  background: var(--form-range-track, var(--border));
+  height: 2px;
+  border-radius: var(--radius-full);
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  border-color: transparent;
+  background: currentColor;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+.form-range:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--blue);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.viz-carousel-controls :is(button, summary):focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px !important;
+}
+
+/* Web recipes are the default, including on renderers without inline style queries. */
+@supports (border-radius: if(style(--corner-shape: round): 1px; else: 2px)) {
+  /* Match the host&#x27;s proportional text-sm scale at every text preference. */
+  .tooltip,
+  .viz-badge,
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    font-size: if(
+      style(--corner-shape: round): round(
+          nearest,
+          calc(var(--font-size-base) * 14 / 16),
+          1px
+        );
+        else: round(nearest, calc(var(--font-size-base) * 13 / 14), 1px)
+    );
+  }
+
+  .btn-sm {
+    font-size: if(
+      style(--corner-shape: round): round(
+          nearest,
+          calc(var(--font-size-base) * 12 / 16),
+          1px
+        );
+        else: round(nearest, calc(var(--font-size-base) * 12 / 14), 1px)
+    );
+  }
+
+  .btn,
+  .nav-link,
+  .form-select {
+    border-radius: if(
+      style(--corner-shape: round): var(--radius-full); else: var(--radius-lg)
+    );
+  }
+
+  .form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+    border-radius: if(
+      style(--corner-shape: round): calc(var(--radius-sm) / 2);
+        else: calc(var(--radius-lg) * 0.4)
+    );
+  }
+
+  .tooltip {
+    font-weight: if(
+      style(--corner-shape: round): 600; else: var(--font-weight-normal)
+    );
+  }
+}
+
+@media (pointer: coarse) {
+  .viz-carousel:has(&gt; .viz-carousel-controls) {
+    min-height: calc(76px + var(--viz-carousel-picker-height, 0px));
+    padding-bottom: 76px;
+  }
+
+  .btn,
+  .nav-link,
+  .viz-carousel-controls button,
+  .viz-carousel-picker &gt; summary,
+  .form-control,
+  .form-select {
+    --btn-size: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, calc(var(--font-size-base) * 14 / 16));
+    font-size: max(
+      16px,
+      round(nearest, calc(var(--font-size-base) * 14 / 16), 1px)
+    );
+  }
+  .form-control:is(
+    [type=&quot;file&quot;],
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;week&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;color&quot;]
+  ) {
+    height: 44px;
+    min-height: 44px;
+    font-size: max(16px, calc(var(--font-size-base) * 14 / 16));
+    font-size: max(
+      16px,
+      round(nearest, calc(var(--font-size-base) * 14 / 16), 1px)
+    );
+  }
+
+  .form-control[type=&quot;file&quot;]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type=&quot;color&quot;] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type=&quot;date&quot;],
+    [type=&quot;datetime-local&quot;],
+    [type=&quot;month&quot;],
+    [type=&quot;time&quot;],
+    [type=&quot;week&quot;]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: &quot;&quot;;
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;script type=&quot;application/json&quot; id=&quot;codex-visualization-widget-state&quot;&gt;__CODEX_VISUALIZATION_WIDGET_STATE__&lt;/script&gt;
+&lt;script&gt;(() =&gt; {
+  const root = document.documentElement;
+  const mediaQuery = globalThis.matchMedia(&quot;(prefers-color-scheme: dark)&quot;);
+  const apply = Reflect.apply;
+  const isArray = Array.isArray;
+  const hasOwn = Object.hasOwn;
+  const parentWindow = globalThis.parent;
+  const stringify = JSON.stringify;
+  const parse = JSON.parse;
+  const encode = TextEncoder.prototype.encode.bind(new TextEncoder());
+  const initialStateElement = document.getElementById(
+    &quot;codex-visualization-widget-state&quot;,
+  );
+  const initialGlobals = parse(initialStateElement?.textContent ?? &quot;{}&quot;);
+  initialStateElement?.remove();
+  /** @type {Record&lt;string, unknown&gt; | null} */
+  let state = initialGlobals.widgetState ?? null;
+  const statePersistence = initialGlobals.statePersistence ?? &quot;none&quot;;
+  let nextStateRequestId = 0;
+  /** @type {Map&lt;number, { resolve: () =&gt; void; reject: (error: Error) =&gt; void; timeout: ReturnType&lt;typeof globalThis.setTimeout&gt;; serializedState: string }&gt;} */
+  const pendingStateWrites = new Map();
+  const persistenceError = () =&gt;
+    Object.assign(
+      new Error(&quot;The host could not persist the widget state update&quot;),
+      {
+        code: -32000,
+        data: { code: &quot;widget_state_persistence_failed&quot;, retryable: false },
+      },
+    );
+  /**
+   * @param {object} prototype
+   * @param {string} property
+   */
+  const getPrototypeGetter = (prototype, property) =&gt; {
+    // oxlint-disable-next-line typescript/unbound-method -- invoked through captured Reflect.apply
+    const getter = Object.getOwnPropertyDescriptor(prototype, property)?.get;
+    if (getter == null) {
+      throw new Error(`Missing ${property} getter`);
+    }
+    return getter;
+  };
+  const getMessageData = getPrototypeGetter(MessageEvent.prototype, &quot;data&quot;);
+  const getMessagePorts = getPrototypeGetter(MessageEvent.prototype, &quot;ports&quot;);
+  const getMessageSource = getPrototypeGetter(MessageEvent.prototype, &quot;source&quot;);
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const addHostMessageListener = MessagePort.prototype.addEventListener;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const postHostMessage = MessagePort.prototype.postMessage;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const startHostPort = MessagePort.prototype.start;
+  // oxlint-disable-next-line typescript/unbound-method -- captured before the untrusted fragment runs
+  const stopMessagePropagation = Event.prototype.stopImmediatePropagation;
+  /** @type {MessagePort | null} */
+  let hostPort = null;
+  const postToHost = (type, payload) =&gt; {
+    if (hostPort != null) {
+      apply(postHostMessage, hostPort, [{ type, ...payload }]);
+    }
+  };
+  const openExternal = ({ href }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;open-external&quot;, { href });
+    }
+  };
+  const sendFollowUpMessage = ({ context, prompt, title }) =&gt; {
+    if (globalThis.navigator.userActivation?.isActive === true) {
+      postToHost(&quot;follow-up&quot;, { context, prompt, title });
+    }
+    return Promise.resolve();
+  };
+  /**
+   * @param {Record&lt;string, unknown&gt; | ((previous: Record&lt;string, unknown&gt; | null) =&gt; Record&lt;string, unknown&gt;)} next
+   * @returns {Promise&lt;void&gt;}
+   */
+  const setWidgetState = async (next) =&gt; {
+    const nextState = typeof next === &quot;function&quot; ? next(state) : next;
+    if (
+      nextState == null ||
+      typeof nextState !== &quot;object&quot; ||
+      isArray(nextState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const inputState = stringify(
+      nextState,
+      (_key, /** @type {unknown} */ value) =&gt; {
+        if (
+          typeof value === &quot;undefined&quot; ||
+          typeof value === &quot;function&quot; ||
+          typeof value === &quot;symbol&quot; ||
+          (typeof value === &quot;number&quot; &amp;&amp; !Number.isFinite(value))
+        ) {
+          throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+        }
+        return value;
+      },
+    );
+    const parsedState = parse(inputState);
+    if (
+      parsedState == null ||
+      typeof parsedState !== &quot;object&quot; ||
+      isArray(parsedState)
+    ) {
+      throw new TypeError(&quot;Widget state must be a JSON object&quot;);
+    }
+    const storedState = {
+      modelContent: null,
+      privateContent: null,
+      ...parsedState,
+    };
+    const serializedState = stringify(storedState);
+    if (encode(serializedState).length &gt; 16 * 1024) {
+      throw new TypeError(
+        &quot;Widget state must be a JSON object of at most 16 KiB&quot;,
+      );
+    }
+    if (
+      hasOwn(storedState, &quot;imageIds&quot;) &amp;&amp;
+      (!isArray(storedState.imageIds) ||
+        storedState.imageIds.some(
+          (/** @type {unknown} */ id) =&gt; typeof id !== &quot;string&quot;,
+        ))
+    ) {
+      throw new TypeError(&quot;Widget state imageIds must be an array of strings&quot;);
+    }
+    if (storedState.imageIds?.length &gt; 0) {
+      throw Object.assign(
+        new TypeError(&quot;Visualization state does not support image attachments&quot;),
+        { code: -32602, data: { code: &quot;images_unsupported&quot; } },
+      );
+    }
+    state = storedState;
+    globalThis.openai.widgetState = state;
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: { widgetState: state } },
+      }),
+    );
+    if (statePersistence === &quot;none&quot;) {
+      throw persistenceError();
+    }
+    const id = ++nextStateRequestId;
+    return new Promise((resolve, reject) =&gt; {
+      const timeout = globalThis.setTimeout(() =&gt; {
+        pendingStateWrites.delete(id);
+        reject(persistenceError());
+      }, 30_000);
+      pendingStateWrites.set(id, { resolve, reject, timeout, serializedState });
+      postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+    });
+  };
+  const mockElement = document.getElementById(&quot;codex-connector-mocks&quot;);
+  const connectorGlobals = {};
+  if (mockElement != null) {
+    const values = new Map(Object.entries(parse(mockElement.textContent)));
+    mockElement.remove();
+    connectorGlobals.visualizationData = {
+      updates: Array.from(values, ([name, value]) =&gt; ({
+        name,
+        revision: 1,
+        state: &quot;ready&quot;,
+        value: { type: &quot;json&quot;, value },
+      })),
+    };
+    connectorGlobals.visualization = {
+      /** @param {string} name @param {(value: unknown) =&gt; void} callback */
+      onData(name, callback) {
+        if (typeof callback !== &quot;function&quot;) {
+          throw new TypeError(&quot;onData requires a callback&quot;);
+        }
+        try {
+          callback(values.get(name));
+        } catch (error) {
+          // oxlint-disable-next-line no-console -- Keep authored callback failures local.
+          console.error(&quot;Live visualization data callback failed&quot;, error);
+        }
+        // A static preview delivers the current fixture once per subscription.
+        return () =&gt; {};
+      },
+    };
+  }
+  const syncTheme = () =&gt; {
+    const theme = mediaQuery.matches ? &quot;dark&quot; : &quot;light&quot;;
+    root.dataset.theme = theme;
+    globalThis.openai = {
+      ...globalThis.openai,
+      ...connectorGlobals,
+      openExternal,
+      sendFollowUpMessage,
+      setWidgetState,
+      theme,
+      visualizationStyleVariables: {},
+      visualizationTheme: theme,
+      widgetState: state,
+      statePersistence,
+      stateModelContext: &quot;none&quot;,
+    };
+    globalThis.dispatchEvent(
+      new CustomEvent(&quot;openai:set_globals&quot;, {
+        detail: { globals: globalThis.openai },
+      }),
+    );
+  };
+  const sendHeight = () =&gt; {
+    postToHost(&quot;height&quot;, {
+      height: Math.ceil(
+        Math.max(
+          document.body.scrollHeight,
+          document.body.getBoundingClientRect().height,
+        ),
+      ),
+    });
+  };
+
+  globalThis.addEventListener(
+    &quot;message&quot;,
+    (event) =&gt; {
+      const data = apply(getMessageData, event, []);
+      const ports = apply(getMessagePorts, event, []);
+      const source = apply(getMessageSource, event, []);
+      if (
+        hostPort != null ||
+        source !== parentWindow ||
+        typeof data !== &quot;object&quot; ||
+        data?.type !== &quot;codex-visualization-initialize&quot; ||
+        !isArray(ports) ||
+        ports.length !== 1
+      ) {
+        return;
+      }
+      apply(stopMessagePropagation, event, []);
+      const nextHostPort = ports[0];
+      try {
+        apply(addHostMessageListener, nextHostPort, [
+          &quot;message&quot;,
+          (event) =&gt; {
+            const data = apply(getMessageData, event, []);
+            if (typeof data === &quot;object&quot; &amp;&amp; data?.type === &quot;measure&quot;) {
+              sendHeight();
+            } else if (
+              typeof data === &quot;object&quot; &amp;&amp;
+              data?.type === &quot;widget-state-result&quot;
+            ) {
+              /** @type {unknown} */
+              const id = data.id;
+              if (typeof id !== &quot;number&quot;) {
+                return;
+              }
+              const pending = pendingStateWrites.get(id);
+              if (pending != null) {
+                pendingStateWrites.delete(id);
+                globalThis.clearTimeout(pending.timeout);
+                if (data.ok === true) {
+                  pending.resolve();
+                } else {
+                  pending.reject(persistenceError());
+                }
+              }
+            }
+          },
+        ]);
+        apply(startHostPort, nextHostPort, []);
+      } catch {
+        return;
+      }
+      hostPort = nextHostPort;
+      for (const [id, { serializedState }] of pendingStateWrites) {
+        postToHost(&quot;widget-state-write&quot;, { id, state: serializedState });
+      }
+      sendHeight();
+    },
+    { capture: true },
+  );
+  document.currentScript?.remove();
+  mediaQuery.addEventListener(&quot;change&quot;, syncTheme);
+  globalThis.addEventListener(&quot;click&quot;, (event) =&gt; {
+    if (event.defaultPrevented) {
+      return;
+    }
+    let element = null;
+    if (event.target instanceof globalThis.Element) {
+      element = event.target;
+    } else if (event.target instanceof globalThis.Node) {
+      element = event.target.parentElement;
+    }
+    const link = element?.closest(&quot;a[href]&quot;);
+    const href = link?.getAttribute(&quot;href&quot;);
+    if (href == null) {
+      return;
+    }
+    if (href.startsWith(&quot;#&quot;)) {
+      let id;
+      try {
+        id = decodeURIComponent(href.slice(1));
+      } catch {
+        return;
+      }
+      const target = id.length === 0 ? root : document.getElementById(id);
+      if (
+        target == null ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      event.preventDefault();
+      postToHost(&quot;scroll-to&quot;, {
+        top: target.getBoundingClientRect().top + globalThis.scrollY,
+      });
+      return;
+    }
+    event.preventDefault();
+    openExternal({ href });
+  });
+  new ResizeObserver(sendHeight).observe(document.body);
+  syncTheme();
+})();
+&lt;/script&gt;
+&lt;div id=&quot;yousum-api-pipelines&quot;&gt;
+  &lt;style&gt;
+    #yousum-api-pipelines { color: var(--foreground); }
+    #yousum-api-pipelines [hidden] { display: none !important; }
+    #yousum-api-pipelines .heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .5); padding-right: 90px; }
+    #yousum-api-pipelines .selectors { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: var(--font-size-base); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .choice { display: grid; gap: calc(var(--font-size-base) * .25); min-width: 0; }
+    #yousum-api-pipelines .endpoint { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .5); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .endpoint code { overflow-wrap: anywhere; min-width: 0; }
+    #yousum-api-pipelines .scope-line { margin-top: calc(var(--font-size-base) * .4); display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .75); }
+    #yousum-api-pipelines .revision, #yousum-api-pipelines .commits { display: flex; flex-wrap: wrap; align-items: baseline; gap: calc(var(--font-size-base) * .75); margin-top: calc(var(--font-size-base) * .5); overflow-wrap: anywhere; }
+    #yousum-api-pipelines .diagram { display: block; width: 100%; margin-top: calc(var(--font-size-base) * .5); }
+    #yousum-api-pipelines .diagram text { fill: var(--foreground); font-weight: 400; }
+    #yousum-api-pipelines .diagram .secondary { fill: var(--muted-foreground); }
+    #yousum-api-pipelines .diagram .silhouette { fill: var(--background); stroke: color-mix(in srgb, var(--foreground) 46%, var(--background)); stroke-width: 1; }
+    #yousum-api-pipelines .diagram .inactive .silhouette { stroke: var(--border); }
+    #yousum-api-pipelines .diagram .inactive text { fill: var(--muted-foreground); }
+    #yousum-api-pipelines .diagram .active-fill { fill: color-mix(in srgb, var(--viz-series-1) 8%, var(--background)); }
+    #yousum-api-pipelines .diagram .background-fill { fill: color-mix(in srgb, var(--viz-series-2) 9%, var(--background)); }
+    #yousum-api-pipelines .diagram .rule { fill: none; stroke: color-mix(in srgb, var(--foreground) 20%, var(--background)); stroke-width: 1; }
+    #yousum-api-pipelines .diagram .edge { fill: none; stroke: var(--viz-series-1); stroke-width: 1.6; }
+    #yousum-api-pipelines .diagram .edge.background { stroke: var(--viz-series-2); stroke-dasharray: 6 4; }
+    #yousum-api-pipelines .diagram .edge.pending { stroke: var(--muted-foreground); stroke-dasharray: 2 4; }
+    #yousum-api-pipelines .legend { display: flex; flex-wrap: wrap; gap: var(--font-size-base); margin-top: calc(var(--font-size-base) * .25); }
+    #yousum-api-pipelines .legend-item { display: inline-flex; align-items: center; gap: calc(var(--font-size-base) * .4); }
+    #yousum-api-pipelines .legend-line { display: inline-block; width: 24px; border-top: 2px solid var(--viz-series-1); }
+    #yousum-api-pipelines .legend-line.background { border-color: var(--viz-series-2); border-top-style: dashed; }
+    #yousum-api-pipelines .legend-line.pending { border-color: var(--muted-foreground); border-top-style: dotted; }
+    #yousum-api-pipelines .io { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: calc(var(--font-size-base) * .3) calc(var(--font-size-base) * .5); margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .io code { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .steps-title { margin-top: var(--font-size-base); }
+    #yousum-api-pipelines .steps { list-style: none; padding: 0; margin: calc(var(--font-size-base) * .5) 0 0; }
+    #yousum-api-pipelines .step { display: grid; grid-template-columns: 26px 88px minmax(0, 1fr) 68px; gap: calc(var(--font-size-base) * .5); align-items: baseline; position: relative; padding: calc(var(--font-size-base) * .5) 0; }
+    #yousum-api-pipelines .step-index { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+    #yousum-api-pipelines .step:not(:last-child) .step-index::after { content: &#x27;↓&#x27;; display: block; color: var(--muted-foreground); }
+    #yousum-api-pipelines .step[data-phase=&quot;background&quot;] .step-index::after { color: var(--viz-series-2); }
+    #yousum-api-pipelines .step-actor { color: var(--muted-foreground); }
+    #yousum-api-pipelines .step-content { display: grid; gap: calc(var(--font-size-base) * .2); min-width: 0; }
+    #yousum-api-pipelines .step-content code, #yousum-api-pipelines .route-row code { display: block; white-space: normal; overflow-wrap: anywhere; }
+    #yousum-api-pipelines .step-content a, #yousum-api-pipelines .route-content a { min-width: 0; }
+    #yousum-api-pipelines .step-tx { white-space: nowrap; color: var(--muted-foreground); }
+    #yousum-api-pipelines .step-note { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .boundary { border-top: 1px solid var(--border); padding-top: calc(var(--font-size-base) * .65); margin-top: calc(var(--font-size-base) * .65); overflow-wrap: anywhere; }
+    #yousum-api-pipelines .mobile-route { display: none; }
+    #yousum-api-pipelines .mobile-route .route-row { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: calc(var(--font-size-base) * .5); padding: calc(var(--font-size-base) * .5) 0; }
+    #yousum-api-pipelines .route-row code { overflow-wrap: anywhere; }
+    #yousum-api-pipelines .route-content { display: grid; gap: calc(var(--font-size-base) * .2); }
+    #yousum-api-pipelines .route-arrow { color: var(--viz-series-1); }
+    #yousum-api-pipelines .route-row[data-phase=&quot;background&quot;] .route-arrow { color: var(--viz-series-2); }
+    #yousum-api-pipelines .route-row[data-phase=&quot;pending&quot;] .route-arrow { color: var(--muted-foreground); }
+    #yousum-api-pipelines .mobile-other { color: var(--muted-foreground); margin-top: calc(var(--font-size-base) * .5); }
+    @media (max-width: 679px) {
+      #yousum-api-pipelines .selectors { grid-template-columns: minmax(0, 1fr); gap: calc(var(--font-size-base) * .5); }
+      #yousum-api-pipelines .diagram { display: none; }
+      #yousum-api-pipelines .mobile-route { display: block; margin-top: var(--font-size-base); }
+      #yousum-api-pipelines .steps-title, #yousum-api-pipelines .steps { display: none; }
+    }
+  &lt;/style&gt;
+  &lt;div class=&quot;heading&quot;&gt;
+    &lt;h2&gt;API별 서버 처리&lt;/h2&gt;
+    &lt;span class=&quot;text-small text-muted&quot;&gt;구현 14개 · 후속 설계 24개&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/12&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅방·기록 PR #12 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;selectors&quot;&gt;
+    &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;도메인&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;도메인 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
+    &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;API&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;API 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;endpoint&quot;&gt;&lt;span class=&quot;viz-badge method&quot;&gt;&lt;/span&gt;&lt;code class=&quot;endpoint-path&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+  &lt;div class=&quot;scope-line text-small&quot;&gt;&lt;span class=&quot;scope&quot;&gt;&lt;/span&gt;&lt;a class=&quot;source&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Notion 명세 ↗&lt;/a&gt;&lt;/div&gt;
+  &lt;div class=&quot;commits text-small&quot; aria-label=&quot;선택 API 구현 커밋&quot;&gt;&lt;/div&gt;
+  &lt;svg class=&quot;diagram&quot; role=&quot;img&quot; aria-label=&quot;선택한 API의 전체 서버 경로&quot;&gt;&lt;/svg&gt;
+  &lt;div class=&quot;mobile-route&quot; aria-label=&quot;선택한 API의 처리 경로&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;legend text-small&quot;&gt;
+    &lt;span class=&quot;legend-item&quot;&gt;&lt;span class=&quot;legend-line&quot;&gt;&lt;/span&gt;현재 HTTP 요청&lt;/span&gt;
+    &lt;span class=&quot;legend-item&quot;&gt;&lt;span class=&quot;legend-line background&quot;&gt;&lt;/span&gt;별도 Worker 처리&lt;/span&gt;
+    &lt;span class=&quot;legend-item&quot;&gt;&lt;span class=&quot;legend-line pending&quot;&gt;&lt;/span&gt;후속 설계·연동 협의&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class=&quot;io text-small&quot; aria-live=&quot;polite&quot; aria-atomic=&quot;true&quot;&gt;&lt;span class=&quot;text-muted&quot;&gt;입력&lt;/span&gt;&lt;code class=&quot;input&quot;&gt;&lt;/code&gt;&lt;span class=&quot;text-muted&quot;&gt;반환&lt;/span&gt;&lt;span class=&quot;output&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+  &lt;h3 class=&quot;steps-title&quot;&gt;핵심 로직&lt;/h3&gt;
+  &lt;ol class=&quot;steps&quot; aria-label=&quot;핵심 함수 처리 순서&quot;&gt;&lt;/ol&gt;
+  &lt;div class=&quot;boundary text-small&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
+  &lt;script&gt;
+  (() =&gt; {
+    const root = document.getElementById(&#x27;yousum-api-pipelines&#x27;);
+    const catalog = [{&quot;id&quot;:&quot;IMPORT-01&quot;,&quot;name&quot;:&quot;YouTube 링크 확인·기존 분석 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/youtube-resources&quot;,&quot;domain&quot;:&quot;02 영상·재생목록 가져오기&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81d4a8b5e8af57a6710f&quot;},{&quot;id&quot;:&quot;IMPORT-02&quot;,&quot;name&quot;:&quot;링크 재생목록 영상 목록 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/youtube-playlists/{playlistId}/items&quot;,&quot;domain&quot;:&quot;02 영상·재생목록 가져오기&quot;,&quot;scope&quot;:&quot;연동 협의&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81f19ff5df851f1257a5&quot;},{&quot;id&quot;:&quot;UPLOAD-01&quot;,&quot;name&quot;:&quot;자막 업로드 URL 발급&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/caption-uploads&quot;,&quot;domain&quot;:&quot;02 영상·재생목록 가져오기&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf818d87d1e1374d528ae0&quot;},{&quot;id&quot;:&quot;UPLOAD-02&quot;,&quot;name&quot;:&quot;GCS 자막 파일 직접 업로드&quot;,&quot;method&quot;:&quot;PUT&quot;,&quot;path&quot;:&quot;{uploadUrl}&quot;,&quot;domain&quot;:&quot;02 영상·재생목록 가져오기&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf81cc9779f9d40de093e4&quot;},{&quot;id&quot;:&quot;UPLOAD-03&quot;,&quot;name&quot;:&quot;자막 업로드 상태 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/caption-uploads/{uploadId}&quot;,&quot;domain&quot;:&quot;02 영상·재생목록 가져오기&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf812eb8f2c91517b92a92&quot;},{&quot;id&quot;:&quot;ANALYSIS-01&quot;,&quot;name&quot;:&quot;업로드 자막 분석 접수&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/analysis-jobs&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81e0bcdfe6f6aa6aef28&quot;},{&quot;id&quot;:&quot;ANALYSIS-02&quot;,&quot;name&quot;:&quot;영상별 분석 상태 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/analysis-jobs/{jobId}&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81be8477c45c330bccab&quot;},{&quot;id&quot;:&quot;ANALYSIS-03&quot;,&quot;name&quot;:&quot;실패한 분석 수동 재시도&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/analysis-jobs/{jobId}/retries&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf810797a1fdc39efe4524&quot;},{&quot;id&quot;:&quot;ANALYSIS-04&quot;,&quot;name&quot;:&quot;분석 결과 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/analyses/{analysisId}&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81b8aeebcea510c56abf&quot;},{&quot;id&quot;:&quot;ANALYSIS-05&quot;,&quot;name&quot;:&quot;구간 상세 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/analyses/{analysisId}/sections/{sectionId}&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8119bad7ff51231eacf8&quot;},{&quot;id&quot;:&quot;ANALYSIS-06&quot;,&quot;name&quot;:&quot;구간 관련 영상 추천 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/analyses/{analysisId}/sections/{sectionId}/recommendations&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81488088c144a56940d0&quot;},{&quot;id&quot;:&quot;ANALYSIS-07&quot;,&quot;name&quot;:&quot;분석 배치 생성·한도 예약&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/analysis-batches&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf81299f61f7e2a3a7d443&quot;},{&quot;id&quot;:&quot;ANALYSIS-08&quot;,&quot;name&quot;:&quot;분석 배치 상태 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/analysis-batches/{batchId}&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf81549020d524063ea046&quot;},{&quot;id&quot;:&quot;ANALYSIS-09&quot;,&quot;name&quot;:&quot;기기 자막 수집 실패 보고&quot;,&quot;method&quot;:&quot;PATCH&quot;,&quot;path&quot;:&quot;/api/v1/analysis-batches/{batchId}/items/{itemId}&quot;,&quot;domain&quot;:&quot;03 영상 분석·결과&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf81febd2bd362ab139f47&quot;},{&quot;id&quot;:&quot;ARCHIVE-02&quot;,&quot;name&quot;:&quot;분석 기록 상세 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/records/{recordId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8133acc7f6a9b60a8154&quot;},{&quot;id&quot;:&quot;ARCHIVE-03&quot;,&quot;name&quot;:&quot;분석 기록 삭제&quot;,&quot;method&quot;:&quot;DELETE&quot;,&quot;path&quot;:&quot;/api/v1/records/{recordId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81778f52d24850731b24&quot;},{&quot;id&quot;:&quot;ARCHIVE-04&quot;,&quot;name&quot;:&quot;마지막 열람 위치 저장&quot;,&quot;method&quot;:&quot;PUT&quot;,&quot;path&quot;:&quot;/api/v1/records/{recordId}/reading-position&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81359778da25e5e2f60e&quot;},{&quot;id&quot;:&quot;ARCHIVE-05&quot;,&quot;name&quot;:&quot;폴더 목록 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/folders&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81c28f6afb98d1fd5630&quot;},{&quot;id&quot;:&quot;ARCHIVE-06&quot;,&quot;name&quot;:&quot;폴더 생성&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/folders&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf811982a0dbcaaa715cdd&quot;},{&quot;id&quot;:&quot;ARCHIVE-07&quot;,&quot;name&quot;:&quot;폴더 상세 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/folders/{folderId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8174a3eae99c9f72dbc8&quot;},{&quot;id&quot;:&quot;ARCHIVE-08&quot;,&quot;name&quot;:&quot;폴더 이름 수정&quot;,&quot;method&quot;:&quot;PATCH&quot;,&quot;path&quot;:&quot;/api/v1/folders/{folderId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81529a0fdec180f1a24c&quot;},{&quot;id&quot;:&quot;ARCHIVE-09&quot;,&quot;name&quot;:&quot;폴더 삭제&quot;,&quot;method&quot;:&quot;DELETE&quot;,&quot;path&quot;:&quot;/api/v1/folders/{folderId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf818f9dc4f534ab15be34&quot;},{&quot;id&quot;:&quot;ARCHIVE-10&quot;,&quot;name&quot;:&quot;폴더에 기록 추가&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/folders/{folderId}/records&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81f99414f8027bccc664&quot;},{&quot;id&quot;:&quot;ARCHIVE-11&quot;,&quot;name&quot;:&quot;폴더에서 기록 제외&quot;,&quot;method&quot;:&quot;DELETE&quot;,&quot;path&quot;:&quot;/api/v1/folders/{folderId}/records/{recordId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8148a5ebe46b0544aec1&quot;},{&quot;id&quot;:&quot;ARCHIVE-12&quot;,&quot;name&quot;:&quot;보관 재생목록 그룹 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/playlist-groups&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;연동 협의&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8140a0bae33859274353&quot;},{&quot;id&quot;:&quot;ARCHIVE-13&quot;,&quot;name&quot;:&quot;보관 재생목록 그룹 상세&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/playlist-groups/{groupId}&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;연동 협의&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81bc8d66e6d8a0ab7dcd&quot;},{&quot;id&quot;:&quot;ARCHIVE-14&quot;,&quot;name&quot;:&quot;홈 화면 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/users/me/home&quot;,&quot;domain&quot;:&quot;04 분석 기록·아카이브&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf8130a115d076c2ad55e8&quot;},{&quot;id&quot;:&quot;SEARCH-01&quot;,&quot;name&quot;:&quot;분석 기록 목록·검색&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/records&quot;,&quot;domain&quot;:&quot;05 검색·탐색&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf817395a0c0109462cd36&quot;},{&quot;id&quot;:&quot;SEARCH-02&quot;,&quot;name&quot;:&quot;필터용 관련 키워드 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/record-keywords&quot;,&quot;domain&quot;:&quot;05 검색·탐색&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81ec9536de068a5c1fbc&quot;},{&quot;id&quot;:&quot;CHAT-01&quot;,&quot;name&quot;:&quot;채팅방 생성&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/conversations&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8193b05fc0e5a0cff597&quot;},{&quot;id&quot;:&quot;CHAT-02&quot;,&quot;name&quot;:&quot;채팅방 목록 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/conversations&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8147b844f57212e12749&quot;},{&quot;id&quot;:&quot;CHAT-03&quot;,&quot;name&quot;:&quot;대화 메시지 목록 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/conversations/{conversationId}/messages&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf8118a678cddeb3f28e54&quot;},{&quot;id&quot;:&quot;CHAT-04&quot;,&quot;name&quot;:&quot;질문 전송·답변 SSE 스트리밍&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;path&quot;:&quot;/api/v1/conversations/{conversationId}/messages&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf81069e84ffd0fd5fd1bc&quot;},{&quot;id&quot;:&quot;CHAT-05&quot;,&quot;name&quot;:&quot;답변 상태·부분 결과 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/conversations/{conversationId}/messages/{messageId}&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40c46c2fafdf814faad2f4e17ebb63f0&quot;},{&quot;id&quot;:&quot;CHAT-06&quot;,&quot;name&quot;:&quot;채팅방 상세·생성 상태 조회&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;path&quot;:&quot;/api/v1/conversations/{conversationId}&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf81549510e53cc081a4b9&quot;},{&quot;id&quot;:&quot;CHAT-07&quot;,&quot;name&quot;:&quot;채팅방 삭제&quot;,&quot;method&quot;:&quot;DELETE&quot;,&quot;path&quot;:&quot;/api/v1/conversations/{conversationId}&quot;,&quot;domain&quot;:&quot;06 AI 질문·대화 기록&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf8169942be7f83279efa8&quot;},{&quot;id&quot;:&quot;PUSH-01&quot;,&quot;name&quot;:&quot;알림 기기 등록·토큰 갱신&quot;,&quot;method&quot;:&quot;PUT&quot;,&quot;path&quot;:&quot;/api/v1/users/me/devices/{installationId}&quot;,&quot;domain&quot;:&quot;08 기기·알림&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf812384d8e6c432468887&quot;},{&quot;id&quot;:&quot;PUSH-02&quot;,&quot;name&quot;:&quot;현재 기기 알림 연결 해제&quot;,&quot;method&quot;:&quot;DELETE&quot;,&quot;path&quot;:&quot;/api/v1/users/me/devices/{installationId}&quot;,&quot;domain&quot;:&quot;08 기기·알림&quot;,&quot;scope&quot;:&quot;MVP&quot;,&quot;source&quot;:&quot;https://app.notion.com/40d46c2fafdf8120b6c8c1d67c2c471d&quot;}];
+    const s = (actor, fn, note, tx = &#x27;TX 밖&#x27;, phase = &#x27;sync&#x27;) =&gt; ({actor, fn, note, tx, phase});
+    const read = (server, fn, data, output, boundary, input) =&gt; ({
+      server, input, output, boundary, edges: [server === &#x27;chat&#x27; ? &#x27;appChat&#x27; : &#x27;appApi&#x27;, server === &#x27;chat&#x27; ? &#x27;chatDb&#x27; : &#x27;apiDb&#x27;],
+      labels: {[server]: &#x27;소유권·조회 조건 확인&#x27;, db: data},
+      steps: [s(server === &#x27;chat&#x27; ? &#x27;Chat&#x27; : &#x27;API&#x27;, fn, &#x27;소유권·조회 조건 확인&#x27;, &#x27;조회 TX&#x27;), s(&#x27;PostgreSQL&#x27;, &#x27;repository.findAsDto()&#x27;, data, &#x27;조회 TX&#x27;), s(server === &#x27;chat&#x27; ? &#x27;Chat&#x27; : &#x27;API&#x27;, &#x27;ApiResponse.ok()&#x27;, output)]
+    });
+    const write = (server, fn, change, output, boundary, input) =&gt; ({
+      server, input, output, boundary, edges: [server === &#x27;chat&#x27; ? &#x27;appChat&#x27; : &#x27;appApi&#x27;, server === &#x27;chat&#x27; ? &#x27;chatDb&#x27; : &#x27;apiDb&#x27;],
+      labels: {[server]: &#x27;소유권·변경 조건 확인&#x27;, db: change},
+      steps: [s(server === &#x27;chat&#x27; ? &#x27;Chat&#x27; : &#x27;API&#x27;, fn, &#x27;소유권·업무 조건 확인&#x27;, &#x27;쓰기 TX&#x27;), s(&#x27;PostgreSQL&#x27;, &#x27;repository.saveOrDelete()&#x27;, change, &#x27;쓰기 TX&#x27;), s(server === &#x27;chat&#x27; ? &#x27;Chat&#x27; : &#x27;API&#x27;, &#x27;commit → response&#x27;, output)]
+    });
+    const flows = {
+      &#x27;IMPORT-01&#x27;: read(&#x27;api&#x27;, &#x27;YouTubeLinkService.resolve()&#x27;, &#x27;videoId로 내 결과·작업 조회&#x27;, &#x27;200 · type / metadata / existing&#x27;, &#x27;URL 정규화·기존 분석 확인만 수행. 자막 수집·분석은 시작하지 않음. 메타데이터 수집 수단은 협의.&#x27;, &#x27;url&#x27;),
+      &#x27;IMPORT-02&#x27;: {...read(&#x27;api&#x27;, &#x27;PlaylistImportService.list()&#x27;, &#x27;후보별 내 기존 분석 연결&#x27;, &#x27;200 · items / nextCursor / hasNext&#x27;, &#x27;서버 API 제공안과 기기 직접 조회 중 선택 필요. 서버 yt-dlp 수집으로 확정한 흐름이 아님.&#x27;, &#x27;playlistId / cursor / limit&#x27;), pending: true, provider: &#x27;YouTube 목록&#x27;, extraPending: [&#x27;apiProvider&#x27;], steps: [s(&#x27;연동 협의&#x27;, &#x27;PlaylistSourcePort.list()&#x27;, &#x27;영상 후보 조회 주체·수단 결정&#x27;, &#x27;TX 밖&#x27;, &#x27;pending&#x27;), s(&#x27;API·DB&#x27;, &#x27;ExistingAnalysisQuery.find()&#x27;, &#x27;영상별 내 기존 결과·작업 매핑&#x27;, &#x27;조회 TX&#x27;), s(&#x27;API&#x27;, &#x27;toPlaylistPage()&#x27;, &#x27;200 · 후보 목록과 다음 커서&#x27;)]},
+      &#x27;UPLOAD-01&#x27;: {server:&#x27;api&#x27;, input:&#x27;batchId / batchItemId / videoId / contentType / sizeBytes&#x27;, output:&#x27;201 · uploadId / uploadUrl / headers / expiresAt&#x27;, edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;업로드 예약·GCS URL 서명&#x27;,db:&#x27;업로드 참조 저장&#x27;}, boundary:&#x27;예약 커밋 후 로컬 또는 IAM 방식으로 URL 서명. 여기서 GCS 객체를 업로드하지 않음. 실제 PUT은 UPLOAD-02.&#x27;, steps:[s(&#x27;API·DB&#x27;,&#x27;UploadReservationService.reserve()&#x27;,&#x27;배치 항목 확인·서버 objectKey 저장&#x27;,&#x27;쓰기 TX&#x27;),s(&#x27;API&#x27;,&#x27;GcsUploadSigner.sign()&#x27;,&#x27;서명 URL 생성 · IAM 호출 여부는 서명 방식에 따름&#x27;),s(&#x27;API&#x27;,&#x27;toUploadResponse()&#x27;,&#x27;201 · 앱이 사용할 업로드 주소&#x27;)]},
+      &#x27;UPLOAD-02&#x27;: {server:&#x27;gcs&#x27;, input:&#x27;발급된 uploadUrl / headers / UTF-8 자막 JSON&#x27;, output:&#x27;GCS 2xx · 본문이 없을 수 있음&#x27;, edges:[&#x27;appGcs&#x27;], labels:{app:&#x27;자막 JSON 직접 PUT&#x27;,gcs:&#x27;자막 객체 저장&#x27;}, boundary:&#x27;Spring·DB를 거치지 않음. GCS 성공 후 앱이 ANALYSIS-01을 별도로 호출. ApiResponse·YouSum 토큰 사용 안 함.&#x27;, steps:[s(&#x27;Android&#x27;,&#x27;PUT uploadUrl&#x27;,&#x27;발급받은 헤더·자막 JSON 전송&#x27;),s(&#x27;GCS&#x27;,&#x27;writeObject()&#x27;,&#x27;서명 검증 후 객체 저장&#x27;),s(&#x27;Android&#x27;,&#x27;onUploadSuccess()&#x27;,&#x27;다음 호출: ANALYSIS-01&#x27;)]},
+      &#x27;UPLOAD-03&#x27;: {...read(&#x27;api&#x27;,&#x27;UploadQueryService.get()&#x27;,&#x27;내 업로드 참조·연결 작업&#x27;,&#x27;200 · status / expiresAt / jobId&#x27;,&#x27;객체 존재는 자막 내용 검증·분석 완료와 다름. 조회로 작업을 생성하지 않음. GCS 확인 방식은 구현 제안.&#x27;,&#x27;uploadId&#x27;),edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;],labels:{api:&#x27;업로드 상태 확인&#x27;,db:&#x27;업로드 참조·작업&#x27;,gcs:&#x27;객체 메타데이터 확인&#x27;},steps:[s(&#x27;API·DB&#x27;,&#x27;UploadQueryService.findOwned()&#x27;,&#x27;소유 업로드·연결 jobId 조회&#x27;,&#x27;조회 TX&#x27;),s(&#x27;API·GCS&#x27;,&#x27;GcsObjectVerifier.head()&#x27;,&#x27;객체 존재·만료 상태 확인&#x27;),s(&#x27;API&#x27;,&#x27;toUploadStatus()&#x27;,&#x27;200 · 상태와 기존 jobId&#x27;)]},
+      &#x27;ANALYSIS-04&#x27;: read(&#x27;api&#x27;,&#x27;AnalysisResultQuery.get()&#x27;,&#x27;완료 결과·구간·키워드&#x27;,&#x27;200 · summary / mindmap / sections / chatReady&#x27;,&#x27;준비 전은 409. 저장된 결과를 읽으며 AI를 다시 호출하지 않음.&#x27;,&#x27;analysisId&#x27;),
+      &#x27;ANALYSIS-05&#x27;: read(&#x27;api&#x27;,&#x27;SectionQueryService.get()&#x27;,&#x27;해당 분석의 구간 상세&#x27;,&#x27;200 · 핵심 / 설명 / 팁 / 도구 / 시간&#x27;,&#x27;analysisId와 sectionId의 소속을 함께 검증. SOURCE와 AI_SUGGESTION을 구분.&#x27;,&#x27;analysisId / sectionId&#x27;),
+      &#x27;ANALYSIS-06&#x27;: {...read(&#x27;api&#x27;,&#x27;RecommendationQuery.get()&#x27;,&#x27;검증된 추천·준비 상태&#x27;,&#x27;200 · READY 또는 PENDING / items&#x27;,&#x27;추천 생성 주체·시점은 협의. GET이 분석 작업을 새로 만들지는 않음. 추천 영상은 아직 내 RAG 근거가 아님.&#x27;,&#x27;analysisId / sectionId&#x27;),pending:true,provider:&#x27;추천 정보 · 협의&#x27;,extraPending:[&#x27;apiProvider&#x27;]},
+      &#x27;ARCHIVE-02&#x27;: read(&#x27;api&#x27;,&#x27;RecordQueryService.get()&#x27;,&#x27;내 기록·폴더 연결·열람 위치&#x27;,&#x27;200 · record / analysis / folders / readingPosition&#x27;,&#x27;완료 시 기록 자동 생성. 조회 때문에 새 기록이나 열람 시각을 저장하지 않음.&#x27;,&#x27;recordId&#x27;),
+      &#x27;ARCHIVE-03&#x27;: write(&#x27;api&#x27;,&#x27;RecordService.delete()&#x27;,&#x27;개인 기록·결과·폴더 연결 삭제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;공유 자막·영상 정보를 함께 지우지 않음. 향후 RAG에서 즉시 제외하고 과거 대화 텍스트는 유지.&#x27;,&#x27;recordId&#x27;),
+      &#x27;ARCHIVE-04&#x27;: write(&#x27;api&#x27;,&#x27;ReadingPositionService.put()&#x27;,&#x27;탭·구간·lastViewedAt 저장&#x27;,&#x27;200 · readingPosition&#x27;,&#x27;tab·sectionId 필수, sectionId:null 허용. positionMs는 복원 정책 확정 전 null. 분석 최신순은 유지.&#x27;,&#x27;recordId / tab / sectionId / positionMs&#x27;),
+      &#x27;ARCHIVE-05&#x27;: read(&#x27;api&#x27;,&#x27;FolderQueryService.list()&#x27;,&#x27;내 폴더·고유 기록 수&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;createdAt·folderId로 커서 조회. 조인 중복으로 기록 수가 부풀지 않게 집계.&#x27;,&#x27;cursor / limit&#x27;),
+      &#x27;ARCHIVE-06&#x27;: write(&#x27;api&#x27;,&#x27;FolderService.create()&#x27;,&#x27;새 폴더 저장&#x27;,&#x27;201 · folderId / name / createdAt&#x27;,&#x27;동일 사용자 동작의 재전송은 같은 멱등 키 사용. 기록을 복제하지 않음.&#x27;,&#x27;name + Idempotency-Key&#x27;),
+      &#x27;ARCHIVE-07&#x27;: read(&#x27;api&#x27;,&#x27;FolderQueryService.get()&#x27;,&#x27;폴더 이름·기록 개수&#x27;,&#x27;200 · folderId / name / recordCount&#x27;,&#x27;폴더 안 실제 기록 목록은 SEARCH-01에 folderId를 전달해 별도 조회.&#x27;,&#x27;folderId&#x27;),
+      &#x27;ARCHIVE-08&#x27;: write(&#x27;api&#x27;,&#x27;FolderService.rename()&#x27;,&#x27;해당 폴더 이름 변경&#x27;,&#x27;200 · 갱신된 폴더&#x27;,&#x27;본인 폴더 확인 후 이름만 변경. 폴더 안 기록·분석은 변경하지 않음.&#x27;,&#x27;folderId / name&#x27;),
+      &#x27;ARCHIVE-09&#x27;: write(&#x27;api&#x27;,&#x27;FolderService.delete()&#x27;,&#x27;폴더·연결 관계 삭제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;원본 기록·분석은 유지. 해당 범위의 기존 대화는 읽을 수 있으며 새 질문 범위는 다시 검증.&#x27;,&#x27;folderId&#x27;),
+      &#x27;ARCHIVE-10&#x27;: write(&#x27;api&#x27;,&#x27;FolderRecordService.add()&#x27;,&#x27;folderId·recordId 연결 저장&#x27;,&#x27;200 · addedRecordIds / alreadyIncludedRecordIds&#x27;,&#x27;전체 기록의 소유권을 먼저 검증. 잘못된 항목은 전체 거절. 연결 UNIQUE로 중복만 제외.&#x27;,&#x27;folderId / recordIds&#x27;),
+      &#x27;ARCHIVE-11&#x27;: write(&#x27;api&#x27;,&#x27;FolderRecordService.remove()&#x27;,&#x27;해당 폴더의 연결 1건 제거&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;원본 기록과 다른 폴더의 연결은 유지.&#x27;,&#x27;folderId / recordId&#x27;),
+      &#x27;ARCHIVE-12&#x27;: {...read(&#x27;api&#x27;,&#x27;PlaylistGroupQuery.list()&#x27;,&#x27;내 보관 재생목록 그룹·개수&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;내부 groupId로 조회. 그룹 생성·합치기·자동 동기화 정책은 협의. YouTube 원본 목록 조회와 구분.&#x27;,&#x27;cursor / limit&#x27;),pending:true},
+      &#x27;ARCHIVE-13&#x27;: {...read(&#x27;api&#x27;,&#x27;PlaylistGroupQuery.get()&#x27;,&#x27;그룹 이름·원본 링크·기록 수&#x27;,&#x27;200 · groupId / playlistId / recordCount&#x27;,&#x27;기록 목록은 SEARCH-01의 playlistGroupId로 조회. 내부 groupId와 YouTube playlistId를 구분.&#x27;,&#x27;groupId&#x27;),pending:true},
+      &#x27;ARCHIVE-14&#x27;: read(&#x27;api&#x27;,&#x27;HomeQueryService.get()&#x27;,&#x27;최근 분석·이어서 볼 구간&#x27;,&#x27;200 · recentAnalyses / continueReading&#x27;,&#x27;피그마 10/23 명세 필드 기준. 이어보기 없으면 null. 조회로 lastViewedAt을 바꾸지 않음.&#x27;,&#x27;별도 본문 없음 · 시연 사용자 문맥&#x27;),
+      &#x27;SEARCH-01&#x27;: read(&#x27;api&#x27;,&#x27;RecordSearchService.search()&#x27;,&#x27;AND 필터·최신순 기록&#x27;,&#x27;200 · items / matchedCount / nextCursor / hasNext&#x27;,&#x27;analyzedAt·recordId 커서, limit+1 조회. 컬렉션 fetch join 페이지네이션 주의. 자막 전체·벡터 검색 아님.&#x27;,&#x27;q / folderId / keywordIds / playlistGroupId / targetFolderId / cursor&#x27;),
+      &#x27;SEARCH-02&#x27;: read(&#x27;api&#x27;,&#x27;RecordKeywordQuery.list()&#x27;,&#x27;현재 범위 키워드·고유 기록 수&#x27;,&#x27;200 · keywords / matchedCount&#x27;,&#x27;SEARCH-01과 같은 필터 의미·집계 기준. RAG 임베딩 유사도 검색 API가 아님.&#x27;,&#x27;q / folderId / keywordIds / playlistGroupId&#x27;),
+      &#x27;CHAT-01&#x27;: write(&#x27;chat&#x27;,&#x27;ConversationService.create()&#x27;,&#x27;검색 범위·채팅방 저장&#x27;,&#x27;201 · conversationId / scope / recordCount&#x27;,&#x27;생성만으로 GPT를 호출하지 않음. 범위 변경은 새 방. 범위 고정·재평가 정책은 협의.&#x27;,&#x27;scope + Idempotency-Key&#x27;),
+      &#x27;CHAT-02&#x27;: read(&#x27;chat&#x27;,&#x27;ConversationQueryService.list()&#x27;,&#x27;내 대화방·최근 활동 정보&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;updatedAt·conversationId 커서. 방 목록 조회는 Python·GPT를 호출하지 않음.&#x27;,&#x27;cursor / limit&#x27;),
+      &#x27;CHAT-03&#x27;: read(&#x27;chat&#x27;,&#x27;MessageQueryService.list()&#x27;,&#x27;저장 메시지·상태·출처&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;오래된 메시지 방향으로 커서 조회하되 items는 과거→최근. clientRequestId 조회와 cursor는 함께 사용하지 않음.&#x27;,&#x27;conversationId / cursor 또는 clientRequestId&#x27;),
+      &#x27;CHAT-04&#x27;: {server:&#x27;chat&#x27;, input:&#x27;conversationId / content / clientRequestId / retryOfMessageId + Idempotency-Key&#x27;, output:&#x27;200 text/event-stream · meta → delta → sources → done&#x27;, edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;,&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;], labels:{chat:&#x27;질문 저장·SSE 중계&#x27;,db:&#x27;허용 기록·대화·벡터&#x27;,python:&#x27;권한 필터 RAG·스트림&#x27;,gpt:&#x27;답변 조각 생성&#x27;}, boundary:&#x27;같은 HTTP 응답으로 스트리밍. 방당 생성 1개·중복 409. 최종 DB 커밋 후 done. Worker·작업큐를 거치지 않음.&#x27;,steps:[s(&#x27;Chat·DB&#x27;,&#x27;ChatRequestService.begin()&#x27;,&#x27;범위·중복·진행 중 검사 → 질문 저장&#x27;,&#x27;쓰기 TX&#x27;),s(&#x27;Chat→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;서버가 확인한 사용자·허용 기록 전달&#x27;),s(&#x27;Python·DB&#x27;,&#x27;RagRetriever.search()&#x27;,&#x27;소유권·삭제 필터 후 chunk 검색&#x27;,&#x27;짧은 조회&#x27;),s(&#x27;Python→GPT&#x27;,&#x27;GptClient.stream()&#x27;,&#x27;근거와 질문으로 토큰 생성&#x27;),s(&#x27;Chat→앱&#x27;,&#x27;ChatEventRelay.onDelta()&#x27;,&#x27;이벤트 조립·SSE 전송·부분 저장&#x27;,&#x27;짧은 저장&#x27;),s(&#x27;Chat·DB&#x27;,&#x27;ChatCompletionService.finish()&#x27;,&#x27;답변·출처 커밋 → done 전송&#x27;,&#x27;쓰기 TX&#x27;)]},
+      &#x27;CHAT-05&#x27;: read(&#x27;chat&#x27;,&#x27;ChatMessageQueryService.get()&#x27;,&#x27;부분·최종 답변과 생성 상태&#x27;,&#x27;200 · content / status / sources / finishReason&#x27;,&#x27;재접속 상태 확인용. 조회로 GPT를 다시 호출하거나 SSE를 재생하지 않음.&#x27;,&#x27;conversationId / messageId&#x27;),
+      &#x27;CHAT-06&#x27;: read(&#x27;chat&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;대화 범위·생성 중 메시지 ID&#x27;,&#x27;200 · scope / generation / activeAssistantMessageId&#x27;,&#x27;생성 중이면 CHAT-05로 상태 조회. 범위가 UNAVAILABLE이어도 기존 대화는 읽을 수 있음.&#x27;,&#x27;conversationId&#x27;),
+      &#x27;CHAT-07&#x27;: write(&#x27;chat&#x27;,&#x27;ConversationService.delete()&#x27;,&#x27;대화방·메시지·출처 삭제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;생성 중인 방 삭제는 409. 분석 기록·폴더·GCS 자막은 유지.&#x27;,&#x27;conversationId&#x27;),
+      &#x27;PUSH-01&#x27;: {...write(&#x27;api&#x27;,&#x27;DeviceService.upsert()&#x27;,&#x27;앱 설치·FCM 토큰 연결&#x27;,&#x27;200 · installationId / notificationPermission&#x27;,&#x27;운영 후속. 데모 분석 완료 표시는 상태 조회 사용. 기기 등록이 FCM 알림 발송을 뜻하지 않음.&#x27;,&#x27;installationId / platform / fcmToken / notificationPermission&#x27;),future:true},
+      &#x27;PUSH-02&#x27;: {...write(&#x27;api&#x27;,&#x27;DeviceService.disconnect()&#x27;,&#x27;해당 설치의 알림 연결 해제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.&#x27;,&#x27;installationId&#x27;),future:true}
+    };
+    const repo = &#x27;https://github.com/AnGyeongKK/ITip-server&#x27;;
+    const implementation = &#x27;f09c8b8&#x27;;
+    const apiSource = &#x27;ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/&#x27;;
+    const workerSource = &#x27;ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/&#x27;;
+    const chatSource = &#x27;ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/conversation/&#x27;;
+    const sourceFiles = {
+      ConversationController: chatSource + &#x27;controller/ConversationController.java&#x27;,
+      ConversationMessageController: chatSource + &#x27;controller/ConversationMessageController.java&#x27;,
+      ConversationService: chatSource + &#x27;service/ConversationService.java&#x27;,
+      ConversationQueryService: chatSource + &#x27;service/ConversationQueryService.java&#x27;,
+      ChatScopeQuery: chatSource + &#x27;service/ChatScopeQuery.java&#x27;,
+      MessageQueryService: chatSource + &#x27;service/MessageQueryService.java&#x27;,
+      AnalysisResultController: apiSource + &#x27;controller/AnalysisResultController.java&#x27;,
+      AnalysisResultQueryService: apiSource + &#x27;service/AnalysisResultQueryService.java&#x27;,
+      AnalysisResultResponse: apiSource + &#x27;dto/response/AnalysisResultResponse.java&#x27;,
+      AnalysisSectionResponse: apiSource + &#x27;dto/response/AnalysisSectionResponse.java&#x27;,
+      AnalysisBatchController: apiSource + &#x27;controller/AnalysisBatchController.java&#x27;,
+      AnalysisBatchService: apiSource + &#x27;service/AnalysisBatchService.java&#x27;,
+      JobController: apiSource + &#x27;controller/JobController.java&#x27;,
+      JobService: apiSource + &#x27;service/JobService.java&#x27;,
+      JobDbService: apiSource + &#x27;service/JobDbService.java&#x27;,
+      AnalysisOwnerLock: &#x27;ITip/libs/domain/src/main/java/com/gkk/itip/domain/analysis/AnalysisOwnerLock.java&#x27;,
+      GcsObjects: &#x27;ITip/libs/common/src/main/java/com/gkk/itip/common/storage/GcsObjects.java&#x27;,
+      AnalysisScheduler: workerSource + &#x27;analysis/AnalysisScheduler.java&#x27;,
+      AnalysisWorker: workerSource + &#x27;analysis/AnalysisWorker.java&#x27;,
+      JobQueue: workerSource + &#x27;analysis/JobQueue.java&#x27;,
+      CaptionParser: workerSource + &#x27;analysis/caption/CaptionParser.java&#x27;,
+      CaptionChunker: workerSource + &#x27;analysis/caption/CaptionChunker.java&#x27;,
+      SpringAiAnalysisClient: workerSource + &#x27;analysis/ai/SpringAiAnalysisClient.java&#x27;,
+      AnalysisOutputValidator: workerSource + &#x27;analysis/output/AnalysisOutputValidator.java&#x27;,
+      WorkerResultStore: workerSource + &#x27;analysis/WorkerResultStore.java&#x27;
+    };
+    const implementedStep = (actor, fn, note, tx = &#x27;TX 밖&#x27;, phase = &#x27;sync&#x27;) =&gt; {
+      const step = s(actor, fn, note, tx, phase);
+      const path = sourceFiles[fn.split(&#x27;.&#x27;)[0]];
+      if (path) step.source = repo + &#x27;/blob/&#x27; + implementation + &#x27;/&#x27; + path;
+      return step;
+    };
+    const backgroundSteps = () =&gt; [
+      implementedStep(&#x27;Worker&#x27;, &#x27;AnalysisScheduler.poll() → AnalysisWorker.runNext()&#x27;, &#x27;별도 프로세스 · 준비 기한 만료 처리 후 한 작업 실행&#x27;, &#x27;TX 밖&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·DB&#x27;, &#x27;JobQueue.claim()&#x27;, &#x27;SKIP LOCKED · runToken/lease 발급 · heartbeat는 renew()&#x27;, &#x27;쓰기 TX&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·GCS&#x27;, &#x27;AnalysisWorker.readCaptions()&#x27;, &#x27;고정 generation 다운로드 → CaptionParser.parse() · 한국어/크기/60분&#x27;, &#x27;TX 밖&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·AI&#x27;, &#x27;SpringAiAnalysisClient.generate()&#x27;, &#x27;모델 Bean 필요 · AnalysisOutputValidator.validate()로 근거 검증&#x27;, &#x27;TX 밖&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·DB&#x27;, &#x27;WorkerResultStore.saveDraft()&#x27;, &#x27;analysisId·sectionId·검증된 요약 저장 · 재시도 때 재사용&#x27;, &#x27;쓰기 TX&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·AI&#x27;, &#x27;CaptionChunker.split() → SpringAiAnalysisClient.embed()&#x27;, &#x27;원문·시간·sectionId 연결 · 벡터 순서/모델/차원 검증&#x27;, &#x27;TX 밖&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·DB&#x27;, &#x27;WorkerResultStore.saveIndex()&#x27;, &#x27;원문 조각·임베딩을 한 번에 저장 · 저장된 index 재사용&#x27;, &#x27;쓰기 TX&#x27;, &#x27;background&#x27;),
+      implementedStep(&#x27;Worker·DB&#x27;, &#x27;WorkerResultStore.complete()&#x27;, &#x27;사용자 → 작업 잠금 · 결과/개인 기록/COMPLETED 함께 확정&#x27;, &#x27;쓰기 TX&#x27;, &#x27;background&#x27;)
+    ];
+    Object.assign(flows, {
+      &#x27;ANALYSIS-04&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, readOnly:true, commits:[&#x27;d2b3eac&#x27;,&#x27;7deea59&#x27;,&#x27;df75e7f&#x27;,&#x27;29c7dfd&#x27;],
+        input:&#x27;UUID analysisId · 요청 본문 없음 · 서버 설정 DEMO_USER_ID&#x27;,
+        output:&#x27;200 · analysisId/recordId · summary/keywords · sections · mindmap · chatReady/analyzedAt&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;완료·기록 확인&#x27;,db:&#x27;저장 JSON·영상·기록&#x27;},
+        boundary:&#x27;readOnly·REPEATABLE_READ. 없음/타인/삭제 기록은 404, 본인 미완료는409, 저장 JSON 손상은500. sections는 시간순, 마인드맵·강조 순서는 유지. Worker·AI·GCS 호출 없음.&#x27;,
+        steps:[
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.get()&#x27;,&#x27;UUID 경로 바인딩 · 서버 설정 소유자&#x27;),
+          implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisResultQueryService.completed()&#x27;,&#x27;본인 결과 → 완료 → 현재 개인 기록 → 영상 조회&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.readDocument()&#x27;,&#x27;schema1.0·필수 콘텐츠·구간 참조·키워드 UUID 검증&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.get()&#x27;,&#x27;sections 시간순 정렬 · 목록에서 detail 제외 · 마인드맵 순서 유지&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.get()&#x27;,&#x27;ApiResponse.success() · 저장된 ID/완료 시각 반환&#x27;)
+        ]
+      },
+      &#x27;ANALYSIS-05&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, readOnly:true, commits:[&#x27;d2b3eac&#x27;,&#x27;b636747&#x27;,&#x27;29c7dfd&#x27;],
+        input:&#x27;UUID analysisId / UUID sectionId · 요청 본문 없음&#x27;,
+        output:&#x27;200 · 구간 핵심/설명/팁/도구/예시 · originalUrl · video/videoOneLine&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;같은 분석의 구간 선택&#x27;,db:&#x27;같은 저장 JSON·영상·기록&#x27;},
+        boundary:&#x27;결과 GET과 같은 완료·개인 기록·저장 문서를 사용. 해당 분석에 없는 sectionId는404. 원본 링크는 고정 YouTube 주소와 floor(startMs/1000)으로 생성. AI 재호출·DB 변경 없음.&#x27;,
+        steps:[
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.getSection()&#x27;,&#x27;두 UUID 경로 바인딩 · 서버 설정 소유자&#x27;),
+          implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisResultQueryService.completed()&#x27;,&#x27;본인 완료 결과·개인 기록·영상 확인&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.readDocument()&#x27;,&#x27;같은 저장 형식·구간 참조·키워드 UUID 검증&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultQueryService.getSection()&#x27;,&#x27;문서 안 sectionId 선택 · 원본 시간 링크 · 영상 카드 결합&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;API&#x27;,&#x27;AnalysisResultController.getSection()&#x27;,&#x27;ApiResponse.success() · SOURCE/AI_SUGGESTION 유지&#x27;)
+        ]
+      },
+      &#x27;ANALYSIS-01&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;5bb146f&#x27;,&#x27;698e0d5&#x27;,&#x27;a39f94f&#x27;,&#x27;85598e5&#x27;],
+        input:&#x27;JSON {batchId, batchItemId, uploadId} + UUID Idempotency-Key&#x27;,
+        output:&#x27;202 + Location/statusUrl · 기존 완료 기록은 200&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;], background:[&#x27;dbWorker&#x27;,&#x27;workerGcs&#x27;,&#x27;workerProvider&#x27;,&#x27;workerDb&#x27;],
+        labels:{api:&#x27;검증 → GCS 확인 → 등록&#x27;,db:&#x27;QUEUED → 결과·기록&#x27;,worker:&#x27;선점·검증·분석·완료&#x27;,gcs:&#x27;generation 고정 자막&#x27;,provider:&#x27;ChatModel / EmbeddingModel&#x27;},
+        boundary:&#x27;작업 커밋 후 202. GCS·AI 대기 중 DB TX 없음. 성공한 draft/index는 건너뛰고, 오래된 runToken의 저장은 차단. 실제 GCS·모델 통신은 미확인.&#x27;,
+        steps:[
+          implementedStep(&#x27;API&#x27;, &#x27;JobController.submit() → JobService.submit()&#x27;, &#x27;서버 고정 시연 사용자 · DTO/멱등 키 검증&#x27;),
+          implementedStep(&#x27;API·DB&#x27;, &#x27;JobDbService.prepareSubmit()&#x27;, &#x27;소유권·업로드 연결·중복/완료 기록 확인&#x27;, &#x27;쓰기 TX&#x27;),
+          implementedStep(&#x27;API·GCS&#x27;, &#x27;GcsObjects.metadata()&#x27;, &#x27;generation·실제 크기·Content-Type 확인&#x27;),
+          implementedStep(&#x27;API·DB&#x27;, &#x27;JobDbService.admitSubmit()&#x27;, &#x27;사용자 잠금 후 재검사 · 작업/업로드 소비/멱등 키 커밋&#x27;, &#x27;쓰기 TX&#x27;),
+          ...backgroundSteps()
+        ]
+      },
+      &#x27;ANALYSIS-02&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;5bb146f&#x27;], input:&#x27;jobId&#x27;, output:&#x27;200 · status / stage / attempt / error / nextPollAfterMs&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;내 작업 상태 조회&#x27;,db:&#x27;작업·영상·완료 ID&#x27;},
+        boundary:&#x27;GET은 Worker를 시작하지 않음. FAILED도 조회 성공은 200. 결과 ID는 COMPLETED에서만 공개. 종료 상태의 nextPollAfterMs는 null.&#x27;,
+        steps:[implementedStep(&#x27;API&#x27;,&#x27;JobController.get()&#x27;,&#x27;서버 고정 시연 사용자&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;JobService.get() → JobDbService.get()&#x27;,&#x27;소유 작업·영상 조회 · 타인/없는 작업은 404&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;API&#x27;,&#x27;JobDbService.get()&#x27;,&#x27;ApiResponse.success() · 미완료 draft ID 숨김&#x27;)]
+      },
+      &#x27;ANALYSIS-03&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;5bb146f&#x27;,&#x27;bebbc8b&#x27;,&#x27;85598e5&#x27;], input:&#x27;jobId + UUID Idempotency-Key + JSON {}&#x27;, output:&#x27;202 · 새 jobId/previousJobId/batchId · 기존 완료는 200&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;], background:[&#x27;dbWorker&#x27;,&#x27;workerGcs&#x27;,&#x27;workerProvider&#x27;,&#x27;workerDb&#x27;],
+        labels:{api:&#x27;최종 실패·중복 재검사&#x27;,db:&#x27;새 작업·이전 draft 연결&#x27;,worker:&#x27;성공 단계 재사용&#x27;,gcs:&#x27;동일 원본 generation&#x27;,provider:&#x27;필요한 실패 단계만 실행&#x27;},
+        boundary:&#x27;FAILED + retryable만 허용. 원본 없음/버전 변경은 410, 서명 URL 만료만으로 차단하지 않음. 삭제한 완료 기록은 과거 실패 작업으로 복구할 수 없음.&#x27;,
+        steps:[implementedStep(&#x27;API&#x27;,&#x27;JobController.retry() → JobService.retry()&#x27;,&#x27;원본 jobId와 새 멱등 키&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;JobDbService.prepareRetry()&#x27;,&#x27;최종 실패·현재 중복 작업·삭제된 완료 결과 검사&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API·GCS&#x27;,&#x27;GcsObjects.metadata()&#x27;,&#x27;같은 generation의 원본 확인&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;JobDbService.admitRetry()&#x27;,&#x27;새 배치·항목·작업/previousJobId · draft/index 재사용&#x27;,&#x27;쓰기 TX&#x27;),...backgroundSteps()]
+      },
+      &#x27;ANALYSIS-07&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;f19461d&#x27;,&#x27;d177cbe&#x27;], input:&#x27;JSON {videoIds, playlistId?} + UUID Idempotency-Key&#x27;, output:&#x27;201 + Location · batchId / items / selectionSummary&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;완료·진행·신규 분류&#x27;,db:&#x27;배치·항목·멱등 키&#x27;},
+        boundary:&#x27;Video가 먼저 저장되어 있어야 함. OPEN_RESULT / OPEN_JOB / COLLECT_CAPTIONS로 분기. 다른 준비 배치가 있으면 409이므로 앱이 batchId를 보관해야 함. 로그인·한도 제외.&#x27;,
+        steps:[implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.create()&#x27;,&#x27;영상 목록·UUID 멱등 키 검증&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisBatchService.create()&#x27;,&#x27;사용자 잠금 → videoId 중복 제거 → 기존 기록/진행 작업 분류&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisBatchService.create()&#x27;,&#x27;배치·항목·멱등 키를 함께 저장 · 준비 기한 발급&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.create()&#x27;,&#x27;커밋 후 201 · Location · 앱의 다음 행동 반환&#x27;)]
+      },
+      &#x27;ANALYSIS-08&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;f19461d&#x27;,&#x27;f88ddc6&#x27;], input:&#x27;batchId&#x27;, output:&#x27;200 · status / items / counts / nextPollAfterMs&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;내 배치 상태 조회&#x27;,db:&#x27;항목·현재 job·영상 일괄 조회&#x27;},
+        boundary:&#x27;total = items.length = 상태별 개수 합. 연결 job이 다른 배치에서 생겼어도 현재 상태를 반영. 종료 시 polling 간격 null. GET은 상태를 변경하지 않음.&#x27;,
+        steps:[implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.get()&#x27;,&#x27;서버 고정 시연 사용자&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisBatchService.get()&#x27;,&#x27;REPEATABLE_READ · 항목/작업/영상 snapshot·counts&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.get()&#x27;,&#x27;200 · 준비/진행/완료/부분 실패 반환&#x27;)]
+      },
+      &#x27;ANALYSIS-09&#x27;: {
+        server:&#x27;api&#x27;, implemented:true, commits:[&#x27;f19461d&#x27;], input:&#x27;JSON {collectionFailure:{code}} + batchId / itemId&#x27;, output:&#x27;200 · batchId / itemId / status:FAILED / error&#x27;,
+        edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;], labels:{api:&#x27;기기 수집 실패 접수&#x27;,db:&#x27;AWAITING_UPLOAD → FAILED&#x27;},
+        boundary:&#x27;AWAITING_UPLOAD에서만 허용. 접수된 분석의 취소 API가 아님. retryable:false이며 기기 수집·업로드를 다시 시작해야 함.&#x27;,
+        steps:[implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.report()&#x27;,&#x27;허용된 수집 실패 코드 검증&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;AnalysisBatchService.reportCollectionFailure()&#x27;,&#x27;사용자 잠금·배치 소유권·대기 상태 확인 후 실패 저장&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API&#x27;,&#x27;AnalysisBatchController.report()&#x27;,&#x27;200 · 해당 항목 반환 · 배치 전체는 GET으로 조회&#x27;)]
+      }
+    });
+    Object.assign(flows, {
+      &#x27;CHAT-01&#x27;: {server:&#x27;chat&#x27;,implemented:true,local:true,commits:[&#x27;7e9cd32&#x27;,&#x27;c4c1be6&#x27;,&#x27;93fdf2c&#x27;,&#x27;db83ec8&#x27;,&#x27;f09c8b8&#x27;],input:&#x27;scope + UUID Idempotency-Key&#x27;,output:&#x27;201 · conversationId / scope / recordCount · Location&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;참고 범위·중복 확인&#x27;,db:&#x27;방·멱등 키 원자적 저장&#x27;},boundary:&#x27;본인 완료 기록만 선택. 같은 키·본문은 최초 응답, 삭제된 방은 404. 이 요청은 Python을 호출하지 않음. 조건 재평가·폴더 구조는 병합 전 협의할 구현안.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.create()&#x27;,&#x27;고정 데모 소유자·UUID 헤더·DTO 검증&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationService.create()&#x27;,&#x27;advisory lock → 키·본문 비교&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatScopeQuery.resolve()&#x27;,&#x27;소유 완료 결과·폴더·키워드 AND·텍스트 포함 검색&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationService.create()&#x27;,&#x27;방·멱등 키 저장 후 커밋 → 201 · Location&#x27;,&#x27;쓰기 TX&#x27;)]},
+      &#x27;CHAT-02&#x27;: {server:&#x27;chat&#x27;,implemented:true,readOnly:true,commits:[&#x27;f918a00&#x27;],input:&#x27;cursor / limit(기본20·최대50)&#x27;,output:&#x27;200 · items / nextCursor / hasNext&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;내 채팅방 목록&#x27;,db:&#x27;updatedAt DESC · id DESC&#x27;},boundary:&#x27;limit+1 조회. 활성 답변 ID 일괄 조회. 조회로 방의 정렬 시각을 변경하지 않음.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.list()&#x27;,&#x27;커서·limit 검증&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationQueryService.list()&#x27;,&#x27;소유자 필터·동률 커서·활성 답변 일괄 조회&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.list()&#x27;,&#x27;ApiResponse · 다음 커서&#x27;)]},
+      &#x27;CHAT-03&#x27;: {server:&#x27;chat&#x27;,implemented:true,readOnly:true,commits:[&#x27;96cac97&#x27;],input:&#x27;conversationId / cursor / limit 또는 clientRequestId&#x27;,output:&#x27;200 · USER·ASSISTANT items / nextCursor / hasNext&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;대화·접수 복구 조회&#x27;,db:&#x27;position 커서·출처 일괄 조회&#x27;},boundary:&#x27;최신 페이지를 선택하고 items는 과거→최근 순. 요청 ID와 cursor는 함께 사용 불가. 원본 삭제 시 과거 답변 유지·출처 DELETED.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationMessageController.list()&#x27;,&#x27;경로·쿼리 검증&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.list()&#x27;,&#x27;본인 방 → position limit+1 또는 요청 ID 복구&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.views()&#x27;,&#x27;출처·현재 개인 기록 일괄 조회 → 삭제 표시&#x27;,&#x27;조회 TX&#x27;)]},
+      &#x27;CHAT-05&#x27;: {server:&#x27;chat&#x27;,implemented:true,readOnly:true,commits:[&#x27;96cac97&#x27;],input:&#x27;conversationId / messageId&#x27;,output:&#x27;200 · content / status / sources / error / nextPollAfterMs&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;부분·최종 답변 조회&#x27;,db:&#x27;소유 방·해당 메시지&#x27;},boundary:&#x27;읽기 전용 복구 경로. Python을 다시 호출하거나 SSE를 재생하지 않음.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationMessageController.get()&#x27;,&#x27;두 UUID 경로&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.get()&#x27;,&#x27;소유 방·같은 방 메시지 확인&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.views()&#x27;,&#x27;현재 출처 가용성·실패·조회 간격 반환&#x27;,&#x27;조회 TX&#x27;)]},
+      &#x27;CHAT-06&#x27;: {server:&#x27;chat&#x27;,implemented:true,readOnly:true,commits:[&#x27;f918a00&#x27;],input:&#x27;conversationId&#x27;,output:&#x27;200 · scope / recordCount / scopeStatus / activeAssistantMessageId&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;방의 현재 참고 범위&#x27;,db:&#x27;저장 조건·현재 기록&#x27;},boundary:&#x27;조건 재평가 구현안. 폴더 삭제 시 UNAVAILABLE이어도 과거 대화는 유지. 생성 중 메시지는 CHAT-05로 조회.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.get()&#x27;,&#x27;소유자·방 ID&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;소유 방·저장 범위 읽기&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatScopeQuery.resolve()&#x27;,&#x27;현재 소유 기록의 개수·가용 상태&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;활성 답변 ID 조회·상세 응답 구성&#x27;,&#x27;조회 TX&#x27;)]},
+      &#x27;CHAT-07&#x27;: {server:&#x27;chat&#x27;,implemented:true,local:true,commits:[&#x27;f918a00&#x27;,&#x27;f09c8b8&#x27;],input:&#x27;conversationId&#x27;,output:&#x27;200 · 성공 메시지&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;소유 방 삭제 조건&#x27;,db:&#x27;방·메시지·출처 cascade&#x27;},boundary:&#x27;같은 방 잠금 후 생성 중이면 409. 분석 기록·결과·폴더·GCS 원문은 유지. 삭제한 생성 키 재전송은 404.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.delete()&#x27;,&#x27;본인 방 ID&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationService.delete()&#x27;,&#x27;방 row lock → 활성 답변 검사 → 삭제·flush&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.delete()&#x27;,&#x27;커밋 후 성공 메시지&#x27;)]}
+    });
+    for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
+    const labels = {app:&#x27;Android&#x27;,api:&#x27;Spring API&#x27;,worker:&#x27;Spring Worker&#x27;,chat:&#x27;Spring Chat&#x27;,db:&#x27;PostgreSQL&#x27;,gcs:&#x27;Cloud Storage&#x27;,provider:&#x27;분석·임베딩 모델&#x27;,python:&#x27;Python AI&#x27;,gpt:&#x27;GPT API&#x27;};
+    const fallback = {app:&#x27;요청·결과&#x27;,api:&#x27;일반 API · 로컬&#x27;,worker:&#x27;DB Poller · 로컬&#x27;,chat:&#x27;채팅 API · 로컬&#x27;,db:&#x27;pgvector · 로컬 Docker&#x27;,gcs:&#x27;실제 GCS&#x27;,provider:&#x27;연동 대상 협의&#x27;,python:&#x27;AI 파트 · 별도 서버&#x27;,gpt:&#x27;Python에서 호출&#x27;};
+    const edgeNodes = {appApi:[&#x27;app&#x27;,&#x27;api&#x27;],appChat:[&#x27;app&#x27;,&#x27;chat&#x27;],appGcs:[&#x27;app&#x27;,&#x27;gcs&#x27;],apiDb:[&#x27;api&#x27;,&#x27;db&#x27;],apiGcs:[&#x27;api&#x27;,&#x27;gcs&#x27;],apiProvider:[&#x27;api&#x27;,&#x27;provider&#x27;],dbWorker:[&#x27;db&#x27;,&#x27;worker&#x27;],workerDb:[&#x27;worker&#x27;,&#x27;db&#x27;],workerGcs:[&#x27;worker&#x27;,&#x27;gcs&#x27;],workerProvider:[&#x27;worker&#x27;,&#x27;provider&#x27;],chatDb:[&#x27;chat&#x27;,&#x27;db&#x27;],chatPython:[&#x27;chat&#x27;,&#x27;python&#x27;],pythonDb:[&#x27;python&#x27;,&#x27;db&#x27;],pythonGpt:[&#x27;python&#x27;,&#x27;gpt&#x27;]};
+    const domainSelect = root.querySelector(&#x27;[aria-label=&quot;도메인 선택&quot;]&#x27;);
+    const apiSelect = root.querySelector(&#x27;[aria-label=&quot;API 선택&quot;]&#x27;);
+    const svg = root.querySelector(&#x27;.diagram&#x27;);
+    const state = { apiId: &#x27;CHAT-01&#x27; };
+    const ns = &#x27;http://www.w3.org/2000/svg&#x27;;
+    const el = (tag, attrs, text) =&gt; {const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+    const selected = () =&gt; catalog.find(a=&gt;a.id===state.apiId);
+    function selectOptions() {
+      const api=selected(); domainSelect.replaceChildren(); apiSelect.replaceChildren();
+      [...new Set(catalog.map(a=&gt;a.domain))].forEach(d=&gt;{const o=document.createElement(&#x27;option&#x27;);o.value=d;o.textContent=d+(d.startsWith(&#x27;08&#x27;)?&#x27; · 운영 후속&#x27;:&#x27;&#x27;);domainSelect.append(o);});
+      domainSelect.value=api.domain;
+      catalog.filter(a=&gt;a.domain===api.domain).forEach(a=&gt;{const o=document.createElement(&#x27;option&#x27;);o.value=a.id;o.textContent=a.id+&#x27; · &#x27;+(a.id===&#x27;ANALYSIS-07&#x27;?&#x27;분석 배치 생성&#x27;:a.name)+(flows[a.id].implemented?&#x27; · 구현&#x27;:&#x27; · 설계&#x27;);apiSelect.append(o);});
+      apiSelect.value=api.id;
+    }
+    function phasesFor(flow) {
+      const map=new Map();
+      for(const key of flow.edges||[]) for(const n of edgeNodes[key])map.set(n,flow.future||flow.planned?&#x27;pending&#x27;:&#x27;sync&#x27;);
+      for(const key of flow.background||[])for(const n of edgeNodes[key])if(!map.has(n))map.set(n,&#x27;background&#x27;);
+      for(const key of flow.extraPending||[])for(const n of edgeNodes[key])if(!map.has(n))map.set(n,&#x27;pending&#x27;);
+      return map;
+    }
+    function draw() {
+      const a=selected(); if(!a)return; const f=flows[a.id];
+      const width=Math.max(680,Math.round(root.clientWidth));
+      svg.setAttribute(&#x27;viewBox&#x27;,`0 0 ${width} 497`);svg.setAttribute(&#x27;height&#x27;,&#x27;497&#x27;);svg.replaceChildren();
+      const title=el(&#x27;title&#x27;,{},a.id+&#x27; · &#x27;+a.name);svg.append(title);
+      const desc=el(&#x27;desc&#x27;,{},(f.edges||[]).map(k=&gt;edgeNodes[k].map(n=&gt;labels[n]).join(&#x27; ↔ &#x27;)).join(&#x27; / &#x27;)+(f.background?&#x27; / 접수 커밋 후 별도 Worker 실행&#x27;:&#x27;&#x27;));svg.append(desc);
+      const defs=el(&#x27;defs&#x27;);
+      for(const kind of [&#x27;sync&#x27;,&#x27;background&#x27;,&#x27;pending&#x27;]) {
+        const m=el(&#x27;marker&#x27;,{id:&#x27;yap-head-&#x27;+kind,markerWidth:9,markerHeight:9,refX:8,refY:4.5,orient:&#x27;auto-start-reverse&#x27;,markerUnits:&#x27;userSpaceOnUse&#x27;});
+        m.append(el(&#x27;path&#x27;,{d:&#x27;M1 1 L8 4.5 L1 8&#x27;,fill:&#x27;none&#x27;,stroke:kind===&#x27;sync&#x27;?&#x27;var(--viz-series-1)&#x27;:kind===&#x27;background&#x27;?&#x27;var(--viz-series-2)&#x27;:&#x27;var(--muted-foreground)&#x27;,&#x27;stroke-width&#x27;:1.4}));defs.append(m);
+      }
+      svg.append(defs);
+      const x1=Math.round(width*.2),x2=Math.round(width*.5),x3=width-150,w1=156,w2=148;
+      const nodes={app:{x:0,y:239,w:96,h:108},api:{x:x1,y:69,w:w1,h:78},worker:{x:x1,y:231,w:w1,h:78},chat:{x:x1,y:393,w:w1,h:78},db:{x:x2,y:231,w:w2,h:88},gcs:{x:x3,y:69,w:150,h:78},provider:{x:x3,y:231,w:150,h:78},python:{x:x2,y:393,w:w2,h:78},gpt:{x:x3,y:393,w:150,h:78}};
+      const t=(x,y,txt,secondary=false)=&gt;svg.append(el(&#x27;text&#x27;,{x,y,class:secondary?&#x27;secondary text-small&#x27;:&#x27;&#x27;},txt));
+      t(0,17,&#x27;앱&#x27;,true);t(x1,17,&#x27;Spring · 로컬&#x27;,true);t(x2,17,&#x27;로컬 DB · AI&#x27;,true);t(x3,17,&#x27;외부 서비스&#x27;,true);
+      const springEnd=x1+w1;
+      const paths={
+        appApi:`M106 262 H${x1-24} V108 H${x1-10}`,
+        appChat:`M106 325 H${x1-24} V432 H${x1-10}`,
+        appGcs:`M48 229 V42 H${x3+75} V59`,
+        apiDb:`M${springEnd+10} 108 H${x2-28} V255 H${x2-10}`,
+        apiGcs:`M${springEnd+10} 108 H${x3-10}`,
+        apiProvider:`M${x1+126} 157 V178 H${x3+75} V221`,
+        dbWorker:`M${x2-10} 259 H${springEnd+10}`,
+        workerDb:`M${springEnd+10} 290 H${x2-10}`,
+        workerGcs:`M${x1+120} 221 V196 H${x3+75} V157`,
+        workerProvider:`M${x1+120} 319 V354 H${x3+75} V319`,
+        chatDb:`M${springEnd+10} 432 H${x2-28} V304 H${x2-10}`,
+        chatPython:`M${springEnd+10} 432 H${x2-10}`,
+        pythonDb:`M${x2+74} 383 V329`,
+        pythonGpt:`M${x2+w2+10} 432 H${x3-10}`
+      };
+      const bidirectional=new Set([&#x27;appApi&#x27;,&#x27;appChat&#x27;,&#x27;appGcs&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;,&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;]);
+      const edges=[];
+      for(const k of f.edges||[])edges.push([k,f.future||f.planned?&#x27;pending&#x27;:&#x27;sync&#x27;]);
+      for(const k of f.background||[])edges.push([k,&#x27;background&#x27;]);
+      for(const k of f.extraPending||[])edges.push([k,&#x27;pending&#x27;]);
+      for(const [k,kind] of edges){const attrs={d:paths[k],class:&#x27;edge &#x27;+kind,&#x27;data-edge&#x27;:k,&#x27;data-phase&#x27;:kind,&#x27;marker-end&#x27;:`url(#yap-head-${kind})`};if(kind===&#x27;sync&#x27;&amp;&amp;bidirectional.has(k))attrs[&#x27;marker-start&#x27;]=`url(#yap-head-${kind})`;svg.append(el(&#x27;path&#x27;,attrs));}
+      const phases=phasesFor(f);
+      for(const [key,n] of Object.entries(nodes)) {
+        const phase=phases.get(key);const g=el(&#x27;g&#x27;,{class:phase?&#x27;&#x27;:&#x27;inactive&#x27;,&#x27;data-node&#x27;:key,&#x27;data-active&#x27;:String(!!phase)});
+        const fill=phase===&#x27;sync&#x27;?&#x27; active-fill&#x27;:phase===&#x27;background&#x27;?&#x27; background-fill&#x27;:&#x27;&#x27;;
+        if(key===&#x27;db&#x27;) {
+          g.append(el(&#x27;path&#x27;,{d:`M${n.x} ${n.y+12} C${n.x} ${n.y-3} ${n.x+n.w} ${n.y-3} ${n.x+n.w} ${n.y+12} V${n.y+n.h-12} C${n.x+n.w} ${n.y+n.h+3} ${n.x} ${n.y+n.h+3} ${n.x} ${n.y+n.h-12} Z`,class:&#x27;silhouette&#x27;+fill}));
+          g.append(el(&#x27;path&#x27;,{d:`M${n.x} ${n.y+12} C${n.x} ${n.y+27} ${n.x+n.w} ${n.y+27} ${n.x+n.w} ${n.y+12}`,class:&#x27;rule&#x27;}));
+        } else {
+          g.append(el(&#x27;rect&#x27;,{x:n.x,y:n.y,width:n.w,height:n.h,rx:key===&#x27;app&#x27;?11:4,class:&#x27;silhouette&#x27;+fill}));
+          if(key===&#x27;app&#x27;)g.append(el(&#x27;rect&#x27;,{x:n.x+8,y:n.y+8,width:n.w-16,height:n.h-16,rx:2,class:&#x27;rule&#x27;}));
+          else g.append(el(&#x27;line&#x27;,{x1:n.x+10,y1:n.y+35,x2:n.x+n.w-10,y2:n.y+35,class:&#x27;rule&#x27;}));
+        }
+        const title=key===&#x27;provider&#x27;?(f.provider||labels[key]):labels[key];
+        g.append(el(&#x27;text&#x27;,{x:n.x+11,y:n.y+(key===&#x27;db&#x27;?39:24)},title));
+        const note=(f.labels&amp;&amp;f.labels[key])||fallback[key];
+        const mid=key===&#x27;db&#x27;?n.y+59:key===&#x27;app&#x27;?n.y+55:n.y+55;
+        const caption=el(&#x27;text&#x27;,{x:n.x+11,y:mid,class:&#x27;secondary text-small&#x27;});g.append(caption);svg.append(g);
+        const lines=[];let line=&#x27;&#x27;;
+        for(const char of note){caption.textContent=line+char;if(caption.getComputedTextLength()&gt;n.w-22&amp;&amp;line){lines.push(line);line=char;}else line+=char;}
+        if(line)lines.push(line);caption.textContent=&#x27;&#x27;;
+        lines.forEach((part,i)=&gt;caption.append(el(&#x27;tspan&#x27;,{x:n.x+11,y:mid+i*17},part)));
+      }
+      if(f.background)t(x1,376,&#x27;접수 커밋 후 · DB 작업을 별도 Worker가 처리&#x27;,true);
+    }
+    function renderSteps(flow) {
+      const ol=root.querySelector(&#x27;.steps&#x27;);const mobile=root.querySelector(&#x27;.mobile-route&#x27;);ol.replaceChildren();mobile.replaceChildren();
+      flow.steps.forEach((step,index)=&gt;{
+        const li=document.createElement(&#x27;li&#x27;);li.className=&#x27;step&#x27;;li.dataset.phase=step.phase;
+        const num=document.createElement(&#x27;span&#x27;);num.className=&#x27;step-index text-small&#x27;;num.textContent=String(index+1).padStart(2,&#x27;0&#x27;);
+        const actor=document.createElement(&#x27;span&#x27;);actor.className=&#x27;step-actor text-small&#x27;;actor.textContent=step.actor;
+        const content=document.createElement(&#x27;div&#x27;);content.className=&#x27;step-content&#x27;;const code=document.createElement(&#x27;code&#x27;);code.textContent=step.fn;const note=document.createElement(&#x27;span&#x27;);note.className=&#x27;step-note text-small&#x27;;note.textContent=step.note;let symbol=code;if(step.source){symbol=document.createElement(&#x27;a&#x27;);symbol.href=step.source;symbol.target=&#x27;_blank&#x27;;symbol.rel=&#x27;noreferrer&#x27;;symbol.append(code);}content.append(symbol,note);
+        const tx=document.createElement(&#x27;span&#x27;);tx.className=&#x27;step-tx text-small&#x27;;tx.textContent=step.tx;
+        li.append(num,actor,content,tx);ol.append(li);
+        const row=document.createElement(&#x27;div&#x27;);row.className=&#x27;route-row&#x27;;row.dataset.phase=flow.future||flow.planned?&#x27;pending&#x27;:step.phase;
+        const arrow=document.createElement(&#x27;span&#x27;);arrow.className=&#x27;route-arrow&#x27;;arrow.textContent=index===flow.steps.length-1?&#x27;└&#x27;:&#x27;↓&#x27;;
+        const body=document.createElement(&#x27;div&#x27;);body.className=&#x27;route-content&#x27;;const heading=document.createElement(&#x27;span&#x27;);heading.textContent=step.actor+&#x27; · &#x27;+step.tx;const fn=document.createElement(&#x27;code&#x27;);fn.textContent=step.fn;let symbolMobile=fn;if(step.source){symbolMobile=document.createElement(&#x27;a&#x27;);symbolMobile.href=step.source;symbolMobile.target=&#x27;_blank&#x27;;symbolMobile.rel=&#x27;noreferrer&#x27;;symbolMobile.append(fn);}const label=document.createElement(&#x27;span&#x27;);label.className=&#x27;text-small&#x27;;label.textContent=step.note;body.append(heading,symbolMobile,label);row.append(arrow,body);mobile.append(row);
+      });
+      const active=phasesFor(flow);const other=document.createElement(&#x27;div&#x27;);other.className=&#x27;mobile-other text-small&#x27;;other.textContent=&#x27;이 경로에 참여하지 않음: &#x27;+Object.keys(labels).filter(k=&gt;!active.has(k)&amp;&amp;k!==&#x27;app&#x27;).map(k=&gt;labels[k]).join(&#x27; · &#x27;);mobile.append(other);
+    }
+    function render() {
+      const a=selected(),f=flows[a.id];
+      root.querySelector(&#x27;.method&#x27;).textContent=a.method;
+      root.querySelector(&#x27;.endpoint-path&#x27;).textContent=a.path;
+      root.querySelector(&#x27;.scope&#x27;).textContent=a.id+&#x27; · &#x27;+(f.readOnly?&#x27;구현 · 저장 데이터 조회&#x27;:f.local?&#x27;구현 · 로컬 DB&#x27;:f.implemented?&#x27;구현 · 실제 외부 연동 대기&#x27;:f.future?&#x27;운영 후속 · 설계&#x27;:&#x27;후속 이슈 · 설계&#x27;);
+      const commits=root.querySelector(&#x27;.commits&#x27;);commits.replaceChildren();
+      for(const sha of f.commits||[]){const link=document.createElement(&#x27;a&#x27;);link.href=repo+&#x27;/commit/&#x27;+sha;link.target=&#x27;_blank&#x27;;link.rel=&#x27;noreferrer&#x27;;link.textContent=sha;commits.append(link);}
+      root.querySelector(&#x27;.source&#x27;).href=a.source;
+      root.querySelector(&#x27;.input&#x27;).textContent=f.input;
+      root.querySelector(&#x27;.output&#x27;).textContent=f.output;
+      root.querySelector(&#x27;.boundary&#x27;).textContent=f.boundary;
+      root.dataset.apiId=a.id;root.dataset.implemented=String(!!f.implemented);renderSteps(f);draw();
+    }
+    function restore(saved) {
+      const id=saved&amp;&amp;saved.privateContent&amp;&amp;saved.privateContent.apiId;
+      if(catalog.some(a=&gt;a.id===id))state.apiId=id;
+    }
+    function persist() {
+      if(window.openai&amp;&amp;window.openai.setWidgetState)window.openai.setWidgetState({modelContent:{apiId:state.apiId,method:selected().method,path:selected().path},privateContent:{apiId:state.apiId}}).catch(()=&gt;{});
+    }
+    domainSelect.addEventListener(&#x27;change&#x27;,()=&gt;{state.apiId=catalog.find(a=&gt;a.domain===domainSelect.value).id;selectOptions();render();persist();});
+    apiSelect.addEventListener(&#x27;change&#x27;,()=&gt;{state.apiId=apiSelect.value;render();persist();});
+    restore(window.openai&amp;&amp;window.openai.widgetState);selectOptions();render();
+    window.addEventListener(&#x27;openai:set_globals&#x27;,event=&gt;{const saved=event.detail&amp;&amp;event.detail.globals&amp;&amp;event.detail.globals.widgetState;if(saved){restore(saved);selectOptions();render();}});
+    new ResizeObserver(draw).observe(root);
+  })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+  let lastPointerWasTouch = false;
+  let pinnedByTouch = false;
+
+  const getTrigger = (event) =&gt; {
+    for (const target of event.composedPath()) {
+      if (target?.nodeType === Node.ELEMENT_NODE) {
+        const trigger = target.closest(&quot;[data-tooltip]&quot;);
+        if (trigger) return trigger;
+      }
+    }
+    return null;
+  };
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    pinnedByTouch = false;
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handlePointer = (event) =&gt; {
+    lastPointerWasTouch =
+      event.type === &quot;pointerdown&quot; &amp;&amp; event.pointerType === &quot;touch&quot;;
+  };
+  const handleTouchClick = (event) =&gt; {
+    const isTouch = event.pointerType === &quot;touch&quot; || lastPointerWasTouch;
+    lastPointerWasTouch = false;
+    if (!isTouch || event.detail === 0) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (
+      trigger == null ||
+      !trigger.isConnected ||
+      getContent(trigger).length === 0 ||
+      (pinnedByTouch &amp;&amp; activeTrigger === trigger)
+    ) {
+      if (pinnedByTouch) {
+        closeTooltip();
+      }
+      return;
+    }
+    openTooltip(trigger);
+    pinnedByTouch = activeTrigger === trigger;
+    window.setTimeout(() =&gt; {
+      if (activeTrigger === trigger &amp;&amp; !trigger.isConnected) {
+        closeTooltip(false);
+      }
+    }, 0);
+  };
+  const handleLeave = (event) =&gt; {
+    if (pinnedByTouch) {
+      return;
+    }
+    const trigger = getTrigger(event);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    lastPointerWasTouch = false;
+    const trigger = getTrigger(event);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handlers = {
+    pointerover: handlePointerOpen,
+    pointerdown: handlePointer,
+    pointercancel: handlePointer,
+    click: handleTouchClick,
+    pointerout: handleLeave,
+    focusin: handleFocusIn,
+    focusout: handleLeave,
+    keydown: handleKeyDown,
+    contextmenu: handleContextMenu,
+  };
+  const roots = new Map();
+  const handledEvents = new WeakSet();
+  const handleEvent = (event) =&gt; {
+    if (handledEvents.has(event)) return;
+    handledEvents.add(event);
+    handlers[event.type](event);
+  };
+  const discoverRoots = (node) =&gt; {
+    if (node.shadowRoot) listen(node.shadowRoot);
+    for (const element of node.querySelectorAll(&quot;*&quot;)) {
+      if (element.shadowRoot) listen(element.shadowRoot);
+    }
+  };
+  const listen = (root) =&gt; {
+    if (roots.has(root)) return;
+    for (const type of Object.keys(handlers)) root.addEventListener(type, handleEvent);
+    const observer = new window.MutationObserver((records) =&gt; {
+      for (const { addedNodes } of records) {
+        for (const node of addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) discoverRoots(node);
+        }
+      }
+      for (const [root, cleanup] of roots) {
+        if (root.host &amp;&amp; !root.host.isConnected) {
+          cleanup();
+          roots.delete(root);
+        }
+      }
+      if (activeTrigger &amp;&amp; !activeTrigger.isConnected) closeTooltip(false);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    roots.set(root, () =&gt; {
+      observer.disconnect();
+      for (const type of Object.keys(handlers)) root.removeEventListener(type, handleEvent);
+    });
+    discoverRoots(root);
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    lastPointerWasTouch = false;
+    for (const cleanup of roots.values()) cleanup();
+    roots.clear();
+    tooltip = null;
+  };
+
+  // Events between children of one shadow root never reach the document.
+  listen(document);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-tabs&quot;&gt;
+(() =&gt; {
+  const selector = &#x27;.nav[role=&quot;tablist&quot;] [role=&quot;tab&quot;]&#x27;;
+  const disabled = &#x27;:disabled,[aria-disabled=&quot;true&quot;]&#x27;;
+  const selectTab = (selected) =&gt; {
+    const panelId = selected.getAttribute(&quot;aria-controls&quot;);
+    for (const tab of selected.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;)) {
+      const active = tab === selected;
+      tab.classList.toggle(&quot;active&quot;, active);
+      tab.setAttribute(&quot;aria-selected&quot;, String(active));
+      const id = tab.getAttribute(&quot;aria-controls&quot;);
+      const panel = id &amp;&amp; document.getElementById(id);
+      if (panel != null) {
+        panel.hidden = id !== panelId;
+        if (!panel.hidden &amp;&amp; selected.id) {
+          panel.setAttribute(&quot;aria-labelledby&quot;, selected.id);
+        }
+      }
+    }
+  };
+  const interact = (event) =&gt; {
+    const tab = event.target?.closest?.(selector);
+    if (event.defaultPrevented || tab == null || tab.matches(disabled)) {
+      return;
+    }
+    if (event.type === &quot;click&quot;) {
+      selectTab(tab);
+      return;
+    }
+    const tabs = Array.from(
+      tab.closest(&#x27;[role=&quot;tablist&quot;]&#x27;).querySelectorAll(&#x27;[role=&quot;tab&quot;]&#x27;),
+    ).filter((candidate) =&gt; !candidate.matches(disabled));
+    const current = tabs.indexOf(tab);
+    let next;
+    if (event.key === &quot;ArrowRight&quot; || event.key === &quot;ArrowDown&quot;) {
+      next = (current + 1) % tabs.length;
+    } else if (event.key === &quot;ArrowLeft&quot; || event.key === &quot;ArrowUp&quot;) {
+      next = (current + tabs.length - 1) % tabs.length;
+    } else if (event.key === &quot;Home&quot;) {
+      next = 0;
+    } else if (event.key === &quot;End&quot;) {
+      next = tabs.length - 1;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    tabs[next].focus();
+    selectTab(tabs[next]);
+  };
+
+  for (const list of document.querySelectorAll(&#x27;.nav[role=&quot;tablist&quot;]&#x27;)) {
+    const selected =
+      list.querySelector(&#x27;[role=&quot;tab&quot;][aria-selected=&quot;true&quot;]&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;].active&#x27;) ??
+      list.querySelector(&#x27;[role=&quot;tab&quot;]&#x27;);
+    if (selected != null) {
+      selectTab(selected);
+    }
+  }
+  document.addEventListener(&quot;click&quot;, interact);
+  document.addEventListener(&quot;keydown&quot;, interact);
+  window.addEventListener(&quot;pagehide&quot;, () =&gt; {
+    document.removeEventListener(&quot;click&quot;, interact);
+    document.removeEventListener(&quot;keydown&quot;, interact);
+  }, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-carousel&quot;&gt;
+  (() =&gt; {
+    for (const root of document.querySelectorAll(&quot;.viz-carousel&quot;)) {
+      const panels = Array.from(
+        root.querySelectorAll(&quot;:scope &gt; [data-variant]&quot;),
+      );
+      if (panels.length === 0) {
+        continue;
+      }
+      root.setAttribute(&quot;role&quot;, &quot;group&quot;);
+      panels.forEach((panel, index) =&gt; {
+        panel.hidden = index !== 0;
+        panel.setAttribute(&quot;role&quot;, &quot;group&quot;);
+        if (!panel.hasAttribute(&quot;aria-label&quot;)) {
+          panel.setAttribute(&quot;aria-label&quot;, panel.dataset.variant);
+        }
+      });
+      root.dataset.activeVariant = panels[0].dataset.variant;
+      if (panels.length === 1) {
+        continue;
+      }
+
+      const controls = document.createElement(&quot;div&quot;);
+      controls.className = &quot;viz-carousel-controls&quot;;
+      // Portable copy of the settings dropdown&#x27;s legacy glyph; no 14px icon-package preset matches it.
+      // https://github.com/openai/openai/blob/master/codex/codex-apps/webview/src/icons/chevron.svg
+      controls.innerHTML = `
+      &lt;button type=&quot;button&quot; class=&quot;viz-carousel-previous cursor-interaction&quot;&gt;&lt;i data-lucide=&quot;chevron-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;details class=&quot;viz-carousel-picker&quot;&gt;
+        &lt;summary class=&quot;cursor-interaction&quot;&gt;
+          &lt;span class=&quot;viz-carousel-count tabular-nums&quot;&gt;&lt;/span&gt;
+          &lt;span class=&quot;viz-carousel-name&quot;&gt;&lt;/span&gt;
+          &lt;svg class=&quot;viz-carousel-caret&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 20 21&quot; fill=&quot;none&quot; aria-hidden=&quot;true&quot; focusable=&quot;false&quot;&gt;
+            &lt;path d=&quot;M15.2793 7.71101C15.539 7.45131 15.961 7.45131 16.2207 7.71101C16.4804 7.97071 16.4804 8.39272 16.2207 8.65242L10.4707 14.4024C10.211 14.6621 9.78902 14.6621 9.52932 14.4024L3.77932 8.65242L3.69436 8.54792C3.52385 8.28979 3.55205 7.93828 3.77932 7.71101C4.00659 7.48374 4.3581 7.45554 4.61623 7.62605L4.72073 7.71101L10 12.9903L15.2793 7.71101Z&quot; fill=&quot;currentColor&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;0.6&quot; /&gt;
+          &lt;/svg&gt;
+        &lt;/summary&gt;
+        &lt;div class=&quot;viz-carousel-options&quot;&gt;&lt;/div&gt;
+      &lt;/details&gt;
+      &lt;button type=&quot;button&quot; class=&quot;viz-carousel-next cursor-interaction&quot;&gt;&lt;i data-lucide=&quot;chevron-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;`;
+      const previous = controls.querySelector(&quot;.viz-carousel-previous&quot;);
+      const next = controls.querySelector(&quot;.viz-carousel-next&quot;);
+      const picker = controls.querySelector(&quot;.viz-carousel-picker&quot;);
+      const summary = picker.querySelector(&quot;summary&quot;);
+      const count = controls.querySelector(&quot;.viz-carousel-count&quot;);
+      const name = controls.querySelector(&quot;.viz-carousel-name&quot;);
+      const options = controls.querySelector(&quot;.viz-carousel-options&quot;);
+      const status = document.createElement(&quot;span&quot;);
+      status.className = &quot;sr-only&quot;;
+      status.setAttribute(&quot;role&quot;, &quot;status&quot;);
+      status.setAttribute(&quot;aria-live&quot;, &quot;polite&quot;);
+      status.setAttribute(&quot;aria-atomic&quot;, &quot;true&quot;);
+      previous.setAttribute(
+        &quot;aria-label&quot;,
+        root.dataset.previousLabel ?? &quot;Previous variant&quot;,
+      );
+      next.setAttribute(&quot;aria-label&quot;, root.dataset.nextLabel ?? &quot;Next variant&quot;);
+
+      let active = 0;
+      let mousePointerId = null;
+      let summaryPointerHandled = false;
+      summary.addEventListener(&quot;pointerdown&quot;, (event) =&gt; {
+        summaryPointerHandled =
+          event.pointerType === &quot;mouse&quot; &amp;&amp; event.button === 0 &amp;&amp; !event.ctrlKey;
+        if (!summaryPointerHandled) {
+          return;
+        }
+        event.preventDefault();
+        summary.focus({ preventScroll: true });
+        picker.open = !picker.open;
+        mousePointerId = picker.open ? event.pointerId : null;
+      });
+      summary.addEventListener(&quot;click&quot;, (event) =&gt; {
+        if (summaryPointerHandled &amp;&amp; event.detail &gt; 0) {
+          event.preventDefault();
+        }
+      });
+      const choices = panels.map((panel, index) =&gt; {
+        const choice = document.createElement(&quot;button&quot;);
+        choice.type = &quot;button&quot;;
+        choice.className = &quot;cursor-interaction&quot;;
+        choice.textContent = panel.dataset.variant;
+        choice.addEventListener(&quot;click&quot;, () =&gt; {
+          select(index);
+          summary.focus();
+        });
+        choice.addEventListener(&quot;pointerup&quot;, (event) =&gt; {
+          if (
+            picker.open &amp;&amp;
+            event.pointerType === &quot;mouse&quot; &amp;&amp;
+            event.button === 0 &amp;&amp;
+            event.pointerId === mousePointerId
+          ) {
+            choice.click();
+          }
+        });
+        options.appendChild(choice);
+        return choice;
+      });
+      const select = (index) =&gt; {
+        const changed = active !== index;
+        active = index;
+        panels.forEach((panel, position) =&gt; {
+          panel.hidden = position !== active;
+          choices[position].setAttribute(
+            &quot;aria-current&quot;,
+            String(position === active),
+          );
+        });
+        root.dataset.activeVariant = panels[active].dataset.variant;
+        count.textContent = `${active + 1} / ${panels.length}`;
+        name.textContent = panels[active].dataset.variant;
+        picker.open = false;
+        mousePointerId = null;
+        if (changed) {
+          status.textContent = `${count.textContent}: ${name.textContent}`;
+        }
+      };
+      previous.addEventListener(&quot;click&quot;, () =&gt;
+        select((active + panels.length - 1) % panels.length),
+      );
+      next.addEventListener(&quot;click&quot;, () =&gt;
+        select((active + 1) % panels.length),
+      );
+      picker.addEventListener(&quot;keydown&quot;, (event) =&gt; {
+        if (event.key === &quot;Escape&quot; &amp;&amp; picker.open) {
+          event.preventDefault();
+          picker.open = false;
+          mousePointerId = null;
+          summary.focus();
+          return;
+        }
+        if (event.altKey || event.ctrlKey || event.metaKey) {
+          return;
+        }
+        const index = choices.indexOf(document.activeElement);
+        let nextIndex;
+        if (event.key === &quot;ArrowDown&quot;) {
+          nextIndex = index &lt; 0 ? active : (index + 1) % choices.length;
+        } else if (event.key === &quot;ArrowUp&quot;) {
+          nextIndex = index &lt; 0 ? active : (index + choices.length - 1) % choices.length;
+        } else if (picker.open &amp;&amp; event.key === &quot;Home&quot;) {
+          nextIndex = 0;
+        } else if (picker.open &amp;&amp; event.key === &quot;End&quot;) {
+          nextIndex = choices.length - 1;
+        } else {
+          return;
+        }
+        event.preventDefault();
+        picker.open = true;
+        choices[nextIndex].focus();
+      });
+      picker.addEventListener(&quot;focusout&quot;, (event) =&gt; {
+        if (!picker.contains(event.relatedTarget)) {
+          picker.open = false;
+          mousePointerId = null;
+        }
+      });
+      const dismiss = (event) =&gt; {
+        if (!summary.contains(event.target)) {
+          mousePointerId = null;
+        }
+        if (!picker.contains(event.target)) {
+          picker.open = false;
+        }
+      };
+      const endPointerSelection = () =&gt; {
+        mousePointerId = null;
+      };
+      const sizePicker = () =&gt; {
+        root.style.setProperty(
+          &quot;--viz-carousel-picker-height&quot;,
+          `${picker.open ? options.offsetHeight : 0}px`,
+        );
+      };
+      picker.addEventListener(&quot;toggle&quot;, sizePicker);
+      window.addEventListener(&quot;resize&quot;, sizePicker);
+      document.addEventListener(&quot;pointerdown&quot;, dismiss);
+      document.addEventListener(&quot;pointerup&quot;, endPointerSelection);
+      document.addEventListener(&quot;pointercancel&quot;, endPointerSelection);
+      window.addEventListener(&quot;blur&quot;, endPointerSelection);
+      window.addEventListener(
+        &quot;pagehide&quot;,
+        () =&gt; {
+          document.removeEventListener(&quot;pointerdown&quot;, dismiss);
+          document.removeEventListener(&quot;pointerup&quot;, endPointerSelection);
+          document.removeEventListener(&quot;pointercancel&quot;, endPointerSelection);
+          window.removeEventListener(&quot;blur&quot;, endPointerSelection);
+          window.removeEventListener(&quot;resize&quot;, sizePicker);
+        },
+        { once: true },
+      );
+      root.append(controls, status);
+      select(0);
+    }
+  })();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+
+<script>(() => {
+  const frame = document.getElementById("codex-visualization");
+  if (!(frame instanceof HTMLIFrameElement)) {
+    return;
+  }
+  const isShare = document.documentElement.classList.contains(
+    "visualization-share-root",
+  );
+  let viewportHeight = globalThis.innerHeight;
+  let sizeFingerprint = null;
+  let sizeWriteTimeout;
+  let lastSize = null;
+  let pendingSize = null;
+  const storageKey = `codex:visualization-widget-state-v2:${JSON.stringify([
+    globalThis.location.pathname,
+    globalThis.location.search,
+  ])}`;
+  const sizeStorageKey = `${storageKey}:share-size-v1`;
+  const parseState = (serializedState) => {
+    if (
+      typeof serializedState !== "string" ||
+      new TextEncoder().encode(serializedState).length > 16 * 1024
+    ) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    /** @type {unknown} */
+    const state = JSON.parse(serializedState);
+    if (
+      state == null ||
+      typeof state !== "object" ||
+      Array.isArray(state) ||
+      ("imageIds" in state &&
+        (!Array.isArray(state.imageIds) || state.imageIds.length > 0))
+    ) {
+      throw new TypeError("Widget state must be a JSON object");
+    }
+    const storedState = { modelContent: null, privateContent: null, ...state };
+    const canonicalState = JSON.stringify(
+      storedState,
+      (_key, /** @type {unknown} */ value) => {
+        if (typeof value === "number" && !Number.isFinite(value)) {
+          throw new TypeError("Widget state must contain finite numbers");
+        }
+        return value;
+      },
+    );
+    if (new TextEncoder().encode(canonicalState).length > 16 * 1024) {
+      throw new TypeError(
+        "Widget state must be a JSON object of at most 16 KiB",
+      );
+    }
+    return storedState;
+  };
+  let storage = null;
+  let state = null;
+  try {
+    const localStorage = globalThis.localStorage;
+    const probeKey = `${storageKey}:probe`;
+    localStorage.setItem(probeKey, "1");
+    localStorage.removeItem(probeKey);
+    storage = localStorage;
+    const savedState = storage.getItem(storageKey);
+    if (savedState != null) {
+      try {
+        state = parseState(savedState);
+      } catch {
+        // Invalid saved state does not disable future writes.
+      }
+    }
+  } catch {
+    storage = null;
+  }
+  const persistSize = () => {
+    globalThis.clearTimeout(sizeWriteTimeout);
+    if (pendingSize == null) {
+      return;
+    }
+    try {
+      storage?.setItem(sizeStorageKey, pendingSize);
+    } catch {
+      // A denied or full cache must not affect the visualization.
+    }
+    pendingSize = null;
+  };
+  if (isShare) {
+    globalThis.addEventListener("pagehide", persistSize);
+  }
+  const initialGlobals = {
+    widgetState: state,
+    statePersistence: storage == null ? "none" : "local",
+  };
+
+  const channel = new MessageChannel();
+  channel.port1.addEventListener("message", (event) => {
+    const data = event.data;
+    if (typeof data !== "object" || data == null) {
+      return;
+    }
+    if (data.type === "widget-state-write") {
+      if (!Number.isSafeInteger(data.id) || data.id <= 0) {
+        return;
+      }
+      let ok = false;
+      try {
+        if (storage != null) {
+          const state = parseState(data.state);
+          storage.setItem(storageKey, JSON.stringify(state));
+          ok = true;
+        }
+      } catch {
+        // Storage denial, quota limits, and invalid state return a failed receipt.
+      }
+      channel.port1.postMessage({
+        type: "widget-state-result",
+        id: data.id,
+        ok,
+      });
+      return;
+    }
+    if (data.type === "height") {
+      const height = data.height;
+      if (
+        typeof height !== "number" ||
+        !Number.isFinite(height) ||
+        height < 0
+      ) {
+        return;
+      }
+      if (height <= 10_000) {
+        const width = isShare && storage != null ? frame.clientWidth : null;
+        frame.style.height = Math.ceil(height) + "px";
+        if (isShare && storage != null) {
+          const size = JSON.stringify({
+            fingerprint: sizeFingerprint,
+            width,
+            viewportHeight: globalThis.innerHeight,
+            dark: globalThis.matchMedia("(prefers-color-scheme: dark)").matches,
+            scale: globalThis.devicePixelRatio,
+            height: Math.ceil(height),
+          });
+          if (size !== lastSize) {
+            lastSize = size;
+            pendingSize = size;
+            globalThis.clearTimeout(sizeWriteTimeout);
+            sizeWriteTimeout = globalThis.setTimeout(persistSize, 100);
+          }
+        }
+      }
+      if (isShare) {
+        // Keep unusually tall content accessible without accepting an unbounded height.
+        if (height > 10_000 && Number.parseFloat(frame.style.height) === 0) {
+          frame.style.removeProperty("height");
+        }
+        frame.scrolling = height > 10_000 ? "auto" : "no";
+        document.documentElement.classList.add("visualization-share-ready");
+      }
+      return;
+    }
+    if (data.type === "scroll-to") {
+      const top = data.top;
+      if (
+        typeof top === "number" &&
+        Number.isFinite(top) &&
+        top >= 0 &&
+        globalThis.navigator.userActivation?.isActive === true
+      ) {
+        globalThis.scrollTo({
+          top: Math.ceil(
+            globalThis.scrollY + frame.getBoundingClientRect().top + top,
+          ),
+        });
+      }
+      return;
+    }
+    if (data.type === "open-external") {
+      const rawHref = data.href;
+      if (typeof rawHref !== "string") {
+        return;
+      }
+      let href;
+      try {
+        const url = new URL(rawHref, document.baseURI);
+        if (url.protocol !== "https:") {
+          return;
+        }
+        href = url.href;
+      } catch {
+        return;
+      }
+      if (globalThis.navigator.userActivation?.isActive === true) {
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.rel = "noopener noreferrer";
+        anchor.target = "_blank";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+      return;
+    }
+    if (data.type === "follow-up") {
+      const prompt = data.prompt;
+      if (
+        typeof prompt !== "string" ||
+        globalThis.navigator.userActivation?.isActive !== true
+      ) {
+        return;
+      }
+      const title = data.title;
+      globalThis.prompt(typeof title === "string" ? title : prompt, prompt);
+    }
+  });
+  channel.port1.start();
+  const srcdoc = frame.dataset.srcdoc;
+  if (srcdoc == null) {
+    return;
+  }
+  globalThis.addEventListener("resize", () => {
+    const height = Number.parseFloat(frame.style.height);
+    if (!isShare && (!Number.isFinite(height) || height <= viewportHeight)) {
+      frame.style.removeProperty("height");
+    }
+    viewportHeight = globalThis.innerHeight;
+    channel.port1.postMessage({ type: "measure" });
+  });
+  frame.addEventListener(
+    "load",
+    () => {
+      frame.contentWindow?.postMessage(
+        { type: "codex-visualization-initialize" },
+        "*",
+        [channel.port2],
+      );
+    },
+    { once: true },
+  );
+  // Match the trusted bootstrap element, not the same text in an authored title.
+  const frameHtml = srcdoc.replace(
+    '<script type="application/json" id="codex-visualization-widget-state">__CODEX_VISUALIZATION_WIDGET_STATE__<\/script>',
+    () =>
+      '<script type="application/json" id="codex-visualization-widget-state">' +
+      JSON.stringify(initialGlobals).replaceAll("<", "\\u003c") +
+      "<\/script>",
+  );
+  if (isShare && storage != null) {
+    // Fingerprint the rendered document, including restored widget state, without
+    // storing its content. This is a layout cache, not a security identity.
+    let hash = 5381;
+    for (let index = 0; index < frameHtml.length; index += 1) {
+      hash = (hash * 33 + frameHtml.charCodeAt(index)) % 4_294_967_296;
+    }
+    sizeFingerprint = hash.toString(36);
+    try {
+      const size = JSON.parse(storage.getItem(sizeStorageKey) ?? "null");
+      if (
+        size?.fingerprint === sizeFingerprint &&
+        size.width === frame.clientWidth &&
+        size.viewportHeight === globalThis.innerHeight &&
+        size.dark ===
+          globalThis.matchMedia("(prefers-color-scheme: dark)").matches &&
+        size.scale === globalThis.devicePixelRatio &&
+        typeof size.height === "number" &&
+        Number.isFinite(size.height) &&
+        size.height >= 0 &&
+        size.height <= 10_000
+      ) {
+        frame.style.height = size.height + "px";
+      }
+    } catch {
+      // Ignore missing or invalid cache entries and measure the live frame.
+    }
+  }
+  frame.srcdoc = frameHtml;
+  delete frame.dataset.srcdoc;
+})();
+</script>
+</body>
+</html>
