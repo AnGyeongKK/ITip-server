@@ -2,7 +2,7 @@
 
 ## API 호출 구조 보기
 
-[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·#12·#13·관련 커밋을 볼 수 있다. 백엔드 구현 15개와 후속 설계 23개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
+[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·#12·#13·#21·관련 커밋을 볼 수 있다. 백엔드 구현 15개와 후속 설계 23개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
 
 편집 원본은 [`visualizations/yousum-api-pipelines.fragment.html`](visualizations/yousum-api-pipelines.fragment.html)이다. 배포용 HTML은 이 원본에 테마·미리보기 실행 환경을 포함한 파일이며, 수정 후 두 파일의 동작을 함께 확인한다.
 
@@ -17,6 +17,7 @@
 | Chat | `ITip/apps/chat-app/src/main` | `ITip/apps/chat-app/src/test` |
 | 공통 응답·예외 | `ITip/libs/common/src/main` | `ITip/libs/common/src/test` |
 | Entity·Repository·공유 결과 | `ITip/libs/domain/src/main` | `ITip/libs/domain/src/test` |
+| 공통 임베딩·SDK | `ITip/libs/ai/src/main` | `ITip/libs/ai/src/test` |
 
 - Java 21과 Docker Desktop을 실행한다. IntelliJ의 Project SDK·Gradle JVM도 21로 맞춘다.
 - `ITip/`에서 명령을 실행한다. 비밀값은 각자 로컬 환경변수로 설정하며 `.env` 파일을 생성·공유·커밋하지 않는다.
@@ -30,8 +31,12 @@
 | `DB_POOL_MAX` | 프로세스별 최대 DB 연결 수. 기본 5 |
 | `WORKER_PORT` | Worker HTTP 포트. 기본 8081 |
 | `CHAT_PORT` | Chat HTTP 포트. 기본 8082 |
-| `CHAT_AI_BASE_URL` | Python 서버 기본 주소. 미설정 시 질문 생성은 JSON503, 방·기록 조회는 동작 |
-| `CHAT_AI_TOKEN` | 내부 Python 인증이 필요한 경우만 Bearer 전달. 실제 값 공유 금지 |
+| `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` | 기본false. 임베딩/답변 모델 활성화 |
+| `OPENAI_API_KEY` | 각자 환경에서 주입. Worker·Chat만 사용, 값 공유/추적 금지 |
+| `OPENAI_BASE_URL` | 기본 https://api.openai.com/v1 |
+| `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` | Worker·Chat의 같은 모델/버전·차원. 임의 기본 모델 없음 |
+| `CHAT_MODEL`, `CHAT_TOKEN_ENCODING`, `CHAT_CONTEXT_TOKENS` | 답변 모델·해당 tokenizer·전체 context 용량을 명시 |
+| `CHAT_INPUT_TOKEN_BUDGET`, `CHAT_MAX_OUTPUT_TOKENS` | 기본8000·2048. 입력 budget+출력 cap+여유256이 context 이내여야 함 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat 공통 fallback 식별자. 응답 metadata.model이 없을 때 사용하며 공급자의 실제 모델을 선택하지 않음 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20. 모델·차원이 맞는 현재 소유 기록만 검색 |
 | `DEMO_USER_ID` | API·Chat에서 동일하게 설정하는 데모 소유자. 기본 demo-user |
@@ -55,7 +60,7 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 스키마는 API의 Flyway가 생성·변경하고 세 앱은 `ddl-auto=validate`로 검사한다. Worker·Chat은 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
-영상 분석을 완료하려면 GCS 인증과 **`ChatModel`·`EmbeddingModel` Bean**이 필요하다. 현재 저장소는 공급자 공통 Spring AI 어댑터까지 포함하며 특정 공급자 starter·모델·API 키 자동 설정은 포함하지 않는다. [AI 문서와 현재 코드의 차이](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한 뒤 Worker에 두 Bean과 HTTP 타임아웃·SDK 총 시도 1회(내부 자동 재시도 0회)를 설정한다. 키 환경변수만 추가해도 모델 Bean이 생성되는 구조는 아니다. 설정 전에도 앱·DB 조회는 시작되지만 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. Python 채팅 서버 연동은 별도 기능이다.
+영상 분석 완료에는 GCS 인증과 분석용 ChatModel·임베딩용 EmbeddingModel이 필요하다. 임베딩은 libs/ai의 실제 공급자 설정을 활성화해 연결한다. 분석용 ChatModel은 AI 파트와 별도로 연결해야 하며 채팅 답변 모델을 Worker에 재사용하지 않는다. [분석 AI와 현재 코드](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한다. 필수 모델이 없는 분석 작업은 AI_NOT_CONFIGURED로 실패한다. [채팅 직접 생성 설정](chat-generation-contract.md#공급자실행-설정)은 이 분석 모델 설정과 별개다.
 
 자막·AI 출력 JSON, 환경변수, 단계별 재시도와 함수 흐름은 [분석 Worker 안내](analysis-worker.md)를 따른다. Worker는 기본 2초마다 작업을 조회한다. `WORKER_SCHEDULING_ENABLED=false`는 수동 점검용이며 시연에서는 기본값 `true`로 실행한다.
 
@@ -125,11 +130,11 @@ DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·C
 | `API_IMAGE`, `WORKER_IMAGE`, `CHAT_IMAGE` | 기본 `itip-api:local`, `itip-worker:local`, `itip-chat:local`. 원격 배포 시 버전 태그 지정 후 같은 Compose 명령의 `pull` 실행 |
 | `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
 | `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
-| `CHAT_AI_BASE_URL`, `CHAT_AI_TOKEN` | Python 주소·선택 Bearer 인증. 주소 미설정 시 질문 접수 전 JSON 503, 방·기록 조회는 동작 |
+| `OPENAI_API_KEY`, `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` 및 모델 변수 | Worker·Chat으로 전달. 일반 API에는 키를 전달하지 않음. [전체 모델 설정](chat-generation-contract.md#공급자실행-설정) 참고 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat에 전달하는 임베딩 응답의 fallback 식별자. 실제 모델 Bean 설정과 별개 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20 |
 
-포트는 `127.0.0.1`에만 바인딩한다. Worker 포트는 호스트에 열지 않는다. Docker Desktop에서 호스트 Python에 연결할 때는 `localhost` 대신 `host.docker.internal`을 사용한다. `.env` 파일은 생성·배포하지 않는다. `docker compose config`는 치환된 비밀값을 출력할 수 있으므로 공유용으로 실행하지 말고 형식만 확인할 때는 `config --quiet`을 사용한다.
+포트는 `127.0.0.1`에만 바인딩한다. Worker 포트는 호스트에 열지 않는다. `.env` 파일은 생성·배포하지 않는다. `docker compose config`는 치환된 비밀값을 출력할 수 있으므로 공유용으로 실행하지 말고 형식만 확인할 때는 `config --quiet`을 사용한다.
 
 GCS 파일이 필요하면 각자 준비한 인증 파일의 **절대경로**를 로컬 `GCS_CREDENTIALS_PATH`로 설정한다. 아래 선택 overlay가 API·Worker에 읽기 전용 마운트한다. 인증 파일은 이미지에 들어가지 않는다.
 
@@ -166,13 +171,11 @@ API의 Flyway 완료 뒤 Chat을 실행한다. API·Chat의 `DEMO_USER_ID`를 �
 
 앱은 방·이력 JSON과 답변 POST SSE 모두 Chat 주소(기본8082)로 호출한다. `POST /api/v1/conversations`의 scope는 [채팅 계약](chat-contract.md)을 따른다. 질문은 JSON clientRequestId·content·retryOfMessageId와 같은 UUID의 Idempotency-Key를 보내며, `Accept: text/event-stream`을 사용한다. 일반 EventSource의 GET 요청으로 대체하지 않는다.
 
-Python을 연결하려면 [내부 계약 초안](python-chat-contract.md)을 AI 파트와 맞추고 CHAT_AI_BASE_URL을 로컬에서 지정한다. 내부 2.0은 `question + contexts + history`를 보내므로 Python과 함께 적용한다. Chat에도 유일한 Spring AI `EmbeddingModel` Bean이 필요하다. 현재 공급자 starter·실제 Bean 자동 설정은 없으며 Python 주소·모델 이름·키 환경변수만 넣어도 Bean이 생기지 않는다. Bean이 없거나 유일하지 않으면 JSON503 CHAT_AI_NOT_CONFIGURED로 질문 접수를 거부한다.
+Chat은 [직접 생성 계약](chat-generation-contract.md)에 따라 질문 임베딩·pgvector 검색·프롬프트 구성·GPT 호출을 수행한다. AI 파트와 모델·tokenizer·context/출력 예산·프롬프트/Schema를 확인한 뒤 위 변수를 설정하고 두 모델을 활성화한다. 활성화 전 질문만 JSON503이고 방·기록 조회는 동작한다. 활성화한 필수 설정이 잘못되면 기동 시 실패한다. Python 서버 주소나 토큰은 사용하지 않는다.
 
-임베딩 공급자는 Worker와 모델·버전·차원·입력 규칙을 맞추고 HTTP 타임아웃10초 이내·SDK 총 시도1회로 구성한다. 모델 식별자/벡터를 확인하고 저장된 문서 벡터와 맞지 않으면 재색인한다. `CHAT_RETRIEVAL_TOP_K`는 품질이 검증된 고정 정책이 아닌 MVP 기본값이다. HTTP fixture·실제 pgvector 테스트와 실제 모델의 의미 검색·답변 품질 검증을 구분한다.
+키를 발급하거나 실제 외부 모델을 호출하지 않고 테스트했다. 테스트는 실제 환경의 모델 활성화를 기본 비활성화하고 로컬 HTTP fixture만 명시적으로 활성화한다. 실제 SDK·DB 동작과 실제 모델의 의미 검색·답변 품질을 구분한다.
 
-Chat 테스트는 기본 AI 주소·토큰을 비우고 각 HTTP fixture 주소만 사용한다. 개발자가 export한 CHAT_AI_BASE_URL·CHAT_AI_TOKEN으로 실제 AI를 호출하지 않는다.
-
-Chat 이미지도 `./gradlew :apps:chat-app:bootJar` 후 `docker build -f apps/chat-app/Dockerfile -t itip-chat:local .`로 만든다. API와 같은 네트워크·DB 환경변수를 전달하고 8082를 로컬에 노출한다. 컨테이너에서 Python이 호스트에 있으면 localhost 대신 해당 Docker 환경의 호스트 주소를 사용한다. [코드 읽기 안내](chat-code-reading.md)에서 함수·잠금·TX·테스트 순서로 따라갈 수 있다.
+Chat 이미지도 `./gradlew :apps:chat-app:bootJar` 후 `docker build -f apps/chat-app/Dockerfile -t itip-chat:local .`로 만든다. API와 같은 네트워크·DB 설정과 위 모델 환경변수를 주입하고 8082를 노출한다. [코드 읽기 안내](chat-code-reading.md)에서 함수·TX·테스트 순서로 따라간다.
 
 ```sh
 ./gradlew test

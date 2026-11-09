@@ -1,5 +1,18 @@
 # 채팅 구현 검토
 
+## 현재: Spring AI로 검색·답변 직접 처리 (PR #21)
+
+- 기준 dev `0551364`에서 시작했고 이전 커밋을 유지한 채 직접 호출로 전환했다. 모델·키는 사용자가 나중에 설정하며 실제 키 발급·외부 모델 호출은 하지 않았다.
+- `4c1f198` 공통 공급자 설정, `1d65804` 프롬프트/예산/구조화 스트림, `bb57cd1` HTTP408 재전송 차단, `07e108f` API 연결 커밋은 각각 독립 리뷰 PASS다.
+- 실제 실패 1건: SDK maxRetries0 아래 Spring AI 기본 HTTP transport가408을 재전송해 요청2회가 됐다. 같은 SDK4.80.0 공식 transport로 바꾸고 401/408/429/503에서 단일 시도를 확인했다.
+- Java21 `./gradlew build`: **312개**, 실패·오류·건너뜀0. API107·Worker100·Chat78·common6·domain19·ai2. 실제 SDK→로컬 HTTP, 실제 pgvector·앱 포트의 조기 본문/부분 저장·인용/권한·삭제 경합을 포함한다.
+- 토큰 예산으로 제외한 원문 인용, 잘린 JSON·출처, 공급자 종료 없는 EOF·LENGTH·거절을 성공으로 처리하지 않는지 확인했다. 본문만 전송하고 완료 저장 뒤 done을 보낸다.
+- Compose 렌더링에서 Worker/Chat의 모델·예산 전달, 일반 API의 키 제외, Python 변수 제거를 확인했다.
+- HTML의 38개 API 선택·Spring 검색/GPT 직접 연결, 독립 파일의 CHAT-03/04 전환을 확인했다. 원문/독립 파일 일치·기존 스타일 wrapper 유지·고정 코드 파일33개·JS 문법·문서 파일 링크를 검사했다.
+- 현재 계약은 [Spring 직접 생성](chat-generation-contract.md)이다. 분석용 ChatModel 실제 연결, 답변/임베딩 모델·encoding 선택·실제 품질/시간/비용·모바일 네트워크 시연은 별도 확인 대상이다.
+
+아래는 이전 PR·설계 시점 기록이다. Python 경유·당시 테스트 수를 현재 구현 상태로 해석하지 않는다.
+
 ## Spring 질문 임베딩·pgvector 검색 전환
 
 - 기준 `dev`: PR #19 병합 `0551364`. 공개 앱 요청·SSE 필드는 유지하고 Python 내부 요청만 schema2.0 contexts로 변경한다. DB 마이그레이션은 없다.

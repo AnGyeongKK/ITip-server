@@ -12,9 +12,9 @@ Notion CHAT-01·06은 고정된 조건을 질문 시점에 재평가하는 방�
 
 검색어의 앞뒤 공백만 제거하고 내부 공백·특수문자는 보존한다. 생성 시각은 PostgreSQL의 마이크로초 정밀도에 맞춰 저장하여 첫 응답과 멱등 재전송의 시각이 일치하게 한다.
 
-## 외부 AI
+## AI 연결
 
-현재 Notion AI 페이지는 RAG 채팅 미착수이며 Python endpoint·스트림 계약은 확인되지 않았다. #7은 내부 HTTP/SSE 계약 초안과 로컬 연동 fixture로 개발하고, 실제 Python과 GPT 검증을 구분한다. 주소·키를 임의로 만들거나 실제 AI가 연결됐다고 표시하지 않는다.
+Spring Chat이 질문 임베딩·pgvector 검색·프롬프트 구성·GPT 직접 호출을 담당한다. AI 파트는 프롬프트·모델 옵션·출력 Schema·평가 사례를 제공한다. 현재 구현은 [직접 생성 계약](chat-generation-contract.md)을 따르며 실제 모델·키를 연결한 품질 검증은 남아 있다.
 
 ## 채팅방·기록 API (#6)
 
@@ -53,12 +53,12 @@ Chat 기본 주소는 `http://localhost:8082`다. API가 Flyway V4·V5를 적용
 
 ```text
 Worker: 자막 원문 → chunk·임베딩 → analysis_chunks
-Spring Chat: 질문 임베딩 → 현재 범위의 pgvector 검색 → 원문·출처 contexts
-Python: question + contexts + history → GPT 답변·인용 SSE
+Spring Chat: 질문 임베딩 → 현재 범위의 pgvector 검색 → 프롬프트 예산 조정
+Spring AI: system + question/contexts/history → GPT 구조화 답변 스트림
 Spring Chat: 전달한 근거·현재 권한 확인 → 최종 저장 → 앱 done
 ```
 
-질문 임베딩은 Spring AI `EmbeddingModel`, 검색은 기존 `analysis_chunks`에 대한 SQL 코사인 거리(`<=>`) 정렬이다. 기본 topK=8, 원문 합계24000 UTF-16 문자이며 [내부 계약 2.0](python-chat-contract.md)을 따른다. 소유권·삭제·현재 기록 범위·완료 상태·임베딩 모델/차원은 정렬 전에 제한한다. 모델 Bean이 없는 경우 조회 기능은 유지하되 질문 접수는 JSON503으로 거부한다.
+질문 임베딩은 Spring AI `EmbeddingModel`, 검색은 기존 `analysis_chunks`에 대한 SQL 코사인 거리(`<=>`) 정렬이다. 기본 topK=8, 원문 합계24000 UTF-16 문자이며 [직접 생성 계약](chat-generation-contract.md)을 따른다. 소유권·삭제·현재 기록 범위·완료 상태·임베딩 모델/차원은 정렬 전에 제한한다. 공급자 설정을 활성화하기 전에는 조회를 유지하고 질문 접수는 JSON503으로 거부한다. 잘못된 필수 설정으로 활성화하면 기동 시 실패한다.
 
 ## 답변 품질 개선 계획
 
@@ -69,4 +69,4 @@ Spring Chat: 전달한 근거·현재 권한 확인 → 최종 저장 → 앱 do
 | 3. 기본값 조정 | 같은 질문 세트에서 chunk 크기·겹침·topK·문맥 길이·유사도 임계값을 하나씩 바꿔 전후를 비교한다. 모델 변경은 문서 벡터 재색인과 함께 검증한다. |
 | 4. 필요할 때 확장 | 검색 누락·잡음이 확인되면 날짜·채널 등 고급 메타데이터 필터, 키워드+벡터 하이브리드, 재정렬, 후속 질문 재작성 등을 검토한다. 근거·지연·비용이 나아지는 안을 팀에서 결정한다. |
 
-현재 사용자·폴더/키워드 범위·삭제·모델/차원 제한은 필수 규칙으로 이미 적용한다. 위 확장 계획은 그 이후의 품질 개선이며 이번 MVP에 추가 알고리즘을 구현하지 않는다. 실제 공급자 Bean·Python/GPT 연결과 기준 질문 세트 검증은 남아 있다.
+현재 사용자·폴더/키워드 범위·삭제·모델/차원 제한은 필수 규칙으로 이미 적용한다. 위 확장 계획은 그 이후의 품질 개선이며 이번 MVP에 추가 알고리즘을 구현하지 않는다. 실제 모델·키 연결과 기준 질문 세트의 품질 검증은 남아 있다.

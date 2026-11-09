@@ -60,7 +60,7 @@
     <h2>API별 서버 처리</h2>
     <span class="text-small text-muted">백엔드 구현 15개 · 후속 설계 23개</span>
   </div>
-  <div class="revision text-small"><a href="https://github.com/AnGyeongKK/ITip-server/pull/21" target="_blank" rel="noreferrer">Spring RAG PR #21 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/19" target="_blank" rel="noreferrer">dev 통합 PR #19 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/13" target="_blank" rel="noreferrer">Python·SSE 원본 PR #13 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/feat/7-spring-rag-retrieval/docs/chat-code-reading.md" target="_blank" rel="noreferrer">채팅 코드 읽기 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/12" target="_blank" rel="noreferrer">채팅방·기록 PR #12 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/11" target="_blank" rel="noreferrer">결과 조회 PR #11 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/10" target="_blank" rel="noreferrer">분석 처리 PR #10 · 병합 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md" target="_blank" rel="noreferrer">결과 조회 검토 기록 ↗</a><span>GCS·실제 모델 연결 미확인</span></div>
+  <div class="revision text-small"><a href="https://github.com/AnGyeongKK/ITip-server/pull/21" target="_blank" rel="noreferrer">Spring AI 검색·답변 PR #21 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/19" target="_blank" rel="noreferrer">dev 통합 PR #19 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/13" target="_blank" rel="noreferrer">SSE 이전 구현 PR #13 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/feat/7-spring-rag-retrieval/docs/chat-code-reading.md" target="_blank" rel="noreferrer">채팅 코드 읽기 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/12" target="_blank" rel="noreferrer">채팅방·기록 PR #12 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/11" target="_blank" rel="noreferrer">결과 조회 PR #11 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/pull/10" target="_blank" rel="noreferrer">분석 처리 PR #10 · 병합 ↗</a><a href="https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md" target="_blank" rel="noreferrer">결과 조회 검토 기록 ↗</a><span>GCS·실제 모델 연결 미확인</span></div>
   <div class="selectors">
     <label class="choice"><span class="form-label">도메인</span><select class="form-select" aria-label="도메인 선택"></select></label>
     <label class="choice"><span class="form-label">API</span><select class="form-select" aria-label="API 선택"></select></label>
@@ -119,9 +119,9 @@
       'SEARCH-01': read('api','RecordSearchService.search()','AND 필터·최신순 기록','200 · items / matchedCount / nextCursor / hasNext','analyzedAt·recordId 커서, limit+1 조회. 컬렉션 fetch join 페이지네이션 주의. 자막 전체·벡터 검색 아님.','q / folderId / keywordIds / playlistGroupId / targetFolderId / cursor'),
       'SEARCH-02': read('api','RecordKeywordQuery.list()','현재 범위 키워드·고유 기록 수','200 · keywords / matchedCount','SEARCH-01과 같은 필터 의미·집계 기준. RAG 임베딩 유사도 검색 API가 아님.','q / folderId / keywordIds / playlistGroupId'),
       'CHAT-01': write('chat','ConversationService.create()','검색 범위·채팅방 저장','201 · conversationId / scope / recordCount','생성만으로 GPT를 호출하지 않음. 범위 변경은 새 방. 범위 고정·재평가 정책은 협의.','scope + Idempotency-Key'),
-      'CHAT-02': read('chat','ConversationQueryService.list()','내 대화방·최근 활동 정보','200 · items / nextCursor / hasNext','updatedAt·conversationId 커서. 방 목록 조회는 Python·GPT를 호출하지 않음.','cursor / limit'),
+      'CHAT-02': read('chat','ConversationQueryService.list()','내 대화방·최근 활동 정보','200 · items / nextCursor / hasNext','updatedAt·conversationId 커서. 방 목록 조회는 AI를 호출하지 않음.','cursor / limit'),
       'CHAT-03': read('chat','MessageQueryService.list()','저장 메시지·상태·출처','200 · items / nextCursor / hasNext','오래된 메시지 방향으로 커서 조회하되 items는 과거→최근. clientRequestId 조회와 cursor는 함께 사용하지 않음.','conversationId / cursor 또는 clientRequestId'),
-      'CHAT-04': {server:'chat', input:'conversationId / content / clientRequestId + Idempotency-Key', output:'200 text/event-stream', edges:['appChat','chatDb','chatPython'],extraPending:['chatProvider','pythonGpt'],labels:{chat:'질문 임베딩·근거 검색',python:'원문 기반 답변 생성'},boundary:'Spring이 검색한 원문·출처만 Python에 전달. 최종 DB 커밋 후 done.',steps:[s('Spring','QuestionEmbeddingClient.embed()','질문 임베딩'),s('Spring·DB','ChatContextQuery.search()','현재 범위의 원문 검색'),s('Spring→Python','PythonChatClient.stream()','question + contexts + history'),s('Spring·DB','ChatGenerationStore.complete()','전달한 근거·현재 권한 확인 후 저장')]},
+      'CHAT-04': {server:'chat', input:'conversationId / content / clientRequestId + Idempotency-Key', output:'200 text/event-stream', edges:['appChat','chatDb','chatProvider','chatGpt'],labels:{chat:'검색·GPT 직접 호출'},boundary:'Spring이 질문 임베딩·검색·프롬프트·GPT 호출·인용 검증을 담당. 최종 저장 후 done.',steps:[s('Chat','QuestionEmbeddingClient.embed()','질문 임베딩'),s('Chat·DB','ChatContextQuery.search()','현재 범위 원문 검색'),s('Chat','ChatAnswerGenerator.prepare()','예산 확인·프롬프트'),s('Chat→GPT','ChatAnswerGenerator.stream()','구조화 스트림'),s('Chat·DB','ChatGenerationStore.complete()','인용 검증 후 저장')]},
       'CHAT-05': read('chat','ChatMessageQueryService.get()','부분·최종 답변과 생성 상태','200 · content / status / sources / finishReason','재접속 상태 확인용. 조회로 GPT를 다시 호출하거나 SSE를 재생하지 않음.','conversationId / messageId'),
       'CHAT-06': read('chat','ConversationQueryService.get()','대화 범위·생성 중 메시지 ID','200 · scope / generation / activeAssistantMessageId','생성 중이면 CHAT-05로 상태 조회. 범위가 UNAVAILABLE이어도 기존 대화는 읽을 수 있음.','conversationId'),
       'CHAT-07': write('chat','ConversationService.delete()','대화방·메시지·출처 삭제','200 · 성공 메시지','생성 중인 방 삭제는 409. 분석 기록·폴더·GCS 자막은 유지.','conversationId'),
@@ -129,7 +129,7 @@
       'PUSH-02': {...write('api','DeviceService.disconnect()','해당 설치의 알림 연결 해제','200 · 성공 메시지','운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.','installationId'),future:true}
     };
     const repo = 'https://github.com/AnGyeongKK/ITip-server';
-    const implementation = '4ab3ffe';
+    const implementation = '07e108f';
     const apiSource = 'ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/';
     const workerSource = 'ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/';
     const chatRoot = 'ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/';
@@ -141,7 +141,8 @@
       ChatCitationQuery: chatRoot + 'stream/ChatCitationQuery.java',
       QuestionEmbeddingClient: chatRoot + 'retrieval/QuestionEmbeddingClient.java',
       ChatContextQuery: chatRoot + 'retrieval/ChatContextQuery.java',
-      PythonChatClient: chatRoot + 'infrastructure/PythonChatClient.java',
+      ChatAnswerGenerator: chatRoot + 'generation/ChatAnswerGenerator.java',
+      AnswerJsonStream: chatRoot + 'generation/AnswerJsonStream.java',
       ConversationController: chatSource + 'controller/ConversationController.java',
       ConversationMessageController: chatSource + 'controller/ConversationMessageController.java',
       ConversationService: chatSource + 'service/ConversationService.java',
@@ -261,21 +262,21 @@
       }
     });
     Object.assign(flows, {
-      'CHAT-01': {server:'chat',implemented:true,local:true,commits:['7e9cd32','c4c1be6','93fdf2c','db83ec8','f09c8b8'],input:'scope + UUID Idempotency-Key',output:'201 · conversationId / scope / recordCount · Location',edges:['appChat','chatDb'],labels:{chat:'참고 범위·중복 확인',db:'방·멱등 키 원자적 저장'},boundary:'본인 완료 기록만 선택. 같은 키·본문은 최초 응답, 삭제된 방은 404. 이 요청은 Python을 호출하지 않음. 조건 재평가·폴더 구조는 병합 전 협의할 구현안.',steps:[implementedStep('Chat','ConversationController.create()','고정 데모 소유자·UUID 헤더·DTO 검증'),implementedStep('Chat·DB','ConversationService.create()','advisory lock → 키·본문 비교','쓰기 TX'),implementedStep('Chat·DB','ChatScopeQuery.resolve()','소유 완료 결과·폴더·키워드 AND·텍스트 포함 검색','쓰기 TX'),implementedStep('Chat·DB','ConversationService.create()','방·멱등 키 저장 후 커밋 → 201 · Location','쓰기 TX')]},
+      'CHAT-01': {server:'chat',implemented:true,local:true,commits:['7e9cd32','c4c1be6','93fdf2c','db83ec8','f09c8b8'],input:'scope + UUID Idempotency-Key',output:'201 · conversationId / scope / recordCount · Location',edges:['appChat','chatDb'],labels:{chat:'참고 범위·중복 확인',db:'방·멱등 키 원자적 저장'},boundary:'본인 완료 기록만 선택. 같은 키·본문은 최초 응답, 삭제된 방은 404. 이 요청은 AI를 호출하지 않음. 조건 재평가·폴더 구조는 병합 전 협의할 구현안.',steps:[implementedStep('Chat','ConversationController.create()','고정 데모 소유자·UUID 헤더·DTO 검증'),implementedStep('Chat·DB','ConversationService.create()','advisory lock → 키·본문 비교','쓰기 TX'),implementedStep('Chat·DB','ChatScopeQuery.resolve()','소유 완료 결과·폴더·키워드 AND·텍스트 포함 검색','쓰기 TX'),implementedStep('Chat·DB','ConversationService.create()','방·멱등 키 저장 후 커밋 → 201 · Location','쓰기 TX')]},
       'CHAT-02': {server:'chat',implemented:true,readOnly:true,commits:['f918a00'],input:'cursor / limit(기본20·최대50)',output:'200 · items / nextCursor / hasNext',edges:['appChat','chatDb'],labels:{chat:'내 채팅방 목록',db:'updatedAt DESC · id DESC'},boundary:'limit+1 조회. 활성 답변 ID 일괄 조회. 조회로 방의 정렬 시각을 변경하지 않음.',steps:[implementedStep('Chat','ConversationController.list()','커서·limit 검증'),implementedStep('Chat·DB','ConversationQueryService.list()','소유자 필터·동률 커서·활성 답변 일괄 조회','조회 TX'),implementedStep('Chat','ConversationController.list()','ApiResponse · 다음 커서')]},
       'CHAT-03': {server:'chat',implemented:true,readOnly:true,commits:['96cac97'],input:'conversationId / cursor / limit 또는 clientRequestId',output:'200 · USER·ASSISTANT items / nextCursor / hasNext',edges:['appChat','chatDb'],labels:{chat:'대화·접수 복구 조회',db:'position 커서·출처 일괄 조회'},boundary:'최신 페이지를 선택하고 items는 과거→최근 순. 요청 ID와 cursor는 함께 사용 불가. 원본 삭제 시 과거 답변 유지·출처 DELETED.',steps:[implementedStep('Chat','ConversationMessageController.list()','경로·쿼리 검증'),implementedStep('Chat·DB','MessageQueryService.list()','본인 방 → position limit+1 또는 요청 ID 복구','조회 TX'),implementedStep('Chat·DB','MessageQueryService.views()','출처·현재 개인 기록 일괄 조회 → 삭제 표시','조회 TX')]},
-      'CHAT-05': {server:'chat',implemented:true,readOnly:true,commits:['96cac97'],input:'conversationId / messageId',output:'200 · content / status / sources / error / nextPollAfterMs',edges:['appChat','chatDb'],labels:{chat:'부분·최종 답변 조회',db:'소유 방·해당 메시지'},boundary:'읽기 전용 복구 경로. Python을 다시 호출하거나 SSE를 재생하지 않음.',steps:[implementedStep('Chat','ConversationMessageController.get()','두 UUID 경로'),implementedStep('Chat·DB','MessageQueryService.get()','소유 방·같은 방 메시지 확인','조회 TX'),implementedStep('Chat·DB','MessageQueryService.views()','현재 출처 가용성·실패·조회 간격 반환','조회 TX')]},
+      'CHAT-05': {server:'chat',implemented:true,readOnly:true,commits:['96cac97'],input:'conversationId / messageId',output:'200 · content / status / sources / error / nextPollAfterMs',edges:['appChat','chatDb'],labels:{chat:'부분·최종 답변 조회',db:'소유 방·해당 메시지'},boundary:'읽기 전용 복구 경로. AI를 다시 호출하거나 SSE를 재생하지 않음.',steps:[implementedStep('Chat','ConversationMessageController.get()','두 UUID 경로'),implementedStep('Chat·DB','MessageQueryService.get()','소유 방·같은 방 메시지 확인','조회 TX'),implementedStep('Chat·DB','MessageQueryService.views()','현재 출처 가용성·실패·조회 간격 반환','조회 TX')]},
       'CHAT-06': {server:'chat',implemented:true,readOnly:true,commits:['f918a00'],input:'conversationId',output:'200 · scope / recordCount / scopeStatus / activeAssistantMessageId',edges:['appChat','chatDb'],labels:{chat:'방의 현재 참고 범위',db:'저장 조건·현재 기록'},boundary:'조건 재평가 구현안. 폴더 삭제 시 UNAVAILABLE이어도 과거 대화는 유지. 생성 중 메시지는 CHAT-05로 조회.',steps:[implementedStep('Chat','ConversationController.get()','소유자·방 ID'),implementedStep('Chat·DB','ConversationQueryService.get()','소유 방·저장 범위 읽기','조회 TX'),implementedStep('Chat·DB','ChatScopeQuery.resolve()','현재 소유 기록의 개수·가용 상태','조회 TX'),implementedStep('Chat·DB','ConversationQueryService.get()','활성 답변 ID 조회·상세 응답 구성','조회 TX')]},
       'CHAT-07': {server:'chat',implemented:true,local:true,commits:['f918a00','f09c8b8'],input:'conversationId',output:'200 · 성공 메시지',edges:['appChat','chatDb'],labels:{chat:'소유 방 삭제 조건',db:'방·메시지·출처 cascade'},boundary:'같은 방 잠금 후 생성 중이면 409. 분석 기록·결과·폴더·GCS 원문은 유지. 삭제한 생성 키 재전송은 404.',steps:[implementedStep('Chat','ConversationController.delete()','본인 방 ID'),implementedStep('Chat·DB','ConversationService.delete()','방 row lock → 활성 답변 검사 → 삭제·flush','쓰기 TX'),implementedStep('Chat','ConversationController.delete()','커밋 후 성공 메시지')]}
     });
     Object.assign(flows, {
       'CHAT-04': {
-        server:'chat',implemented:true,commits:['ef0b4e5','753fb94','4ab3ffe','616e993'],
+        server:'chat',implemented:true,commits:['4c1f198','1d65804','bb57cd1','07e108f'],
         input:'JSON clientRequestId/content/retryOfMessageId? · 동일 UUID Idempotency-Key · Accept SSE',
         output:'200 text/event-stream · meta / delta / sources / done · 실패는 error 또는 상태 GET',
-        edges:['appChat','chatDb','chatPython'],extraPending:['chatProvider','pythonGpt'],
-        labels:{chat:'질문 임베딩·검색·SSE',db:'허용 자막·벡터·대화',provider:'모델 Bean 연결 대기',python:'contexts로 답변 생성',gpt:'AI 파트 · 미검증'},provider:'질문 임베딩 모델',
-        boundary:'Spring 검색 → Python 생성. 현재 범위·동일 모델/차원으로 검색하고 전달한 인용만 완료 저장. AI 대기 동안 DB TX 없음. 내부2.0 동시 적용·모델 Bean 필요. 실제 모델·GPT 품질 미검증. PR #21.',
+        edges:['appChat','chatDb','chatProvider','chatGpt'],
+        labels:{chat:'검색·GPT·SSE',db:'원문·벡터·대화',provider:'Worker·Chat 공통',gpt:'실제 모델·키 설정 필요'},provider:'임베딩 모델',
+        boundary:'Spring이 검색·프롬프트·GPT 직접 호출. 실제 전송 후보·공급자 STOP·JSON·현재 권한 확인 후 완료 저장. AI 대기는 TX 밖. SDK/HTTP 재시도0. 실제 모델·품질 미검증. PR #21.',
         steps:[
           implementedStep('Chat','ChatStreamController.send()','AI 설정·요청·처리 여유 확인 · 실제 servlet 출력 스트림'),
           implementedStep('Chat·DB','ChatGenerationStore.begin()','키 → 방 잠금 · 현재 범위·과거 문맥 · 질문/답변/키 저장 후 커밋','쓰기 TX'),
@@ -283,8 +284,11 @@
           implementedStep('Chat→모델','QuestionEmbeddingClient.embed()','질문만 임베딩 · 10초 · 최대4개 · 실제 공급자 Bean 필요'),
           implementedStep('Chat·DB','ChatGenerationStore.refresh()','임베딩 후 현재 범위·안전한 history 재확인','짧은 읽기 TX'),
           implementedStep('Chat·DB','ChatContextQuery.search()','소유·기록·완료·모델/차원 제한 → 코사인 거리 topK · 원문 최대24000자','SQL 조회'),
-          implementedStep('Chat→Python','PythonChatClient.stream()','내부2.0 question + contexts + history · idle30초/전체120초'),
+          implementedStep('Chat','ChatAnswerGenerator.prepare()','고정 system + JSON 입력 · 오래된 대화/후순위 원문 제외 · 실제 후보 보존'),
+          implementedStep('Chat→GPT','ChatAnswerGenerator.stream()','Spring AI 실제 SDK · strict schema · idle30초/전체120초 · 재시도0'),
+          implementedStep('Chat','AnswerJsonStream.accept()','answer만 점진 decode · JSON 구문/인용 메타데이터는 본문에서 제외'),
           implementedStep('Chat→앱','ChatStreamBridge.write()','SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush','부분 TX'),
+          implementedStep('Chat','AnswerJsonStream.finish()','실제 공급자 STOP · 완전한 JSON · 전송 context/section 인용 검증'),
           implementedStep('Chat·DB','ChatGenerationStore.complete()','방 → 메시지 잠금 · 현재 토큰·lease 확인','쓰기 TX'),
           implementedStep('Chat·DB','ChatCitationQuery.validate()','실제 전달한 인용 · 현재/최초 범위 · chunk/section · 기록 FOR SHARE','완료 TX'),
           implementedStep('Chat·DB','ChatGenerationStore.complete()','본문·검증 출처·COMPLETED 저장 후 커밋','완료 TX'),
@@ -294,9 +298,9 @@
       }
     });
     for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
-    const labels = {app:'Android',api:'Spring API',worker:'Spring Worker',chat:'Spring Chat',db:'PostgreSQL',gcs:'Cloud Storage',provider:'분석·임베딩 모델',python:'Python AI',gpt:'GPT API'};
-    const fallback = {app:'요청·결과',api:'일반 API · 로컬',worker:'DB Poller · 로컬',chat:'채팅 API · 로컬',db:'pgvector · 로컬 Docker',gcs:'실제 GCS',provider:'연동 대상 협의',python:'AI 파트 · 별도 서버',gpt:'Python에서 호출'};
-    const edgeNodes = {appApi:['app','api'],appChat:['app','chat'],appGcs:['app','gcs'],apiDb:['api','db'],apiGcs:['api','gcs'],apiProvider:['api','provider'],dbWorker:['db','worker'],workerDb:['worker','db'],workerGcs:['worker','gcs'],workerProvider:['worker','provider'],chatDb:['chat','db'],chatPython:['chat','python'],chatProvider:['chat','provider'],pythonGpt:['python','gpt']};
+    const labels = {app:'Android',api:'Spring API',worker:'Spring Worker',chat:'Spring Chat',db:'PostgreSQL',gcs:'Cloud Storage',provider:'분석·임베딩 모델',gpt:'GPT API'};
+    const fallback = {app:'요청·결과',api:'일반 API · 로컬',worker:'DB Poller · 로컬',chat:'채팅 API · 로컬',db:'pgvector · 로컬 Docker',gcs:'실제 GCS',provider:'연동 대상 협의',gpt:'Spring Chat 직접 호출'};
+    const edgeNodes = {appApi:['app','api'],appChat:['app','chat'],appGcs:['app','gcs'],apiDb:['api','db'],apiGcs:['api','gcs'],apiProvider:['api','provider'],dbWorker:['db','worker'],workerDb:['worker','db'],workerGcs:['worker','gcs'],workerProvider:['worker','provider'],chatDb:['chat','db'],chatGpt:['chat','gpt'],chatProvider:['chat','provider']};
     const domainSelect = root.querySelector('[aria-label="도메인 선택"]');
     const apiSelect = root.querySelector('[aria-label="API 선택"]');
     const svg = root.querySelector('.diagram');
@@ -331,7 +335,7 @@
       }
       svg.append(defs);
       const x1=Math.round(width*.2),x2=Math.round(width*.5),x3=width-150,w1=156,w2=148;
-      const nodes={app:{x:0,y:239,w:96,h:108},api:{x:x1,y:69,w:w1,h:78},worker:{x:x1,y:231,w:w1,h:78},chat:{x:x1,y:393,w:w1,h:78},db:{x:x2,y:231,w:w2,h:88},gcs:{x:x3,y:69,w:150,h:78},provider:{x:x3,y:231,w:150,h:78},python:{x:x2,y:393,w:w2,h:78},gpt:{x:x3,y:393,w:150,h:78}};
+      const nodes={app:{x:0,y:239,w:96,h:108},api:{x:x1,y:69,w:w1,h:78},worker:{x:x1,y:231,w:w1,h:78},chat:{x:x1,y:393,w:w1,h:78},db:{x:x2,y:231,w:w2,h:88},gcs:{x:x3,y:69,w:150,h:78},provider:{x:x3,y:231,w:150,h:78},gpt:{x:x3,y:393,w:150,h:78}};
       const t=(x,y,txt,secondary=false)=>svg.append(el('text',{x,y,class:secondary?'secondary text-small':''},txt));
       t(0,17,'앱',true);t(x1,17,'Spring · 로컬',true);t(x2,17,'로컬 DB · AI',true);t(x3,17,'외부 서비스',true);
       const springEnd=x1+w1;
@@ -347,11 +351,10 @@
         workerGcs:`M${x1+120} 221 V196 H${x3+75} V157`,
         workerProvider:`M${x1+120} 319 V354 H${x3+75} V319`,
         chatDb:`M${springEnd+10} 432 H${x2-28} V304 H${x2-10}`,
-        chatPython:`M${springEnd+10} 432 H${x2-10}`,
+        chatGpt:`M${springEnd+10} 432 H${x3-10}`,
         chatProvider:`M${springEnd+10} 408 H${x2-44} V366 H${x3+120} V319`,
-        pythonGpt:`M${x2+w2+10} 432 H${x3-10}`
       };
-      const bidirectional=new Set(['appApi','appChat','appGcs','apiDb','apiGcs','chatDb','chatPython','chatProvider','pythonGpt']);
+      const bidirectional=new Set(['appApi','appChat','appGcs','apiDb','apiGcs','chatDb','chatGpt','chatProvider']);
       const edges=[];
       for(const k of f.edges||[])edges.push([k,f.future||f.planned?'pending':'sync']);
       for(const k of f.background||[])edges.push([k,'background']);

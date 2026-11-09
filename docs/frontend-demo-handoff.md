@@ -112,7 +112,7 @@ docker compose -f compose.yaml -f compose.demo.yaml up -d
 docker compose -f compose.yaml -f compose.demo.yaml ps
 ```
 
-API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작업을 조회한다. Metro 기본 8081과 충돌하지 않는다. Chat은 방·기록 관리와 POST SSE를 제공한다. 실제 Python 서버를 연결하려면 `CHAT_AI_BASE_URL=http://host.docker.internal:<합의한 포트>`를 설정하고 Chat을 재생성한다. Python은 컨테이너에서 접근 가능한 주소로 리슨해야 한다. AI 담당과 [내부 계약 초안](python-chat-contract.md)의 요청·이벤트·출처를 맞춘 뒤 실제 응답을 확인한다.
+API·Chat은 호스트8080·8082에 노출되고 Worker는 DB 대기 작업을 조회한다. Metro8081과 충돌하지 않는다. Chat은 질문 임베딩·검색·GPT 호출과 기존 POST SSE를 담당한다. 앱 질문 JSON·SSE 파서는 그대로 사용한다. 백엔드 모델·키·tokenizer/예산 설정은 [직접 생성 계약](chat-generation-contract.md#공급자실행-설정)을 따른다. 실행용 Python 채팅 컨테이너는 필요 없다.
 
 | 시연 전 확인 | 기대 동작 |
 | --- | --- |
@@ -123,7 +123,7 @@ API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작�
 | 분석 상태·결과 | 상태 조회로 완료 표시. 자막 없음·지원하지 않는 자막 언어·60분 초과 등 오류 표시 |
 | 채팅 | POST SSE의 delta를 누적 표시하고 done/error까지 처리. 연결 종료만으로 완료 처리하지 않음 |
 
-**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** 현재 Worker에는 모델 Bean 연결, GCS에는 각자의 인증 설정이 필요하며, 모델 미설정 시 작업은 `AI_NOT_CONFIGURED`로 실패한다. Chat은 질문 임베딩용 Spring AI EmbeddingModel Bean과 내부 2.0 계약의 Python 서버가 필요하다. 주소·모델 Bean이 미설정이면 질문 접수 전에 JSON503을 반환한다. APK 배포 이미지를 추가해도 이 연결은 생성되지 않는다.
+**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** GCS 인증·Worker 분석 모델·공통 임베딩 모델·Chat 답변 모델 설정이 필요하다. 기본 모델 비활성 상태에서 질문은 JSON503이며, 활성화하려면 키뿐 아니라 모델·차원·tokenizer/예산을 맞춘다. 로컬 HTTP fixture 테스트는 실제 GPT 품질·모바일 시연 성공을 뜻하지 않는다.
 
 팀원은 **이미지 태그(또는 APK), 이미지 지원 플랫폼·실행 확인한 노트북 CPU, 소스 커밋, 앱 versionName/versionCode, Android 최소 버전·ABI, API·Chat 주소, Metro 없이 실행 확인 결과**만 전달한다. `.env`·서명키·API 키·인증 파일은 전달 대상이 아니다.
 
@@ -134,5 +134,3 @@ API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작�
 - [Android 에뮬레이터 호스트 주소](https://developer.android.com/studio/run/emulator-networking-address)
 - [Docker 멀티 플랫폼 이미지](https://docs.docker.com/build/building/multi-platform/)
 - [Compose 시작 순서와 healthcheck](https://docs.docker.com/compose/how-tos/startup-order/)
-
-질문 임베딩·검색은 Spring이 처리한다. 모바일의 질문 JSON·POST SSE 파서는 그대로 사용한다.
