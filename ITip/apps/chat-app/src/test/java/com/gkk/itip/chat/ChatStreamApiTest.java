@@ -38,12 +38,15 @@ class ChatStreamApiTest {
     static final AtomicInteger CALLS=new AtomicInteger();
     static final AtomicReference<CountDownLatch> HOLD=new AtomicReference<>();
     static final AtomicLong PAUSE=new AtomicLong();
-    static HttpServer python;
+    static HttpServer model;
+    static final AtomicInteger HTTP_STATUS=new AtomicInteger(200);
+    static final AtomicReference<CountDownLatch> RECEIVED=new AtomicReference<>();
     @DynamicPropertySource static void config(DynamicPropertyRegistry r) throws Exception {
-        python=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
-        python.createContext("/v1/chat/stream", e->{
+        model=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        model.createContext("/v1/chat/completions", e->{
             CALLS.incrementAndGet(); INPUT.set(new String(e.getRequestBody().readAllBytes(),StandardCharsets.UTF_8));
-            e.getResponseHeaders().add("Content-Type","text/event-stream"); e.sendResponseHeaders(200,0);
+            RECEIVED.get().countDown();
+            e.getResponseHeaders().add("Content-Type",HTTP_STATUS.get()==200?"text/event-stream":"application/json"); e.sendResponseHeaders(HTTP_STATUS.get(),0);
             String response=RESPONSE.get();
             try {
                 var hold=HOLD.get(); if(hold!=null)hold.await(5,TimeUnit.SECONDS);
@@ -53,12 +56,12 @@ class ChatStreamApiTest {
                 for(byte b:response.getBytes(StandardCharsets.UTF_8)){out.write(b); out.flush();}
             } catch(java.io.IOException disconnected) { }
         });
-        python.start();
-        r.add("itip.chat.ai-base-url",()->"http://127.0.0.1:"+python.getAddress().getPort());
+        model.start();
+        ChatModelFixture.properties(r,model.getAddress().getPort());
         r.add("spring.datasource.url",POSTGRES::getJdbcUrl);r.add("spring.datasource.username",POSTGRES::getUsername);
         r.add("spring.datasource.password",POSTGRES::getPassword);
     }
-    @AfterAll static void stop(){if(python!=null)python.stop(0);}
+    @AfterAll static void stop(){if(model!=null)model.stop(0);}
     @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired JsonMapper mapper;
     @Autowired ChatGenerationStore store; @Autowired ChatStreamBridge bridge; @Autowired ChatMessageRepository messages;
     @Autowired ChatEmbeddingFixture.FixtureModel embedding;
@@ -71,11 +74,13 @@ class ChatStreamApiTest {
             embedding,embedding_model,embedding_dimensions)
             values (?,'demo-user',?,array[?]::uuid[],array['segment-1'],'원문',0,1000,'CAPTION','[0.1,0.2]','fixture',2)
             """,chunk,a.analysisId(),a.sectionId());
-        RESPONSE.set(event("delta","{\"text\":\"한국어 답변\"}")+event("sources","{\"items\":[]}")+event("done","{\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}"));
-        CALLS.set(0);INPUT.set(null);HOLD.set(null);PAUSE.set(0);
+        RESPONSE.set(ChatModelFixture.answer("한국어 답변",null,null));
+        CALLS.set(0);INPUT.set(null);HOLD.set(null);PAUSE.set(0);HTTP_STATUS.set(200);RECEIVED.set(new CountDownLatch(1));
         embedding.response=request->ChatEmbeddingFixture.vector("fixture",1,0);
     }
-    static String event(String type,String json){return "event: "+type+"\ndata: "+json+"\n\n";}
+    tools.jackson.databind.JsonNode modelInput() {
+        return mapper.readTree(mapper.readTree(INPUT.get()).path("messages").get(1).path("content").asString());
+    }
     String path(){return "/api/v1/conversations/"+room+"/messages";}
     String body(UUID key){return "{\"clientRequestId\":\""+key+"\",\"content\":\"설명해 줘\"}";}
     String send(UUID key) throws Exception {
@@ -92,12 +97,13 @@ class ChatStreamApiTest {
         UUID key=UUID.randomUUID();String text=send(key);
         assertThat(text).contains("event: meta","event: delta","한국어 답변","event: sources","event: done","INSUFFICIENT_EVIDENCE");
         assertThat(text).doesNotContain("\"code\":\"OK\"");
-        var input=mapper.readTree(INPUT.get());assertThat(input.path("ownerId").asString()).isEqualTo("demo-user");
-        assertThat(input.path("contexts").size()).isEqualTo(1);
-        assertThat(input.path("contexts").get(0).path("text").asString()).isEqualTo("원문");
-        assertThat(input.path("schemaVersion").asString()).isEqualTo("2.0");
-        assertThat(input.has("records")).isFalse();
-        assertThat(input.path("contexts").get(0).path("recordId").asString()).isEqualTo(a.recordId().toString());
+        var input=mapper.readTree(INPUT.get());
+        assertThat(input.has("messages")).isTrue();assertThat(input.has("records")).isFalse();
+        var data=modelInput();assertThat(data.path("contexts").size()).isEqualTo(1);
+        assertThat(data.path("contexts").get(0).path("text").asString()).isEqualTo("원문");
+        assertThat(data.path("contexts").get(0).path("contextId").asString()).isEqualTo("C1");
+        assertThat(data.path("contexts").get(0).path("sectionIds").get(0).asString()).isEqualTo(a.sectionId().toString());
+        assertThat(text).doesNotContain("\"evidenceStatus\":","\"citations\":");
         mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
                 .andExpect(jsonPath("data.items[1].content").value("한국어 답변"))
                 .andExpect(jsonPath("data.items[1].status").value("COMPLETED"))
@@ -107,8 +113,7 @@ class ChatStreamApiTest {
         assertThat(CALLS.get()).isEqualTo(1);
     }
     @Test void validatesCitationAndDerivesMetadataFromDatabase() throws Exception {
-        RESPONSE.set(event("delta","{\"text\":\"근거 답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
-                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        RESPONSE.set(ChatModelFixture.answer("근거 답변","C1",a.sectionId()));
         UUID key=UUID.randomUUID();String text=send(key);
         assertThat(text).contains("근거 영상","src-1","\"usedRecordCount\":1");
         mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
@@ -135,32 +140,63 @@ class ChatStreamApiTest {
         assertThat(found.getFirst().text()).isEqualTo("원문");
         assertThat(found.getFirst().sectionIds()).containsExactly(a.sectionId());
     }
-    @Test void rejectsValidCitationThatWasNotRetrievedAndSentToPython() throws Exception {
+    @Test void rejectsValidCitationThatWasNotRetrievedAndSentToModel() throws Exception {
         addChunk(a,"demo-user","[1,0]","fixture",2);
-        UUID notRetrieved=addChunk(a,"demo-user","[0,1]","fixture",2);
-        RESPONSE.set(event("delta","{\"text\":\"답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
-                "\",\"chunkId\":\""+notRetrieved+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        addChunk(a,"demo-user","[0,1]","fixture",2);
+        RESPONSE.set(ChatModelFixture.answer("답변","C3",a.sectionId()));
         assertThat(send(UUID.randomUUID())).contains("CHAT_INVALID_AI_RESPONSE").doesNotContain("event: sources","event: done");
-        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isEqualTo(2);
+        assertThat(modelInput().path("contexts").size()).isEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from chat_message_sources",Integer.class)).isZero();
     }
     @Test void noCompatibleEmbeddingSendsEmptyContextsForInsufficientEvidence() throws Exception {
         jdbc.update("update analysis_chunks set embedding_model='different-model'");
         assertThat(send(UUID.randomUUID())).contains("event: done","INSUFFICIENT_EVIDENCE");
-        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isZero();
+        assertThat(modelInput().path("contexts").size()).isZero();
     }
-    @Test void embeddingFailurePersistsSafeFailureAndNeverSendsRawQuestionToPython() throws Exception {
+    @Test void tokenBudgetExcludedContextCannotBeCitedEvenThoughSqlRetrievedIt() throws Exception {
+        jdbc.update("update analysis_chunks set embedding='[1,0]' where id=?",chunk);
+        UUID pruned=addChunk(a,"demo-user","[0.1,0.2]","fixture",2);
+        jdbc.update("update analysis_chunks set text=? where id=?","x7Q9!z2V8#".repeat(1800),pruned);
+        RESPONSE.set(ChatModelFixture.answer("답변","C2",a.sectionId()));
+        assertThat(send(UUID.randomUUID())).contains("CHAT_INVALID_AI_RESPONSE").doesNotContain("event: sources","event: done");
+        assertThat(modelInput().path("contexts").size()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from analysis_chunks where analysis_id=?",Integer.class,a.analysisId())).isEqualTo(2);
+    }
+    @Test void rejectsCompleteJsonWithoutProviderStopAndTruncatedCitations() throws Exception {
+        for(String json:List.of("{\"answer\":\"부분 답변\",\"citations\":[",
+                "{\"answer\":\"부분 답변\",\"citations\":[],\"evidenceStatus\":\"INSUFFICIENT_EVIDENCE\"}")) {
+            RESPONSE.set(ChatModelFixture.raw(json,json.endsWith("[")?"stop":null));
+            UUID key=UUID.randomUUID();
+            assertThat(send(key)).contains("INCOMPLETE","event: error").doesNotContain("event: sources","event: done");
+            assertThat(messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key).getLast().getContent()).isEqualTo("부분 답변");
+        }
+    }
+    @Test void sdkHttpErrorsAreSanitizedAndAttemptedOnlyOnce() throws Exception {
+        for(int http:new int[]{401,408,429,503}) {
+            HTTP_STATUS.set(http);CALLS.set(0);
+            RESPONSE.set("{\"error\":{\"message\":\"private provider detail\",\"type\":\"fixture_error\"}}");
+            UUID key=UUID.randomUUID();String result=send(key);
+            assertThat(result).contains("event: error").doesNotContain("private provider detail","event: done");
+            assertThat(CALLS.get()).isEqualTo(1);
+            assertThat(messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key).getLast().getRetryable()).isEqualTo(http!=401);
+        }
+    }
+    @Test void providerRefusalDoesNotBecomeACompletedAnswer() throws Exception {
+        RESPONSE.set("data: {\"id\":\"fixture\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"fixture-answer\",\"choices\":[{\"index\":0,\"delta\":{\"refusal\":\"private refusal\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n");
+        assertThat(send(UUID.randomUUID())).contains("CHAT_AI_REFUSED","FAILED").doesNotContain("private refusal","event: done","event: sources");
+    }
+    @Test void embeddingFailurePersistsSafeFailureAndNeverSendsRawQuestionToModel() throws Exception {
         embedding.response=request->{throw new IllegalStateException("provider credential should not leak");};
         UUID key=UUID.randomUUID();
         assertThat(send(key)).contains("CHAT_RETRIEVAL_FAILED","event: error").doesNotContain("event: done","credential");
         assertThat(CALLS.get()).isZero();
         assertThat(messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key).getLast().getStatus()).isEqualTo(MessageStatus.FAILED);
     }
-    @Test void rechecksDeletedRecordsAfterEmbeddingBeforeBuildingPythonContext() throws Exception {
+    @Test void rechecksDeletedRecordsAfterEmbeddingBeforeBuildingModelContext() throws Exception {
         embedding.response=request->{jdbc.update("delete from analysis_records where id=?",a.recordId());return ChatEmbeddingFixture.vector("fixture",1,0);};
         assertThat(send(UUID.randomUUID())).contains("INSUFFICIENT_EVIDENCE","event: done");
-        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isZero();
-        assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+        assertThat(modelInput().path("contexts").size()).isZero();
+        assertThat(modelInput().path("history").size()).isZero();
     }
     private UUID addChunk(ChatTestData.Analysis analysis,String owner,String vector,String model,int dimensions) {
         UUID id=UUID.randomUUID();
@@ -172,19 +208,18 @@ class ChatStreamApiTest {
         return id;
     }
     @Test void eofIsIncompleteAndPreservesPartialText() throws Exception {
-        RESPONSE.set(event("delta","{\"text\":\"끊긴 답변\"}"));UUID key=UUID.randomUUID();
+        RESPONSE.set(ChatModelFixture.raw("{\"answer\":\"끊긴 답변",null));UUID key=UUID.randomUUID();
         assertThat(send(key)).contains("event: error","INCOMPLETE").doesNotContain("event: done");
         mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
                 .andExpect(jsonPath("data.items[1].status").value("INCOMPLETE"))
                 .andExpect(jsonPath("data.items[1].content").value("끊긴 답변"));
     }
     @Test void rejectsForeignOrUnknownCitationsWithoutPublishingSources() throws Exception {
-        RESPONSE.set(event("delta","{\"text\":\"답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+UUID.randomUUID()+
-                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        RESPONSE.set(ChatModelFixture.answer("답변","C999",a.sectionId()));
         assertThat(send(UUID.randomUUID())).contains("event: error").doesNotContain("event: sources","event: done");
         assertThat(jdbc.queryForObject("select count(*) from chat_message_sources",Integer.class)).isZero();
     }
-    @Test void earlyInvalidInputStaysJsonAndNeverCallsPython() throws Exception {
+    @Test void earlyInvalidInputStaysJsonAndNeverCallsModel() throws Exception {
         UUID key=UUID.randomUUID();
         mvc.perform(post(path()).header("Idempotency-Key",UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_EVENT_STREAM).content(body(key)))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("code").value("INVALID_REQUEST"));
@@ -194,22 +229,21 @@ class ChatStreamApiTest {
         assertThat(CALLS.get()).isZero();assertThat(jdbc.queryForObject("select count(*) from chat_messages",Integer.class)).isZero();
     }
     @Test void malformedJsonIsNotMarkedAsRetryableTransportFailure() throws Exception {
-        RESPONSE.set("event: delta\ndata: {broken}\n\n"); UUID key=UUID.randomUUID();
+        RESPONSE.set(ChatModelFixture.raw("{broken","stop")); UUID key=UUID.randomUUID();
         assertThat(send(key)).contains("CHAT_INVALID_AI_RESPONSE","event: error").doesNotContain("event: done");
         mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
                 .andExpect(jsonPath("data.items[1].status").value("FAILED"))
                 .andExpect(jsonPath("data.items[1].retryable").value(false));
     }
-    @Test void forwardsCommentHeartbeatWithoutTreatingItAsAnAnswerOrCompletion() throws Exception {
-        RESPONSE.set(": heartbeat\n\n"+RESPONSE.get());
-        UUID key=UUID.randomUUID();String text=send(key);
-        assertThat(text).contains(": heartbeat\n\n","event: delta","event: done").doesNotContain("event: error");
-        mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
-                .andExpect(jsonPath("data.items[1].content").value("한국어 답변"));
+    @Test void providerLengthLimitKeepsPartialAnswerWithoutPublishingCompletion() throws Exception {
+        RESPONSE.set(ChatModelFixture.raw("{\"answer\":\"길이 제한으로 남은 답변", "length"));
+        UUID key=UUID.randomUUID();
+        assertThat(send(key)).contains("CHAT_ANSWER_TOO_LONG","INCOMPLETE").doesNotContain("event: done","event: sources");
+        assertThat(messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key).getLast().getContent()).isEqualTo("길이 제한으로 남은 답변");
     }
     @Test void passesCompletedQuestionAnswerContextForFollowUp() throws Exception {
         send(UUID.randomUUID());send(UUID.randomUUID());
-        var history=mapper.readTree(INPUT.get()).path("history");
+        var history=modelInput().path("history");
         assertThat(history.size()).isEqualTo(2);
         assertThat(history.get(0).path("role").asString()).isEqualTo("USER");
         assertThat(history.get(0).path("content").asString()).isEqualTo("설명해 줘");
@@ -217,12 +251,11 @@ class ChatStreamApiTest {
         assertThat(history.get(1).path("content").asString()).isEqualTo("한국어 답변");
     }
     @Test void doesNotSendDeletedSourcesOldAnswerAsFollowUpContext() throws Exception {
-        RESPONSE.set(event("delta","{\"text\":\"삭제될 기록의 답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
-                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        RESPONSE.set(ChatModelFixture.answer("삭제될 기록의 답변","C1",a.sectionId()));
         UUID old=UUID.randomUUID();send(old);
         jdbc.update("delete from analysis_records where id=?",a.recordId());f.analysis("demo-user","새 기록");
-        RESPONSE.set(event("delta","{\"text\":\"새 안내\"}")+event("sources","{\"items\":[]}")+event("done","{\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}"));
-        send(UUID.randomUUID());assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+        RESPONSE.set(ChatModelFixture.answer("새 안내",null,null));
+        send(UUID.randomUUID());assertThat(modelInput().path("history").size()).isZero();
         mvc.perform(get(path()).param("clientRequestId",old.toString())).andExpect(status().isOk())
                 .andExpect(jsonPath("data.items[1].content").value("삭제될 기록의 답변"));
     }
@@ -232,7 +265,7 @@ class ChatStreamApiTest {
         UUID answer=f.answer(room,key,question,2,"COMPLETED","긴".repeat(32001),1);
         jdbc.update("update chat_messages set finish_reason='INSUFFICIENT_EVIDENCE' where id=?",answer);
         send(UUID.randomUUID());
-        assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+        assertThat(modelInput().path("history").size()).isZero();
     }
     @Test void activeStreamBlocksSecondQuestionAndDeletionButAllowsReads() throws Exception {
         var gate=new CountDownLatch(1);HOLD.set(gate);UUID key=UUID.randomUUID();
@@ -250,12 +283,11 @@ class ChatStreamApiTest {
         assertThat(CALLS.get()).isEqualTo(1);
     }
     @Test void deletingRecordDuringGenerationPreventsFinalCitationPublication() throws Exception {
-        RESPONSE.set(event("delta","{\"text\":\"답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
-                "\",\"chunkId\":\""+chunk+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        RESPONSE.set(ChatModelFixture.answer("답변","C1",a.sectionId()));
         var gate=new CountDownLatch(1);HOLD.set(gate);UUID key=UUID.randomUUID();
         var initial=mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)
                 .content(body(key))).andExpect(request().asyncStarted()).andReturn();
-        try {jdbc.update("delete from analysis_records where id=?",a.recordId());}finally{gate.countDown();}
+        try {assertThat(RECEIVED.get().await(5,TimeUnit.SECONDS)).isTrue();jdbc.update("delete from analysis_records where id=?",a.recordId());}finally{gate.countDown();}
         initial.getAsyncResult(10000);String text=mvc.perform(asyncDispatch(initial)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         assertThat(text).contains("event: error").doesNotContain("event: sources","event: done");
         assertThat(jdbc.queryForObject("select count(*) from chat_message_sources",Integer.class)).isZero();

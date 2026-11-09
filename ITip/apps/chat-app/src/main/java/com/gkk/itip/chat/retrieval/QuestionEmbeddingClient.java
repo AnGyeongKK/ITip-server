@@ -1,6 +1,7 @@
 package com.gkk.itip.chat.retrieval;
 
 import com.gkk.itip.chat.stream.ChatLimits;
+import com.gkk.itip.ai.AiHttpRetryPolicy;
 import com.gkk.itip.common.exception.BusinessException;
 import jakarta.annotation.PreDestroy;
 import org.springframework.ai.embedding.*;
@@ -8,7 +9,8 @@ import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import com.openai.errors.OpenAIServiceException;
+import com.openai.errors.OpenAIIoException;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,12 +73,12 @@ public class QuestionEmbeddingClient {
             if (cause instanceof NonTransientAiException) return false;
             if (cause instanceof TransientAiException || cause instanceof ResourceAccessException
                     || cause instanceof java.io.IOException) return true;
-            if (cause instanceof RestClientResponseException http) return temporary(http.getStatusCode().value());
-            if (cause instanceof WebClientResponseException http) return temporary(http.getStatusCode().value());
+            if (cause instanceof RestClientResponseException http) return AiHttpRetryPolicy.retryable(http.getStatusCode().value());
+            if (cause instanceof OpenAIServiceException http) return AiHttpRetryPolicy.retryable(http.statusCode());
+            if (cause instanceof OpenAIIoException) return true;
             if (cause == cause.getCause()) break;
         }
         return false;
     }
-    private boolean temporary(int status) { return status == 408 || status == 429 || status >= 500; }
     @PreDestroy public void close() { calls.shutdownNow(); }
 }

@@ -43,14 +43,14 @@ class QuestionEmbeddingClientTest {
         try {
             for(RuntimeException rejected:new RuntimeException[]{
                     new org.springframework.ai.retry.NonTransientAiException("private provider detail"),
-                    org.springframework.web.reactive.function.client.WebClientResponseException.create(401,"rejected",null,null,null)}) {
+                    new org.springframework.web.client.HttpClientErrorException(org.springframework.http.HttpStatus.UNAUTHORIZED)}) {
                 model.response=request->{throw rejected;};
                 assertThatThrownBy(()->client.embed("질문")).isInstanceOfSatisfying(ChatRetrievalException.class,error->assertThat(error.retryable()).isFalse());
             }
             for(RuntimeException temporary:new RuntimeException[]{
                     new org.springframework.ai.retry.TransientAiException("private provider detail"),
-                    org.springframework.web.reactive.function.client.WebClientResponseException.create(429,"busy",null,null,null),
-                    org.springframework.web.reactive.function.client.WebClientResponseException.create(503,"unavailable",null,null,null)}) {
+                    new org.springframework.web.client.HttpClientErrorException(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS),
+                    new org.springframework.web.client.HttpServerErrorException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)}) {
                 model.response=request->{throw temporary;};
                 assertThatThrownBy(()->client.embed("질문")).isInstanceOfSatisfying(ChatRetrievalException.class,error->assertThat(error.retryable()).isTrue());
             }

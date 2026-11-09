@@ -186,6 +186,16 @@ class SpringAiAnalysisClientTest {
         assertFailure(() -> client("embed-v1", 32).embed(List.of(chunk("원문"))), "AI_REQUEST_REJECTED", false);
     }
 
+    @Test void classifiesActualSdkServiceStatusForDocumentEmbedding() {
+        for(int status:new int[]{401,408,429,503}) {
+            var failure=mock(com.openai.errors.OpenAIServiceException.class);
+            when(failure.statusCode()).thenReturn(status);
+            when(embedding.call(any(EmbeddingRequest.class))).thenThrow(failure);
+            assertFailure(()->client("fixture",32).embed(List.of(chunk("원문"))),
+                status==401?"AI_REQUEST_REJECTED":"AI_UNAVAILABLE",status!=401);
+        }
+    }
+
     private SpringAiAnalysisClient client(String modelId, int batchSize) {
         var beans = new StaticListableBeanFactory();
         beans.addBean("chat", chat);

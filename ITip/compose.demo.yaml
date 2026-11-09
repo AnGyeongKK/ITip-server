@@ -7,6 +7,14 @@ x-app-environment: &app-environment
   DB_PASSWORD: ${DB_PASSWORD:?로컬 DB_PASSWORD를 설정하세요}
   DEMO_USER_ID: ${DEMO_USER_ID:-demo-user}
 
+x-embedding-environment: &embedding-environment
+  AI_EMBEDDING_ENABLED: ${AI_EMBEDDING_ENABLED:-false}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-0}
+  ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
+
 services:
   api:
     image: ${API_IMAGE:-itip-api:local}
@@ -31,9 +39,8 @@ services:
   worker:
     image: ${WORKER_IMAGE:-itip-worker:local}
     environment:
-      <<: *app-environment
+      <<: [*app-environment, *embedding-environment]
       WORKER_SCHEDULING_ENABLED: ${WORKER_SCHEDULING_ENABLED:-true}
-      ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
     depends_on:
       api:
         condition: service_healthy
@@ -42,12 +49,15 @@ services:
   chat:
     image: ${CHAT_IMAGE:-itip-chat:local}
     environment:
-      <<: *app-environment
+      <<: [*app-environment, *embedding-environment]
       CHAT_PORT: "8082"
-      # 미설정 시 질문 접수는 JSON 503. 방·대화 조회는 계속 사용할 수 있다.
-      CHAT_AI_BASE_URL: ${CHAT_AI_BASE_URL:-}
-      CHAT_AI_TOKEN: ${CHAT_AI_TOKEN:-}
-      ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
+      # 두 모델의 명시적 설정 전에는 질문 접수만 JSON503, 조회는 계속 사용할 수 있다.
+      CHAT_GENERATION_ENABLED: ${CHAT_GENERATION_ENABLED:-false}
+      CHAT_MODEL: ${CHAT_MODEL:-}
+      CHAT_TOKEN_ENCODING: ${CHAT_TOKEN_ENCODING:-}
+      CHAT_CONTEXT_TOKENS: ${CHAT_CONTEXT_TOKENS:-0}
+      CHAT_INPUT_TOKEN_BUDGET: ${CHAT_INPUT_TOKEN_BUDGET:-8000}
+      CHAT_MAX_OUTPUT_TOKENS: ${CHAT_MAX_OUTPUT_TOKENS:-2048}
       CHAT_RETRIEVAL_TOP_K: ${CHAT_RETRIEVAL_TOP_K:-8}
     ports:
       - "127.0.0.1:${CHAT_PORT:-8082}:8082"

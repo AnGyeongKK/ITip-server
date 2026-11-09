@@ -2,7 +2,8 @@ package com.gkk.itip.chat;
 
 import com.gkk.itip.chat.conversation.service.MessageQueryService;
 import com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef;
-import com.gkk.itip.chat.infrastructure.PythonChatClient;
+import com.gkk.itip.chat.generation.ChatAnswerGenerator;
+import org.springframework.ai.chat.prompt.Prompt;
 import com.gkk.itip.chat.stream.*;
 import com.gkk.itip.chat.retrieval.*;
 import org.junit.jupiter.api.Test;
@@ -18,14 +19,16 @@ import static org.mockito.ArgumentMatchers.*;
 
 class ChatStreamPersistenceFailureTest {
     @Test void storageOutageClosesStreamWithoutInventingPersistedTerminalState() {
-        var python=mock(PythonChatClient.class);var store=mock(ChatGenerationStore.class);
+        var generator=mock(ChatAnswerGenerator.class);var store=mock(ChatGenerationStore.class);
         var ticket=new GenerationTicket("demo-user",UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),
                 UUID.randomUUID(),UUID.randomUUID(),List.of(new RecordRef(UUID.randomUUID(),UUID.randomUUID())),List.of());
         when(store.refresh(ticket)).thenReturn(ticket);
-        when(python.stream(ticket,"질문",List.of())).thenReturn(Flux.error(new IOException("upstream disconnected")));
+        var prepared=new ChatAnswerGenerator.Prepared(new Prompt("fixture"),List.of());
+        when(generator.prepare(eq("질문"),anyList(),anyList())).thenReturn(prepared);
+        when(generator.stream(prepared)).thenReturn(Flux.error(new IOException("upstream disconnected")));
         when(store.fail(eq(ticket),anyString(),anyString(),anyBoolean()))
                 .thenThrow(new DataAccessResourceFailureException("test database unavailable"));
-        var bridge=new ChatStreamBridge(python,store,mock(MessageQueryService.class),JsonMapper.builder().build(),
+        var bridge=new ChatStreamBridge(generator,store,mock(MessageQueryService.class),JsonMapper.builder().build(),
                 mock(QuestionEmbeddingClient.class),mock(ChatContextQuery.class));
         var out=new ByteArrayOutputStream();
         assertThatCode(()->bridge.write(ticket,"질문",out)).doesNotThrowAnyException();
