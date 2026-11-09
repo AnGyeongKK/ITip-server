@@ -38,6 +38,24 @@ class QuestionEmbeddingClientTest {
         var client=client(model,"document-model");
         try {assertThat(client.embed("질문").model()).isEqualTo("document-model");}finally{client.close();}
     }
+    @Test void distinguishesPermanentProviderRejectionFromTransientFailures() {
+        var model=new ChatEmbeddingFixture.FixtureModel();var client=client(model,"");
+        try {
+            for(RuntimeException rejected:new RuntimeException[]{
+                    new org.springframework.ai.retry.NonTransientAiException("private provider detail"),
+                    org.springframework.web.reactive.function.client.WebClientResponseException.create(401,"rejected",null,null,null)}) {
+                model.response=request->{throw rejected;};
+                assertThatThrownBy(()->client.embed("질문")).isInstanceOfSatisfying(ChatRetrievalException.class,error->assertThat(error.retryable()).isFalse());
+            }
+            for(RuntimeException temporary:new RuntimeException[]{
+                    new org.springframework.ai.retry.TransientAiException("private provider detail"),
+                    org.springframework.web.reactive.function.client.WebClientResponseException.create(429,"busy",null,null,null),
+                    org.springframework.web.reactive.function.client.WebClientResponseException.create(503,"unavailable",null,null,null)}) {
+                model.response=request->{throw temporary;};
+                assertThatThrownBy(()->client.embed("질문")).isInstanceOfSatisfying(ChatRetrievalException.class,error->assertThat(error.retryable()).isTrue());
+            }
+        }finally{client.close();}
+    }
     @Test void absentOrAmbiguousModelFailsConfigurationBeforeAdmission() {
         for(var beans:new StaticListableBeanFactory[]{new StaticListableBeanFactory(),
                 new StaticListableBeanFactory(Map.of("a",new ChatEmbeddingFixture.FixtureModel(),"b",new ChatEmbeddingFixture.FixtureModel()))}) {
