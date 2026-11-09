@@ -29,4 +29,36 @@ public class ChatMessage {
     private Instant leaseUntil;
     @Column(nullable = false) private Instant createdAt;
     private Instant completedAt;
+
+    public static ChatMessage question(UUID room, long position, UUID key, String hash, String text, Instant now) {
+        var m = new ChatMessage();
+        m.id = UUID.randomUUID(); m.conversationId = room; m.position = position;
+        m.clientRequestId = key; m.requestHash = hash; m.content = text; m.createdAt = now; m.role = MessageRole.USER;
+        return m;
+    }
+    public static ChatMessage answer(ChatMessage question, int scopeCount, UUID retryOf, UUID token, Instant lease) {
+        var m = question(question.conversationId, question.position + 1, question.clientRequestId, question.requestHash, "", question.createdAt);
+        m.role = MessageRole.ASSISTANT; m.replyToMessageId = question.id; m.retryOfMessageId = retryOf;
+        m.status = MessageStatus.GENERATING; m.scopeRecordCount = scopeCount; m.usedRecordCount = 0;
+        m.retryable = false; m.generationToken = token; m.leaseUntil = lease;
+        return m;
+    }
+    public boolean ownedGeneration(UUID token, Instant now) {
+        return status != null && status.active() && token.equals(generationToken) && leaseUntil.isAfter(now);
+    }
+    public void checkpoint(String text) { requireActive(); content = text; }
+    public void fail(String text, String code, boolean mayRetry) {
+        requireActive(); content = text; status = text.isEmpty() ? MessageStatus.FAILED : MessageStatus.INCOMPLETE;
+        errorCode = code; errorMessage = "답변 생성이 중단됐어요."; retryable = mayRetry;
+        generationToken = null; leaseUntil = null;
+    }
+    public void complete(String text, FinishReason reason, int used, Instant now) {
+        requireActive();
+        if (text.isBlank() || reason == null || used < 0 || used > scopeRecordCount) throw new IllegalArgumentException("invalid completion");
+        content = text; status = MessageStatus.COMPLETED; finishReason = reason; usedRecordCount = used;
+        completedAt = now.isBefore(createdAt) ? createdAt : now; retryable = false; generationToken = null; leaseUntil = null;
+    }
+    private void requireActive() {
+        if (status == null || !status.active()) throw new IllegalStateException("generation is not active");
+    }
 }

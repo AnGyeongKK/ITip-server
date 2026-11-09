@@ -1903,9 +1903,9 @@ html&gt;body{padding:0}&lt;/style&gt;
   &lt;/style&gt;
   &lt;div class=&quot;heading&quot;&gt;
     &lt;h2&gt;API별 서버 처리&lt;/h2&gt;
-    &lt;span class=&quot;text-small text-muted&quot;&gt;구현 14개 · 후속 설계 24개&lt;/span&gt;
+    &lt;span class=&quot;text-small text-muted&quot;&gt;백엔드 구현 15개 · 후속 설계 23개&lt;/span&gt;
   &lt;/div&gt;
-  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/12&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅방·기록 PR #12 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/13&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Python·SSE 원본 PR #13 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/7-feat-ai-chat/docs/chat-code-reading.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅 코드 읽기 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/12&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅방·기록 PR #12 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
   &lt;div class=&quot;selectors&quot;&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;도메인&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;도메인 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;API&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;API 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
@@ -1974,11 +1974,17 @@ html&gt;body{padding:0}&lt;/style&gt;
       &#x27;PUSH-02&#x27;: {...write(&#x27;api&#x27;,&#x27;DeviceService.disconnect()&#x27;,&#x27;해당 설치의 알림 연결 해제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.&#x27;,&#x27;installationId&#x27;),future:true}
     };
     const repo = &#x27;https://github.com/AnGyeongKK/ITip-server&#x27;;
-    const implementation = &#x27;f09c8b8&#x27;;
+    const implementation = &#x27;6b24ca1&#x27;;
     const apiSource = &#x27;ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/&#x27;;
     const workerSource = &#x27;ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/&#x27;;
-    const chatSource = &#x27;ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/conversation/&#x27;;
+    const chatRoot = &#x27;ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/&#x27;;
+    const chatSource = chatRoot + &#x27;conversation/&#x27;;
     const sourceFiles = {
+      ChatStreamController: chatRoot + &#x27;stream/ChatStreamController.java&#x27;,
+      ChatGenerationStore: chatRoot + &#x27;stream/ChatGenerationStore.java&#x27;,
+      ChatStreamBridge: chatRoot + &#x27;stream/ChatStreamBridge.java&#x27;,
+      ChatCitationQuery: chatRoot + &#x27;stream/ChatCitationQuery.java&#x27;,
+      PythonChatClient: chatRoot + &#x27;infrastructure/PythonChatClient.java&#x27;,
       ConversationController: chatSource + &#x27;controller/ConversationController.java&#x27;,
       ConversationMessageController: chatSource + &#x27;controller/ConversationMessageController.java&#x27;,
       ConversationService: chatSource + &#x27;service/ConversationService.java&#x27;,
@@ -2105,6 +2111,27 @@ html&gt;body{padding:0}&lt;/style&gt;
       &#x27;CHAT-06&#x27;: {server:&#x27;chat&#x27;,implemented:true,readOnly:true,commits:[&#x27;f918a00&#x27;],input:&#x27;conversationId&#x27;,output:&#x27;200 · scope / recordCount / scopeStatus / activeAssistantMessageId&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;방의 현재 참고 범위&#x27;,db:&#x27;저장 조건·현재 기록&#x27;},boundary:&#x27;조건 재평가 구현안. 폴더 삭제 시 UNAVAILABLE이어도 과거 대화는 유지. 생성 중 메시지는 CHAT-05로 조회.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.get()&#x27;,&#x27;소유자·방 ID&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;소유 방·저장 범위 읽기&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatScopeQuery.resolve()&#x27;,&#x27;현재 소유 기록의 개수·가용 상태&#x27;,&#x27;조회 TX&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;활성 답변 ID 조회·상세 응답 구성&#x27;,&#x27;조회 TX&#x27;)]},
       &#x27;CHAT-07&#x27;: {server:&#x27;chat&#x27;,implemented:true,local:true,commits:[&#x27;f918a00&#x27;,&#x27;f09c8b8&#x27;],input:&#x27;conversationId&#x27;,output:&#x27;200 · 성공 메시지&#x27;,edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;],labels:{chat:&#x27;소유 방 삭제 조건&#x27;,db:&#x27;방·메시지·출처 cascade&#x27;},boundary:&#x27;같은 방 잠금 후 생성 중이면 409. 분석 기록·결과·폴더·GCS 원문은 유지. 삭제한 생성 키 재전송은 404.&#x27;,steps:[implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.delete()&#x27;,&#x27;본인 방 ID&#x27;),implementedStep(&#x27;Chat·DB&#x27;,&#x27;ConversationService.delete()&#x27;,&#x27;방 row lock → 활성 답변 검사 → 삭제·flush&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;Chat&#x27;,&#x27;ConversationController.delete()&#x27;,&#x27;커밋 후 성공 메시지&#x27;)]}
     });
+    Object.assign(flows, {
+      &#x27;CHAT-04&#x27;: {
+        server:&#x27;chat&#x27;,implemented:true,commits:[&#x27;fd018f1&#x27;,&#x27;fda03ff&#x27;,&#x27;66ff1cc&#x27;,&#x27;76059ca&#x27;,&#x27;7ecdad0&#x27;,&#x27;ad82441&#x27;,&#x27;30c547a&#x27;],
+        input:&#x27;JSON clientRequestId/content/retryOfMessageId? · 동일 UUID Idempotency-Key · Accept SSE&#x27;,
+        output:&#x27;200 text/event-stream · meta / delta / sources / done · 실패는 error 또는 상태 GET&#x27;,
+        edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;],extraPending:[&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;],
+        labels:{chat:&#x27;접수·저장·POST SSE&#x27;,db:&#x27;부분·최종 답변·출처&#x27;,python:&#x27;계약 초안 · 실연동 대기&#x27;,gpt:&#x27;AI 파트 · 미검증&#x27;},
+        boundary:&#x27;AI 대기 동안 DB TX 없음. 같은 요청은 409로 기존 이력 조회. 최종 출처만 FOR SHARE로 확인·저장 후 done. 실제 HTTP 첫 조각·부분 저장은 검증했으며 Python/GPT 계약·시연은 미완료이며 원본 구현은 PR #13이다.&#x27;,
+        steps:[
+          implementedStep(&#x27;Chat&#x27;,&#x27;ChatStreamController.send()&#x27;,&#x27;AI 설정·요청·처리 여유 확인 · 실제 servlet 출력 스트림&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.begin()&#x27;,&#x27;키 → 방 잠금 · 현재 범위·과거 문맥 · 질문/답변/키 저장 후 커밋&#x27;,&#x27;쓰기 TX&#x27;),
+          implementedStep(&#x27;Chat→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;WebClient 구독 · 질문·허용 ID·history · idle30초/전체120초&#x27;),
+          implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;meta · SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush&#x27;,&#x27;부분 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;방 → 메시지 잠금 · 현재 토큰·lease 확인&#x27;,&#x27;쓰기 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatCitationQuery.validate()&#x27;,&#x27;현재/최초 범위 · chunk/section · 기록 FOR SHARE&#x27;,&#x27;완료 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;본문·검증 출처·COMPLETED 저장 후 커밋&#x27;,&#x27;완료 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.get()&#x27;,&#x27;저장된 최종 본문·출처·개수 재조회&#x27;,&#x27;조회 TX&#x27;),
+          implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;sources → done · upstream 닫기 · 오류는 부분 보존&#x27;)
+        ]
+      }
+    });
     for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
     const labels = {app:&#x27;Android&#x27;,api:&#x27;Spring API&#x27;,worker:&#x27;Spring Worker&#x27;,chat:&#x27;Spring Chat&#x27;,db:&#x27;PostgreSQL&#x27;,gcs:&#x27;Cloud Storage&#x27;,provider:&#x27;분석·임베딩 모델&#x27;,python:&#x27;Python AI&#x27;,gpt:&#x27;GPT API&#x27;};
     const fallback = {app:&#x27;요청·결과&#x27;,api:&#x27;일반 API · 로컬&#x27;,worker:&#x27;DB Poller · 로컬&#x27;,chat:&#x27;채팅 API · 로컬&#x27;,db:&#x27;pgvector · 로컬 Docker&#x27;,gcs:&#x27;실제 GCS&#x27;,provider:&#x27;연동 대상 협의&#x27;,python:&#x27;AI 파트 · 별도 서버&#x27;,gpt:&#x27;Python에서 호출&#x27;};
@@ -2112,7 +2139,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     const domainSelect = root.querySelector(&#x27;[aria-label=&quot;도메인 선택&quot;]&#x27;);
     const apiSelect = root.querySelector(&#x27;[aria-label=&quot;API 선택&quot;]&#x27;);
     const svg = root.querySelector(&#x27;.diagram&#x27;);
-    const state = { apiId: &#x27;CHAT-01&#x27; };
+    const state = { apiId: &#x27;CHAT-04&#x27; };
     const ns = &#x27;http://www.w3.org/2000/svg&#x27;;
     const el = (tag, attrs, text) =&gt; {const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
     const selected = () =&gt; catalog.find(a=&gt;a.id===state.apiId);
