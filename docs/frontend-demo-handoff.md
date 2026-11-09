@@ -123,7 +123,7 @@ API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작�
 | 분석 상태·결과 | 상태 조회로 완료 표시. 자막 없음·지원하지 않는 자막 언어·60분 초과 등 오류 표시 |
 | 채팅 | POST SSE의 delta를 누적 표시하고 done/error까지 처리. 연결 종료만으로 완료 처리하지 않음 |
 
-**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** 현재 Worker에는 모델 Bean 연결, GCS에는 각자의 인증 설정이 필요하며, 모델 미설정 시 작업은 `AI_NOT_CONFIGURED`로 실패한다. Chat은 실제 Python AI 서버 연결이 필요하며, 주소 미설정 시 질문 접수 전에 JSON 503을 반환한다. APK 배포 이미지를 추가해도 이 연결은 생성되지 않는다.
+**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** 현재 Worker에는 모델 Bean 연결, GCS에는 각자의 인증 설정이 필요하며, 모델 미설정 시 작업은 `AI_NOT_CONFIGURED`로 실패한다. Chat은 질문 임베딩용 Spring AI EmbeddingModel Bean과 내부 2.0 계약의 Python 서버가 필요하다. 주소·모델 Bean이 미설정이면 질문 접수 전에 JSON503을 반환한다. APK 배포 이미지를 추가해도 이 연결은 생성되지 않는다.
 
 팀원은 **이미지 태그(또는 APK), 이미지 지원 플랫폼·실행 확인한 노트북 CPU, 소스 커밋, 앱 versionName/versionCode, Android 최소 버전·ABI, API·Chat 주소, Metro 없이 실행 확인 결과**만 전달한다. `.env`·서명키·API 키·인증 파일은 전달 대상이 아니다.
 
@@ -134,3 +134,5 @@ API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작�
 - [Android 에뮬레이터 호스트 주소](https://developer.android.com/studio/run/emulator-networking-address)
 - [Docker 멀티 플랫폼 이미지](https://docs.docker.com/build/building/multi-platform/)
 - [Compose 시작 순서와 healthcheck](https://docs.docker.com/compose/how-tos/startup-order/)
+
+질문 임베딩·검색은 Spring이 처리한다. 모바일의 질문 JSON·POST SSE 파서는 그대로 사용한다.

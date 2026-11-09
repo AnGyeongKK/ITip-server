@@ -1,5 +1,15 @@
 # 채팅 구현 검토
 
+## Spring 질문 임베딩·pgvector 검색 전환
+
+- 기준 `dev`: PR #19 병합 `0551364`. 공개 앱 요청·SSE 필드는 유지하고 Python 내부 요청만 schema2.0 contexts로 변경한다. DB 마이그레이션은 없다.
+- `ef0b4e5` 리뷰: 공급자 영구 오류도 재시도 가능으로 표시하는 P2 발견. `753fb94`에서 원인별 분류를 수정했고 신규 테스트의 실패→통과와 독립 재리뷰 PASS를 확인했다.
+- `4ab3ffe` 리뷰 PASS: 임베딩 후 현재 범위/history 확인, 실제 전달한 근거만 인용, 짧은 TX·완료 후 done 유지. 후속 Compose에서 모델 fallback·topK 전달을 확인한다.
+- Java21 `./gradlew build`: **294개**, 실패·오류·건너뜀0. API107·Worker99·Chat63·common6·domain19. 로컬 pgvector, HTTP fixture, 실제 HTTP 첫 delta·부분 저장·삭제 경합을 포함한다.
+- 실제 공급자 Bean·Python2.0/GPT 실통신·의미 검색/답변 품질은 미검증이다. 이후 기준 질문 세트로 근거·답변·지연·비용을 측정하고 필요할 때 고급 RAG를 도입한다. [품질 개선 계획](chat-contract.md#답변-품질-개선-계획)을 따른다.
+
+아래는 각 이전 PR 시점의 검증 기록이다.
+
 ## 채팅방·대화 기록 (#6)
 
 | 커밋 | 검토 결과 |

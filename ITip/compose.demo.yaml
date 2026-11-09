@@ -33,6 +33,7 @@ services:
     environment:
       <<: *app-environment
       WORKER_SCHEDULING_ENABLED: ${WORKER_SCHEDULING_ENABLED:-true}
+      ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
     depends_on:
       api:
         condition: service_healthy
@@ -46,6 +47,8 @@ services:
       # 미설정 시 질문 접수는 JSON 503. 방·대화 조회는 계속 사용할 수 있다.
       CHAT_AI_BASE_URL: ${CHAT_AI_BASE_URL:-}
       CHAT_AI_TOKEN: ${CHAT_AI_TOKEN:-}
+      ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
+      CHAT_RETRIEVAL_TOP_K: ${CHAT_RETRIEVAL_TOP_K:-8}
     ports:
       - "127.0.0.1:${CHAT_PORT:-8082}:8082"
     depends_on:

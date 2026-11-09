@@ -32,6 +32,8 @@
 | `CHAT_PORT` | Chat HTTP 포트. 기본 8082 |
 | `CHAT_AI_BASE_URL` | Python 서버 기본 주소. 미설정 시 질문 생성은 JSON503, 방·기록 조회는 동작 |
 | `CHAT_AI_TOKEN` | 내부 Python 인증이 필요한 경우만 Bearer 전달. 실제 값 공유 금지 |
+| `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat 공통 fallback 식별자. 응답 metadata.model이 없을 때 사용하며 공급자의 실제 모델을 선택하지 않음 |
+| `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20. 모델·차원이 맞는 현재 소유 기록만 검색 |
 | `DEMO_USER_ID` | API·Chat에서 동일하게 설정하는 데모 소유자. 기본 demo-user |
 
 `DB_NAME`·`DB_PORT`를 변경하면 앱의 `DB_URL`도 같은 DB를 가리키게 설정한다. 기존 volume이 있으면 환경변수 변경만으로 DB 계정·비밀번호가 바뀌지 않는다. 개인 데이터가 있는 volume을 임의로 삭제하지 않는다.
@@ -124,6 +126,8 @@ DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·C
 | `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
 | `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
 | `CHAT_AI_BASE_URL`, `CHAT_AI_TOKEN` | Python 주소·선택 Bearer 인증. 주소 미설정 시 질문 접수 전 JSON 503, 방·기록 조회는 동작 |
+| `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat에 전달하는 임베딩 응답의 fallback 식별자. 실제 모델 Bean 설정과 별개 |
+| `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20 |
 
 포트는 `127.0.0.1`에만 바인딩한다. Worker 포트는 호스트에 열지 않는다. Docker Desktop에서 호스트 Python에 연결할 때는 `localhost` 대신 `host.docker.internal`을 사용한다. `.env` 파일은 생성·배포하지 않는다. `docker compose config`는 치환된 비밀값을 출력할 수 있으므로 공유용으로 실행하지 말고 형식만 확인할 때는 `config --quiet`을 사용한다.
 
@@ -162,7 +166,9 @@ API의 Flyway 완료 뒤 Chat을 실행한다. API·Chat의 `DEMO_USER_ID`를 �
 
 앱은 방·이력 JSON과 답변 POST SSE 모두 Chat 주소(기본8082)로 호출한다. `POST /api/v1/conversations`의 scope는 [채팅 계약](chat-contract.md)을 따른다. 질문은 JSON clientRequestId·content·retryOfMessageId와 같은 UUID의 Idempotency-Key를 보내며, `Accept: text/event-stream`을 사용한다. 일반 EventSource의 GET 요청으로 대체하지 않는다.
 
-Python을 연결하려면 [내부 계약 초안](python-chat-contract.md)을 AI 파트와 맞추고 CHAT_AI_BASE_URL을 로컬에서 지정한다. 현재 실제 Python 주소·스키마가 확인되지 않았으며 키만 넣어서 GPT·RAG가 구현되는 구조가 아니다. HTTP fixture 테스트와 실제 AI 시연을 구분한다.
+Python을 연결하려면 [내부 계약 초안](python-chat-contract.md)을 AI 파트와 맞추고 CHAT_AI_BASE_URL을 로컬에서 지정한다. 내부 2.0은 `question + contexts + history`를 보내므로 Python과 함께 적용한다. Chat에도 유일한 Spring AI `EmbeddingModel` Bean이 필요하다. 현재 공급자 starter·실제 Bean 자동 설정은 없으며 Python 주소·모델 이름·키 환경변수만 넣어도 Bean이 생기지 않는다. Bean이 없거나 유일하지 않으면 JSON503 CHAT_AI_NOT_CONFIGURED로 질문 접수를 거부한다.
+
+임베딩 공급자는 Worker와 모델·버전·차원·입력 규칙을 맞추고 HTTP 타임아웃10초 이내·SDK 총 시도1회로 구성한다. 모델 식별자/벡터를 확인하고 저장된 문서 벡터와 맞지 않으면 재색인한다. `CHAT_RETRIEVAL_TOP_K`는 품질이 검증된 고정 정책이 아닌 MVP 기본값이다. HTTP fixture·실제 pgvector 테스트와 실제 모델의 의미 검색·답변 품질 검증을 구분한다.
 
 Chat 테스트는 기본 AI 주소·토큰을 비우고 각 HTTP fixture 주소만 사용한다. 개발자가 export한 CHAT_AI_BASE_URL·CHAT_AI_TOKEN으로 실제 AI를 호출하지 않는다.
 

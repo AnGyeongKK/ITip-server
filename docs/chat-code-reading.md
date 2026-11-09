@@ -2,6 +2,19 @@
 
 `ITip/`는 Gradle 집계 루트다. 일반 API·분석 Worker·Chat은 각각 실행되며 같은 PostgreSQL을 사용한다. 이 문서의 Java 경로는 `ITip/` 기준이다.
 
+## 검색 구현에서 볼 지점
+
+| 파일·함수 | 확인할 내용 |
+| --- | --- |
+| `QuestionEmbeddingClient.embed()` | 공급자 호출 최대4개·대기10초·벡터/모델 검증·영구/일시 오류 구분. DB TX 없음 |
+| `ChatGenerationStore.refresh()` | 임베딩 중 삭제·범위 변경 반영. 처음 허용된 기록과 현재 기록의 교집합 및 안전한 history |
+| `ChatContextQuery.search()` | SQL에서 owner·record·완료·모델·차원 제한. MATERIALIZED로 혼합 차원 연산 방지. 현재는 정확 검색이며 ANN 인덱스 없음 |
+| `ChatContext.citations()` → `ChatCitationQuery.validate()` | 전달한 근거만 인용. 완료 시 현재 DB 권한·삭제·시간 재확인 후 snapshot 저장 |
+
+`QuestionEmbeddingClientTest`는 입력·모델 식별·잘못된 벡터·공급자 오류·시간 제한을 검사한다. `ChatStreamApiTest`는 실제 pgvector에서 가까운 타인/범위 밖 chunk를 섞어도 허용 원문만 선택하고, 전달하지 않은 유효 chunk 인용은 거부하는지 확인한다.
+
+모델 Bean이 없는 기본 구성에서는 질문 생성이 JSON503으로 거부된다. 공급자 연결과 Python2.0 동시 적용이 필요하다. 이후 실제 답변 품질 테스트와 고급 RAG 도입 순서는 [품질 개선 계획](chat-contract.md#답변-품질-개선-계획)을 따른다.
+
 ## 먼저 볼 순서
 
 | 순서 | 파일·함수 | 확인할 내용 |
@@ -17,7 +30,7 @@
 
 `...`는 `src/main/java/com/gkk/itip/`이며, `chat/...`도 Chat 앱의 해당 Java 루트 아래다. 메서드의 어노테이션과 해당 메서드를 호출하는 Bean을 함께 본다. 같은 클래스 내부 호출에 새 `@Transactional` 경계가 생긴다고 가정하지 않는다.
 
-답변 생성부터 읽으려면 `chat/stream/ChatStreamController.send()` → `ChatGenerationStore.begin()` → `ChatStreamBridge.write()` 순서로 시작한다. 최종 저장은 `ChatGenerationStore.complete()`, Python 통신은 `chat/infrastructure/PythonChatClient.stream()`에 있다. 이 Java 파일부터 읽고 아래 흐름을 따라간다.
+답변 생성부터 읽으려면 `chat/stream/ChatStreamController.send()` → `ChatGenerationStore.begin()` → `ChatStreamBridge.write()` 순서로 시작한다. 검색은 `chat/retrieval/QuestionEmbeddingClient.embed()` → `ChatContextQuery.search()`, 최종 저장은 `ChatGenerationStore.complete()`, Python 통신은 `chat/infrastructure/PythonChatClient.stream()`에 있다.
 
 ## 방 생성 요청 한 번 따라가기
 
@@ -53,7 +66,7 @@ GET /conversations/{id}/messages?cursor=...
 ```text
 POST /conversations/{id}/messages
   ChatStreamController.send()
-  → Python 설정·인스턴스 처리 여유 확인
+  → Python·임베딩 Bean 설정·인스턴스 처리 여유 확인
   → ChatGenerationStore.begin() [짧은 DB TX]
      → 소유자+키 advisory lock → 소유 방 row lock
      → 중복·활성 답변·재요청·현재 참고 기록 확인
@@ -61,15 +74,18 @@ POST /conversations/{id}/messages
      → ChatHistoryQuery.select(): 현재 범위로 안전한 과거 대화 선별
   → 커밋
   → MVC 전용 스레드 / ChatStreamBridge.write() [TX 없음]
-     → PythonChatClient.stream(): WebClient POST /v1/chat/stream 구독
      → meta
+     → QuestionEmbeddingClient.embed(): 질문만 임베딩 [외부 I/O, 최대10초]
+     → ChatGenerationStore.refresh() [짧은 읽기 TX]: 현재 범위·history 재확인
+     → ChatContextQuery.search(): 소유/범위/완료/모델/차원 제한 후 pgvector 검색
+     → PythonChatClient.stream(): question + contexts(원문·출처) + history, schema2.0
      → upstream 이벤트 읽기·delta 누적
      → ChatGenerationStore.checkpoint() [약250ms 간격의 짧은 TX]
      → sequence·delta 앱 전송
      → Python done
      → ChatGenerationStore.complete() [짧은 DB TX]
         → 방 → 메시지 잠금·토큰/lease 재확인
-        → ChatCitationQuery.validate(): 현재 범위·chunk·section·시간 검증
+        → ChatCitationQuery.validate(): 전달한 인용 조합·현재 범위·chunk·section·시간 검증
         → 본문·출처·COMPLETED 함께 저장
      → 커밋 후 MessageQueryService.get()으로 같은 저장값 조회
      → sources → done → upstream 닫기·처리 여유 반환
@@ -90,7 +106,7 @@ POST /conversations/{id}/messages
 
 현재 Spring 7의 callback 출력 스트림은 flush가 기본 비활성이다. `ChatStreamController`가 실제 servlet 스트림을 전달하는 이유를 함께 본다. 이 처리가 빠지면 작은 SSE가 완료 시점에 모여 도착할 수 있다. `ChatHttpStreamingTest`는 이 문제의 실제 HTTP 실패→수정을 확인한다.
 
-`fail()`도 DB 장애로 저장할 수 없으면 상태를 꾸미지 않고 연결을 닫는다. 앱은 EOF를 완료로 간주하지 않고 GET으로 복구한다. 프로세스 강제 종료는 150초 lease 만료 후 로컬 10초 복구 작업이 회수한다. 마지막 체크포인트 뒤 조각은 유실될 수 있다.
+`fail()`도 DB 장애로 저장할 수 없으면 상태를 꾸미지 않고 연결을 닫는다. 앱은 EOF를 완료로 간주하지 않고 GET으로 복구한다. 프로세스 강제 종료는 160초 lease 만료 후 로컬 10초 복구 작업이 회수한다. 마지막 체크포인트 뒤 조각은 유실될 수 있다.
 
 ## 테스트로 동작 확인
 
@@ -107,4 +123,4 @@ Docker를 켠 뒤 `ITip/`에서 실행한다. 테스트는 Testcontainers가 별
 
 `ChatHttpStreamingTest`는 완료 전 첫 조각 수신을 실제 포트에서 확인한다. `ChatCompletionConcurrencyTest`는 SQL 이후 잠시 대기시켜 삭제와 완료의 순서를 확인하고, 테스트 Clock으로 lease를 넘겨 만료 복구가 완료된 답변을 덮지 않는지 확인한다. [검토 기록](chat-review-log.md)에 발견 문제·수정 커밋·258개 전체 테스트 결과가 있다.
 
-채팅방·대화 저장은 [PR #12](https://github.com/AnGyeongKK/ITip-server/pull/12), Python·SSE 원본 구현은 [PR #13](https://github.com/AnGyeongKK/ITip-server/pull/13)이다. PR #13의 병합 대상은 `6-feat-chat`이었으므로 해당 코드가 `dev`에도 포함됐는지 별도로 확인해야 한다. [dev 통합 PR #19](https://github.com/AnGyeongKK/ITip-server/pull/19)는 영상 가져오기·Docker 설정을 포함한 최신 `dev`에 이 코드를 연결한다. 실제 Python·GPT 응답 확인 전에는 이슈 #7 완료로 표시하지 않는다. [API 호출 구조](yousum-api-pipelines.html)에서 CHAT-04를 선택하면 함수·트랜잭션·원본 커밋을 함께 볼 수 있다.
+채팅방·대화 저장은 [PR #12](https://github.com/AnGyeongKK/ITip-server/pull/12), Python·SSE 원본 구현은 [PR #13](https://github.com/AnGyeongKK/ITip-server/pull/13)이다. PR #13의 원본 대상은 `6-feat-chat`이었고 PR #19로 `dev`에 통합됐다. [dev 통합 PR #19](https://github.com/AnGyeongKK/ITip-server/pull/19)는 영상 가져오기·Docker 설정을 포함한 최신 `dev`에 이 코드를 연결한다. 실제 Python·GPT 응답 확인 전에는 이슈 #7 완료로 표시하지 않는다. [API 호출 구조](yousum-api-pipelines.html)에서 CHAT-04를 선택하면 함수·트랜잭션·원본 커밋을 함께 볼 수 있다.

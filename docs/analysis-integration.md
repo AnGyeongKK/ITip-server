@@ -20,7 +20,7 @@ Worker → 자막 검증 → AI 분석 → 검색용 임베딩 → 결과·개�
 | 업로드 발급 → 분석 접수 | 서버가 생성한 uploadId에 소유자·batchItemId·videoId·bucket·objectKey·선언한 크기·Content-Type을 연결한다. 앱은 임의 GCS 경로를 분석 요청에 넣지 않는다. |
 | API → Worker | PostgreSQL 작업 행을 등록한다. API가 Worker Service를 직접 실행하거나 응답 후 숨은 스레드로 분석하지 않는다. |
 | Worker → 결과·보관 | 요약·키워드·주제 상세·마인드맵·검색 조각이 준비된 뒤 analysisId·recordId를 함께 확정한다. 도중 저장된 분석은 공개 완료 결과가 아니다. |
-| 분석 → 채팅 | 원문 기반 검색 조각, 실제 sectionId·시간, 임베딩 모델·차원을 저장한다. Python 채팅 서버는 사용자에게 허용된 완료 기록만 검색한다. |
+| 분석 → 채팅 | 원문 기반 검색 조각, 실제 sectionId·시간, 임베딩 모델·차원을 저장한다. Spring Chat이 질문 임베딩·사용자 범위 pgvector 검색을 수행하고 Python에는 검색 원문·출처를 전달한다. |
 
 ## 영상 가져오기에서 메타데이터 등록
 
@@ -50,7 +50,9 @@ WHERE r.owner_id = :ownerId
   AND a.chat_ready = TRUE;
 ```
 
-위 SQL은 권한 범위만 보여주는 예시다. 실제 검색에서는 같은 임베딩 모델·버전·차원의 벡터끼리 비교하고, 폴더·키워드 조건에서 허용한 recordId만 전달한다. 저장된 sectionId·시간을 출처로 사용하며 AI가 새 DB ID나 시간을 만들지 않는다.
+위 SQL은 권한 범위만 보여주는 예시다. 실제 구현은 Chat의 `ChatContextQuery.search()`이며 기존 `analysis_chunks`를 사용한다. Spring AI 기본 `vector_store`를 새로 생성하지 않는다. 같은 임베딩 모델·버전·차원의 벡터끼리 비교하고 폴더·키워드 조건에서 허용한 recordId만 검색한다. 저장된 sectionId·시간을 출처로 사용하며 AI가 DB ID나 시간을 만들지 않는다.
+
+질문 임베딩은 Chat의 Spring AI `EmbeddingModel`, GPT 생성은 Python의 책임이다. 공급자·모델·버전·차원과 질문/문서 입력 규칙을 맞추고 모델 변경 시 기존 chunk 재색인을 검토한다.
 
 ## 시연용 범위
 
