@@ -1,0 +1,21 @@
+# 선택: compose.yaml + compose.demo.yaml 뒤에 병합. 실제 자격증명은 복사·배포하지 않는다.
+x-gcs: &gcs
+  # 호스트에서 600 권한으로 보관한 파일도 읽을 수 있게 현재 사용자로 실행한다.
+  user: "${LOCAL_UID:?id -u 값으로 설정하세요}:${LOCAL_GID:?id -g 값으로 설정하세요}"
+  volumes:
+    - type: bind
+      source: ${GCS_CREDENTIALS_PATH:?본인 로컬 GCS 인증 파일의 절대경로를 설정하세요}
+      target: /run/secrets/gcs.json
+      read_only: true
+      bind:
+        create_host_path: false
+
+services:
+  api:
+    <<: *gcs
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcs.json
+  worker:
+    <<: *gcs
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/gcs.json

@@ -1,0 +1,15 @@
+# 독립 실행: docker compose -f compose.mobile.yaml up -d
+# React Native 실행 컨테이너가 아니라, 팀원이 만든 APK 다운로드 서버다.
+# 이미지는 linux/amd64+linux/arm64로 배포하고 platform은 고정하지 않는다.
+name: itip-mobile
+
+services:
+  mobile-apk:
+    image: ${MOBILE_APK_IMAGE:?Docker Hub의 APK 이미지와 버전 태그를 설정하세요}
+    ports:
+      - "127.0.0.1:${MOBILE_APK_PORT:-8090}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/itip-demo.apk"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
