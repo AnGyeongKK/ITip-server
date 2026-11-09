@@ -27,8 +27,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties={"spring.flyway.enabled=true","itip.demo.owner-id=demo-user"})
+@SpringBootTest(properties={"spring.flyway.enabled=true","itip.demo.owner-id=demo-user","itip.chat.retrieval-top-k=2"})
 @AutoConfigureMockMvc @Testcontainers
+@org.springframework.context.annotation.Import(ChatEmbeddingFixture.class)
 class ChatStreamApiTest {
     @Container static final PostgreSQLContainer POSTGRES=new PostgreSQLContainer(
             DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"));
@@ -60,6 +61,8 @@ class ChatStreamApiTest {
     @AfterAll static void stop(){if(python!=null)python.stop(0);}
     @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired JsonMapper mapper;
     @Autowired ChatGenerationStore store; @Autowired ChatStreamBridge bridge; @Autowired ChatMessageRepository messages;
+    @Autowired ChatEmbeddingFixture.FixtureModel embedding;
+    @Autowired com.gkk.itip.chat.retrieval.ChatContextQuery retrieval;
     ChatTestData f; UUID room; ChatTestData.Analysis a; UUID chunk;
     @BeforeEach void clear(){
         f=new ChatTestData(jdbc);f.clear();a=f.analysis("demo-user","근거 영상");room=f.room("demo-user");chunk=UUID.randomUUID();
@@ -70,6 +73,7 @@ class ChatStreamApiTest {
             """,chunk,a.analysisId(),a.sectionId());
         RESPONSE.set(event("delta","{\"text\":\"한국어 답변\"}")+event("sources","{\"items\":[]}")+event("done","{\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}"));
         CALLS.set(0);INPUT.set(null);HOLD.set(null);PAUSE.set(0);
+        embedding.response=request->ChatEmbeddingFixture.vector("fixture",1,0);
     }
     static String event(String type,String json){return "event: "+type+"\ndata: "+json+"\n\n";}
     String path(){return "/api/v1/conversations/"+room+"/messages";}
@@ -89,8 +93,11 @@ class ChatStreamApiTest {
         assertThat(text).contains("event: meta","event: delta","한국어 답변","event: sources","event: done","INSUFFICIENT_EVIDENCE");
         assertThat(text).doesNotContain("\"code\":\"OK\"");
         var input=mapper.readTree(INPUT.get());assertThat(input.path("ownerId").asString()).isEqualTo("demo-user");
-        assertThat(input.path("records").size()).isEqualTo(1);
-        assertThat(input.path("records").get(0).path("recordId").asString()).isEqualTo(a.recordId().toString());
+        assertThat(input.path("contexts").size()).isEqualTo(1);
+        assertThat(input.path("contexts").get(0).path("text").asString()).isEqualTo("원문");
+        assertThat(input.path("schemaVersion").asString()).isEqualTo("2.0");
+        assertThat(input.has("records")).isFalse();
+        assertThat(input.path("contexts").get(0).path("recordId").asString()).isEqualTo(a.recordId().toString());
         mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
                 .andExpect(jsonPath("data.items[1].content").value("한국어 답변"))
                 .andExpect(jsonPath("data.items[1].status").value("COMPLETED"))
@@ -108,6 +115,61 @@ class ChatStreamApiTest {
                 .andExpect(jsonPath("data.items[1].sources[0].videoId").value(a.videoId()))
                 .andExpect(jsonPath("data.items[1].sources[0].startMs").value(0))
                 .andExpect(jsonPath("data.items[1].usedRecordCount").value(1));
+    }
+    @Test void retrievalFiltersBeforeTopKAndOnlyComparesMatchingModelsAndDimensions() {
+        var second=f.analysis("demo-user","두 번째 허용 기록");
+        UUID secondChunk=addChunk(second,"demo-user","[0.2,0.8]","fixture",2);
+        var foreign=f.analysis("other-user","타인 원문");
+        for(int n=0;n<5;n++) addChunk(foreign,"other-user","[1,0]","fixture",2);
+        var outside=f.analysis("demo-user","범위 밖"); addChunk(outside,"demo-user","[1,0]","fixture",2);
+        var deleted=f.analysis("demo-user","삭제 원문"); addChunk(deleted,"demo-user","[1,0]","fixture",2);
+        jdbc.update("delete from analysis_records where id=?",deleted.recordId());
+        addChunk(a,"demo-user","[1,0]","other-model",2);
+        addChunk(a,"demo-user","[1,0,0]","fixture",3);
+        var allowed=List.of(new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(a.recordId(),a.analysisId()),
+                new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(second.recordId(),second.analysisId()),
+                new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(foreign.recordId(),foreign.analysisId()),
+                new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(deleted.recordId(),deleted.analysisId()));
+        var found=retrieval.search("demo-user",allowed,new com.gkk.itip.chat.retrieval.QuestionEmbeddingClient.Vector("fixture",new float[]{1,0}));
+        assertThat(found).extracting(com.gkk.itip.chat.retrieval.ChatContext::chunkId).containsExactly(chunk,secondChunk);
+        assertThat(found.getFirst().text()).isEqualTo("원문");
+        assertThat(found.getFirst().sectionIds()).containsExactly(a.sectionId());
+    }
+    @Test void rejectsValidCitationThatWasNotRetrievedAndSentToPython() throws Exception {
+        addChunk(a,"demo-user","[1,0]","fixture",2);
+        UUID notRetrieved=addChunk(a,"demo-user","[0,1]","fixture",2);
+        RESPONSE.set(event("delta","{\"text\":\"답변\"}")+event("sources","{\"items\":[{\"recordId\":\""+a.recordId()+
+                "\",\"chunkId\":\""+notRetrieved+"\",\"sectionId\":\""+a.sectionId()+"\"}]}")+event("done","{\"finishReason\":\"STOP\"}"));
+        assertThat(send(UUID.randomUUID())).contains("CHAT_INVALID_AI_RESPONSE").doesNotContain("event: sources","event: done");
+        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from chat_message_sources",Integer.class)).isZero();
+    }
+    @Test void noCompatibleEmbeddingSendsEmptyContextsForInsufficientEvidence() throws Exception {
+        jdbc.update("update analysis_chunks set embedding_model='different-model'");
+        assertThat(send(UUID.randomUUID())).contains("event: done","INSUFFICIENT_EVIDENCE");
+        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isZero();
+    }
+    @Test void embeddingFailurePersistsSafeFailureAndNeverSendsRawQuestionToPython() throws Exception {
+        embedding.response=request->{throw new IllegalStateException("provider credential should not leak");};
+        UUID key=UUID.randomUUID();
+        assertThat(send(key)).contains("CHAT_RETRIEVAL_FAILED","event: error").doesNotContain("event: done","credential");
+        assertThat(CALLS.get()).isZero();
+        assertThat(messages.findByConversationIdAndClientRequestIdOrderByPositionAsc(room,key).getLast().getStatus()).isEqualTo(MessageStatus.FAILED);
+    }
+    @Test void rechecksDeletedRecordsAfterEmbeddingBeforeBuildingPythonContext() throws Exception {
+        embedding.response=request->{jdbc.update("delete from analysis_records where id=?",a.recordId());return ChatEmbeddingFixture.vector("fixture",1,0);};
+        assertThat(send(UUID.randomUUID())).contains("INSUFFICIENT_EVIDENCE","event: done");
+        assertThat(mapper.readTree(INPUT.get()).path("contexts").size()).isZero();
+        assertThat(mapper.readTree(INPUT.get()).path("history").size()).isZero();
+    }
+    private UUID addChunk(ChatTestData.Analysis analysis,String owner,String vector,String model,int dimensions) {
+        UUID id=UUID.randomUUID();
+        jdbc.update("""
+            insert into analysis_chunks(id,owner_id,analysis_id,section_ids,source_segment_ids,text,start_ms,end_ms,source_type,
+              embedding,embedding_model,embedding_dimensions)
+            values (?,?,?,array[?]::uuid[],array['segment-1'],'추가 원문',0,1000,'CAPTION',?::vector,?,?)
+            """,id,owner,analysis.analysisId(),analysis.sectionId(),vector,model,dimensions);
+        return id;
     }
     @Test void eofIsIncompleteAndPreservesPartialText() throws Exception {
         RESPONSE.set(event("delta","{\"text\":\"끊긴 답변\"}"));UUID key=UUID.randomUUID();

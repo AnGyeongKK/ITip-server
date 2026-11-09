@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties={"spring.flyway.enabled=true","itip.demo.owner-id=demo-user"})
 @Testcontainers
+@org.springframework.context.annotation.Import(ChatEmbeddingFixture.class)
 class ChatHttpStreamingTest {
     @Container static final PostgreSQLContainer POSTGRES=new PostgreSQLContainer(
             DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"));

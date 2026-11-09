@@ -3,6 +3,7 @@ package com.gkk.itip.chat.stream;
 import com.gkk.itip.chat.conversation.dto.MessageView;
 import com.gkk.itip.chat.conversation.service.MessageQueryService;
 import com.gkk.itip.chat.infrastructure.PythonChatClient;
+import com.gkk.itip.chat.retrieval.*;
 import com.gkk.itip.domain.chat.FinishReason;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -24,15 +25,24 @@ public class ChatStreamBridge {
     private final ChatGenerationStore store;
     private final MessageQueryService messages;
     private final JsonMapper mapper;
-    public ChatStreamBridge(PythonChatClient python,ChatGenerationStore store,MessageQueryService messages,JsonMapper mapper) {
+    private final QuestionEmbeddingClient embeddings;
+    private final ChatContextQuery contexts;
+    public ChatStreamBridge(PythonChatClient python,ChatGenerationStore store,MessageQueryService messages,JsonMapper mapper,
+            QuestionEmbeddingClient embeddings,ChatContextQuery contexts) {
         this.python=python;this.store=store;this.messages=messages;this.mapper=mapper;
+        this.embeddings=embeddings;this.contexts=contexts;
     }
     public void write(GenerationTicket ticket,String question,OutputStream out) {
         var text=new StringBuilder();
         boolean committed=false;
-        try(var events=python.stream(ticket,question).toStream(1)) {
+        try {
             event(out,"meta",Map.of("conversationId",ticket.conversationId(),"userMessageId",ticket.userMessageId(),
                 "assistantMessageId",ticket.assistantMessageId(),"clientRequestId",ticket.clientRequestId(),"scopeRecordCount",ticket.scopeRecordCount()));
+            var vector=embeddings.embed(question);
+            var fresh=store.refresh(ticket);
+            var retrieved=contexts.search(fresh.ownerId(),fresh.records(),vector);
+            var candidates=retrieved.stream().flatMap(context->context.citations().stream()).toList();
+            try(var events=python.stream(fresh,question,retrieved).toStream(1)) {
             int sequence=0; long checkpoint=0;
             List<ChatCitation> sources=null;
             var iterator=events.iterator();
@@ -62,7 +72,7 @@ public class ChatStreamBridge {
                     case "done" -> {
                         if(sources==null) throw new ChatProtocolException();
                         var reason=FinishReason.valueOf(data.path("finishReason").asString());
-                        if(!store.complete(ticket,text.toString(),reason,sources)) throw new ChatProtocolException();
+                        if(!store.complete(ticket,text.toString(),reason,sources,candidates)) throw new ChatProtocolException();
                         committed=true;
                         var answer=(MessageView.Assistant)messages.get(ticket.ownerId(),ticket.conversationId(),ticket.assistantMessageId());
                         event(out,"sources",Map.of("assistantMessageId",ticket.assistantMessageId(),"sources",answer.sources(),"usedRecordCount",answer.usedRecordCount()));
@@ -74,12 +84,14 @@ public class ChatStreamBridge {
                 }
             }
             throw new EOFException("AI stream ended without done");
+            }
         } catch(Exception failure) {
             if(committed) return;
             boolean invalid=failure instanceof ChatProtocolException || failure instanceof IllegalArgumentException
                 || failure instanceof DecodingException || failure instanceof DataBufferLimitException;
             boolean retryable=!invalid && (!(failure instanceof WebClientResponseException http) || http.getStatusCode().value()==429 || http.getStatusCode().is5xxServerError());
-            String code=invalid?"CHAT_INVALID_AI_RESPONSE":"CHAT_STREAM_FAILED";
+            if(failure instanceof ChatRetrievalException retrieval) retryable=retrieval.retryable();
+            String code=failure instanceof ChatRetrievalException?"CHAT_RETRIEVAL_FAILED":invalid?"CHAT_INVALID_AI_RESPONSE":"CHAT_STREAM_FAILED";
             MessageStatus status;
             try {status=store.fail(ticket,text.toString(),code,retryable);}
             catch(RuntimeException persistenceFailure) {

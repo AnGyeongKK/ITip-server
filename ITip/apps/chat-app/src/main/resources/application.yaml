@@ -13,5 +13,7 @@ itip:
   chat:
     ai-base-url: ${CHAT_AI_BASE_URL:}
     ai-token: ${CHAT_AI_TOKEN:}
+    embedding-model-id: ${ANALYSIS_EMBEDDING_MODEL_ID:}
+    retrieval-top-k: ${CHAT_RETRIEVAL_TOP_K:8}
   demo:
     owner-id: ${DEMO_USER_ID:demo-user}

@@ -83,19 +83,28 @@ public class ChatGenerationStore {
         message.fail(text,code,retryable); return message.getStatus();
     }
     @Transactional
-    public boolean complete(GenerationTicket ticket, String text, FinishReason reason, List<ChatCitation> input) {
+    public boolean complete(GenerationTicket ticket, String text, FinishReason reason, List<ChatCitation> input, List<ChatCitation> candidates) {
         var room=rooms.lockOwned(ticket.conversationId(),ticket.ownerId()).orElseThrow(()->new ChatProtocolException());
         var message=current(ticket);
         if(message==null) return false;
         if(text.isBlank() || reason==null || (reason==FinishReason.INSUFFICIENT_EVIDENCE && !input.isEmpty())
                 || (reason!=FinishReason.INSUFFICIENT_EVIDENCE && input.isEmpty())) throw new ChatProtocolException();
         var current=scopes.resolve(ticket.ownerId(),scopes.readScope(room.getScopeJson()));
-        var verified=citations.validate(ticket,input,current.records());
+        var verified=citations.validate(ticket,input,current.records(),candidates);
         int used=(int)verified.stream().map(ChatMessageSource::getRecordId).distinct().count();
         sources.saveAll(verified);
         var now=clock.instant().truncatedTo(ChronoUnit.MICROS);
         message.complete(text,reason,used,now); room.touch(now);
         return true;
+    }
+    @Transactional(readOnly=true)
+    public GenerationTicket refresh(GenerationTicket ticket) {
+        var room=rooms.findByIdAndOwnerId(ticket.conversationId(),ticket.ownerId()).orElseThrow(ChatProtocolException::new);
+        var current=scopes.resolve(ticket.ownerId(),scopes.readScope(room.getScopeJson()));
+        if(current.status().equals("UNAVAILABLE")) throw new ChatProtocolException();
+        var records=current.records().stream().filter(ticket.records()::contains).toList();
+        return new GenerationTicket(ticket.ownerId(),ticket.conversationId(),ticket.userMessageId(),ticket.assistantMessageId(),
+            ticket.clientRequestId(),ticket.token(),records,history.select(ticket.ownerId(),ticket.conversationId(),records));
     }
     private ChatMessage current(GenerationTicket ticket) {
         var message = messages.lock(ticket.assistantMessageId()).orElse(null);

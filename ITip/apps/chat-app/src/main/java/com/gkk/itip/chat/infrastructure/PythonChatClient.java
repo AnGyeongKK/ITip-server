@@ -2,6 +2,7 @@ package com.gkk.itip.chat.infrastructure;
 
 import com.gkk.itip.chat.stream.GenerationTicket;
 import com.gkk.itip.chat.stream.ChatLimits;
+import com.gkk.itip.chat.retrieval.ChatContext;
 import com.gkk.itip.common.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -16,6 +17,7 @@ import io.netty.channel.ChannelOption;
 import tools.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.Map;
+import java.util.List;
 import static com.gkk.itip.common.exception.ErrorCode.CHAT_AI_NOT_CONFIGURED;
 
 @Component
@@ -38,11 +40,11 @@ public class PythonChatClient {
         client=builder.build();
     }
     public void requireConfigured() { if(baseUrl.isEmpty()) throw new BusinessException(CHAT_AI_NOT_CONFIGURED); }
-    public Flux<ServerSentEvent<JsonNode>> stream(GenerationTicket ticket, String question) {
+    public Flux<ServerSentEvent<JsonNode>> stream(GenerationTicket ticket, String question, List<ChatContext> contexts) {
         requireConfigured();
         return client.post().uri("/v1/chat/stream").contentType(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_EVENT_STREAM)
-            .bodyValue(Map.of("schemaVersion","1.0","requestId",ticket.clientRequestId(),"conversationId",ticket.conversationId(),
-                "ownerId",ticket.ownerId(),"question",question,"records",ticket.records(),"history",ticket.history()))
+            .bodyValue(Map.of("schemaVersion","2.0","requestId",ticket.clientRequestId(),"conversationId",ticket.conversationId(),
+                "ownerId",ticket.ownerId(),"question",question,"contexts",contexts,"history",ticket.history()))
             .retrieve().bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<JsonNode>>() {})
             .timeout(ChatLimits.IDLE_TIMEOUT).take(ChatLimits.STREAM_DURATION);
     }

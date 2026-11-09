@@ -6,7 +6,7 @@
 - `ITip/`는 Gradle 집계 루트이며 `ITip/src/main`, `ITip/src/test`를 사용하지 않는다. 실제 소스·테스트는 `apps/api-app/src`, `apps/worker-app/src`, `apps/chat-app/src`, `libs/common/src`, `libs/domain/src`에 둔다. 초기 단일 모듈의 빈 `ITip/src/`는 제거했으며 이 경로에 새 코드를 작성하지 않는다.
 - Java 21, Spring Boot 4.1.2, Gradle Wrapper, Spring MVC, JPA를 기준으로 개발한다.
 - 현재 시연용 MVP는 영상·재생목록 가져오기, 분석·결과, 기록·폴더, 검색, AI 대화, 기기·알림이다. 로그인·결제·요금제·이용 한도는 구현 범위에서 제외한다.
-- 데모는 로컬 PostgreSQL(pgvector)·DB 작업 조회·Spring Worker로 실행한다. 파일은 실제 GCS의 presigned URL로 업로드한다. GPT·RAG 채팅은 AI 파트의 Python 서버와 연동한다.
+- 데모는 로컬 PostgreSQL(pgvector)·DB 작업 조회·Spring Worker로 실행한다. 파일은 실제 GCS의 presigned URL로 업로드한다. 질문 임베딩·pgvector 검색은 Spring Chat이 담당하고, GPT 답변 생성은 AI 파트의 Python 서버와 연동한다.
 - 기획·API 변경이 필요하면 영향과 제안을 설명하고 합의한 뒤 반영한다. Figma는 읽기 전용으로 사용한다.
 
 ## 폴더 구조와 실행 경계
@@ -39,9 +39,9 @@ gkk/
 | --- | --- | --- |
 | `api-app` | 링크·업로드 URL, 분석 접수·조회, 기록·폴더·검색 | 로컬 Spring Boot, `API_BASE_URL` |
 | `worker-app` | GCS 자막 검증, 분석 연동, 상태·결과 저장 | 로컬 Spring Boot, PostgreSQL 대기 작업 조회 |
-| `chat-app` | 채팅방·대화 저장, Python AI 서버 연동, POST SSE | 로컬 Spring Boot, `CHAT_BASE_URL` |
+| `chat-app` | 채팅방·대화 저장, 질문 임베딩·pgvector 검색, Python 답변 연동, POST SSE | 로컬 Spring Boot, `CHAT_BASE_URL` |
 
-- 세 Spring 앱은 각각 실행한다. Python AI 서버는 AI 파트가 별도로 구현한다. 채팅 모델 호출·RAG는 Python 담당, 백엔드는 요청 범위 검증·서버 연동·대화 저장·SSE 전달을 담당한다. 내부 연동 형식은 AI 파트와 합의한다.
+- 세 Spring 앱은 각각 실행한다. Python AI 서버는 AI 파트가 별도로 구현한다. Worker는 자막 원문을 임베딩해 저장하고, Chat은 질문 임베딩·pgvector 검색·검색 원문과 출처 전달을 담당한다. Python은 전달된 원문으로 GPT 답변을 생성한다. 백엔드는 범위 검증·대화 저장·SSE 전달을 담당한다. 내부 연동 형식은 AI 파트와 합의한다.
 - Spring MVC·JPA를 사용한다. Virtual Threads는 초기 비활성, Redis는 보류한다. 실행 앱 간 Gradle 의존은 만들지 않고 공유 코드는 `common`·`domain`에 둔다.
 - 같은 PostgreSQL을 사용하며 중복 작업은 DB에서 제어한다. 로컬 Worker는 `@Scheduled`로 대기 작업을 선점하고, AI 처리 중에는 긴 DB 트랜잭션을 유지하지 않는다.
 - 자막은 Android → GCS presigned URL 업로드 → API 접수 → DB 대기 작업 → Worker 순서다. 서버 yt-dlp 수집은 구현하지 않는다.

@@ -1,6 +1,7 @@
 package com.gkk.itip.chat.stream;
 
 import com.gkk.itip.chat.infrastructure.PythonChatClient;
+import com.gkk.itip.chat.retrieval.QuestionEmbeddingClient;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.exception.BusinessException;
 import jakarta.validation.Valid;
@@ -19,14 +20,16 @@ public class ChatStreamController {
     private final ChatStreamBridge bridge;
     private final PythonChatClient python;
     private final DemoUserProvider user;
+    private final QuestionEmbeddingClient embeddings;
     private final Semaphore capacity=new Semaphore(ChatLimits.CONCURRENT_STREAMS);
-    public ChatStreamController(ChatGenerationStore store,ChatStreamBridge bridge,PythonChatClient python,DemoUserProvider user) {
-        this.store=store;this.bridge=bridge;this.python=python;this.user=user;
+    public ChatStreamController(ChatGenerationStore store,ChatStreamBridge bridge,PythonChatClient python,DemoUserProvider user,QuestionEmbeddingClient embeddings) {
+        this.store=store;this.bridge=bridge;this.python=python;this.user=user;this.embeddings=embeddings;
     }
     @PostMapping(produces=MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<StreamingResponseBody> send(@PathVariable UUID conversationId,@RequestHeader("Idempotency-Key") UUID key,
             @Valid @RequestBody SendMessageRequest request,HttpServletResponse response) {
         python.requireConfigured();
+        embeddings.requireConfigured();
         if(!capacity.tryAcquire()) throw new BusinessException(CHAT_CAPACITY_EXCEEDED);
         GenerationTicket ticket;
         try {ticket=store.begin(user.ownerId(),conversationId,key,request);}
