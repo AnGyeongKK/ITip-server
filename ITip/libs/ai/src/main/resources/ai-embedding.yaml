@@ -1,0 +1,8 @@
+itip:
+  ai:
+    embedding:
+      enabled: ${AI_EMBEDDING_ENABLED:false}
+      api-key: ${OPENAI_API_KEY:}
+      model: ${EMBEDDING_MODEL:}
+      dimensions: ${EMBEDDING_DIMENSIONS:0}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

@@ -3,6 +3,7 @@ plugins { id 'org.springframework.boot' }
 dependencies {
     implementation project(':libs:common')
     implementation project(':libs:domain')
+    implementation project(':libs:ai')
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.ai:spring-ai-model:2.0.2'
     implementation 'org.springframework.ai:spring-ai-retry:2.0.2'

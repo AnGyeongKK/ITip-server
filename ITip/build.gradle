@@ -34,5 +34,5 @@ subprojects {
     tasks.withType(Test).configureEach { useJUnitPlatform() }
 }
 
-tasks.named('build') { dependsOn ':apps:api-app:build', ':apps:worker-app:build', ':apps:chat-app:build', ':libs:common:build', ':libs:domain:build' }
-tasks.named('check') { dependsOn ':apps:api-app:check', ':apps:worker-app:check', ':apps:chat-app:check', ':libs:common:check', ':libs:domain:check' }
+tasks.named('build') { dependsOn ':apps:api-app:build', ':apps:worker-app:build', ':apps:chat-app:build', ':libs:common:build', ':libs:domain:build', ':libs:ai:build' }
+tasks.named('check') { dependsOn ':apps:api-app:check', ':apps:worker-app:check', ':apps:chat-app:check', ':libs:common:check', ':libs:domain:check', ':libs:ai:check' }

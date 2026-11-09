@@ -1,0 +1,7 @@
+plugins { id 'java-library' }
+
+dependencies {
+    api 'org.springframework.ai:spring-ai-openai:2.0.2'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
