@@ -1,12 +1,9 @@
 package com.gkk.itip.api.video.controller;
 
 import com.gkk.itip.api.video.dto.response.YoutubePlaylistResponse;
-import com.gkk.itip.api.video.exception.YoutubeLookupException;
 import com.gkk.itip.api.video.service.YoutubePlaylistService;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.response.ApiResponse;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,9 +29,4 @@ public class YoutubePlaylistController {
         return ApiResponse.success(playlists.findItems(user.ownerId(), playlistId, cursor, limit));
     }
 
-    @ExceptionHandler(YoutubeLookupException.class)
-    public ResponseEntity<ApiResponse<Void>> handleLookupFailure(YoutubeLookupException exception) {
-        return ResponseEntity.status(exception.status())
-                .body(new ApiResponse<>(exception.code(), exception.getMessage(), null));
-    }
 }

@@ -22,6 +22,16 @@ Worker → 자막 검증 → AI 분석 → 검색용 임베딩 → 결과·개�
 | Worker → 결과·보관 | 요약·키워드·주제 상세·마인드맵·검색 조각이 준비된 뒤 analysisId·recordId를 함께 확정한다. 도중 저장된 분석은 공개 완료 결과가 아니다. |
 | 분석 → 채팅 | 원문 기반 검색 조각, 실제 sectionId·시간, 임베딩 모델·차원을 저장한다. Python 채팅 서버는 사용자에게 허용된 완료 기록만 검색한다. |
 
+## 영상 가져오기에서 메타데이터 등록
+
+- `GET /api/v1/youtube-resources?url=...`: 단일 영상이 미등록이거나 길이가 없으면 YouTube Data API에서 조회한 뒤 `videos`에 ID·길이(ms)·제목·채널·썸네일을 저장한다. 길이가 있는 캐시는 재사용한다. 재생목록 링크 판별만으로는 영상 행을 만들지 않는다.
+- `GET /api/v1/youtube-playlists/{playlistId}/items`: 조회한 페이지에서 접근 가능하고 길이가 확인된 영상들을 응답 전에 저장한다. 미확인 길이는 `INELIGIBLE/VIDEO_UNAVAILABLE`로 반환하고 신규 행을 만들지 않는다.
+- YouTube HTTP 호출은 DB 트랜잭션 밖에서 수행한다. `VideoMetadataStore.saveAll()`이 짧은 트랜잭션의 UPSERT로 중복·동시 등록을 처리한다. 응답에서 생략된 선택 필드는 기존 값을 지우지 않는다.
+- GET에서 저장하는 것은 공유 영상 메타데이터 캐시다. 사용자 분석 배치·작업·보관 기록은 생성하지 않는다. 앱은 반환된 `videoId`로 기존 `POST /api/v1/analysis-batches`를 호출한다.
+- 신규 단일 영상 조회에도 서버의 `YOUTUBE_API_KEY`가 필요하다. 조회 실패·길이 미확인 시 오류를 반환하고 빈 영상 행을 등록하지 않는다. 자막 수집은 계속 Android 담당이며 서버에서 yt-dlp를 실행하지 않는다.
+
+`YoutubeImportAnalysisIntegrationTest`는 미등록 영상 가져오기 → 실제 PostgreSQL 메타데이터 저장 → HTTP 201 분석 배치 생성을 확인한다. 실제 YouTube·GCS·AI 응답을 사용한 전체 영상 분석 시연은 별도로 검증한다.
+
 GCS 업로드 URL 만료와 객체 보관 기간은 다르다. 이미 업로드한 객체는 URL 만료 시각만으로 삭제·재업로드 대상으로 판단하지 않는다. 접수 때 확인한 generation을 고정해 Worker가 같은 버전을 읽는다.
 
 ## 채팅 검색에 전달할 범위

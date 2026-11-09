@@ -2,11 +2,13 @@ package com.gkk.itip.api.video;
 
 import com.gkk.itip.api.video.controller.YoutubePlaylistController;
 import com.gkk.itip.api.video.exception.YoutubeLookupException;
+import com.gkk.itip.api.video.exception.YoutubeExceptionHandler;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient.PlaylistPage;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient.PlaylistVideo;
 import com.gkk.itip.api.video.service.YoutubePlaylistService;
 import com.gkk.itip.api.video.service.YoutubeResourceService;
+import com.gkk.itip.api.video.service.VideoMetadataStore;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.web.ApiExceptionHandler;
 import com.gkk.itip.domain.analysis.AnalysisJobRepository;
@@ -41,10 +43,11 @@ class YoutubePlaylistApiTest {
 
     @BeforeEach
     void setUp() {
-        var resources = new YoutubeResourceService(mock(VideoRepository.class), records, jobs);
-        var service = new YoutubePlaylistService(youtube, resources);
+        var metadata = mock(VideoMetadataStore.class);
+        var resources = new YoutubeResourceService(mock(VideoRepository.class), records, jobs, youtube, metadata);
+        var service = new YoutubePlaylistService(youtube, resources, metadata);
         mvc = MockMvcBuilders.standaloneSetup(new YoutubePlaylistController(service, new DemoUserProvider(OWNER)))
-                .setControllerAdvice(new ApiExceptionHandler())
+                .setControllerAdvice(new ApiExceptionHandler(), new YoutubeExceptionHandler())
                 .build();
     }
 

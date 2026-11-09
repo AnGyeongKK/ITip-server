@@ -19,10 +19,12 @@ public class YoutubePlaylistService {
     private static final int MAX_LIMIT = 50;
     private final YoutubeDataClient youtube;
     private final YoutubeResourceService resources;
+    private final VideoMetadataStore metadata;
 
-    public YoutubePlaylistService(YoutubeDataClient youtube, YoutubeResourceService resources) {
+    public YoutubePlaylistService(YoutubeDataClient youtube, YoutubeResourceService resources, VideoMetadataStore metadata) {
         this.youtube = youtube;
         this.resources = resources;
+        this.metadata = metadata;
     }
 
     public YoutubePlaylistResponse findItems(String ownerId, String playlistId, String cursor, int limit) {
@@ -34,6 +36,7 @@ public class YoutubePlaylistService {
         }
 
         var page = youtube.loadPlaylist(playlistId, cursor, limit);
+        metadata.saveAll(page.items());
         var ids = page.items().stream().map(PlaylistVideo::videoId).collect(Collectors.toSet());
         var existing = resources.existingAnalyses(ownerId, ids);
         var items = page.items().stream().map(video -> toItem(video, existing)).toList();
@@ -43,7 +46,7 @@ public class YoutubePlaylistService {
 
     private static Item toItem(PlaylistVideo video, Map<String, Existing> existing) {
         String reason = null;
-        if (!video.available()) {
+        if (!video.available() || video.durationMs() == null || video.durationMs() <= 0) {
             reason = "VIDEO_UNAVAILABLE";
         } else if (video.durationMs() != null && video.durationMs() > YoutubeResourceService.MAX_DURATION_MS) {
             reason = "DURATION_EXCEEDED";

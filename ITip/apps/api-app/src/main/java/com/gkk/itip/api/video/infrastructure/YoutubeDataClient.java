@@ -20,6 +20,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,6 +74,14 @@ public class YoutubeDataClient {
                 .toList();
         return new PlaylistPage(playlist.snippet().title(), playlist.snippet().channelTitle(),
                 playlist.snippet().thumbnailUrl(), playlist.contentDetails().itemCount(), items, page.nextPageToken());
+    }
+
+    public Optional<PlaylistVideo> loadVideo(String videoId) {
+        if (!configured) throw new YoutubeLookupException(YOUTUBE_LOOKUP_UNAVAILABLE);
+        var video = videoDetails(List.of(videoId)).get(videoId);
+        if (video == null) return Optional.empty();
+        return Optional.of(new PlaylistVideo(videoId, video.snippet().title(), video.snippet().channelTitle(),
+                video.snippet().thumbnailUrl(), millis(video.contentDetails().duration()), true));
     }
 
     private static URI playlistItemsUri(UriBuilder uri, String playlistId, String cursor, int limit) {

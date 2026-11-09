@@ -2,6 +2,10 @@ package com.gkk.itip.api.video;
 
 import com.gkk.itip.api.video.controller.YoutubeResourceController;
 import com.gkk.itip.api.video.service.YoutubeResourceService;
+import com.gkk.itip.api.video.service.VideoMetadataStore;
+import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
+import com.gkk.itip.api.video.exception.YoutubeExceptionHandler;
+import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.web.ApiExceptionHandler;
 import com.gkk.itip.domain.analysis.AnalysisJob;
@@ -41,13 +45,15 @@ class YoutubeResourceApiTest {
     private final AnalysisRecordRepository records = mock(AnalysisRecordRepository.class);
     private final AnalysisJobRepository jobs = mock(AnalysisJobRepository.class);
     private MockMvc mvc;
+    private final YoutubeDataClient youtube = mock(YoutubeDataClient.class);
+    private final VideoMetadataStore metadata = mock(VideoMetadataStore.class);
 
     @BeforeEach
     void setUp() {
-        var controller = new YoutubeResourceController(new YoutubeResourceService(videos, records, jobs),
+        var controller = new YoutubeResourceController(new YoutubeResourceService(videos, records, jobs, youtube, metadata),
                 new DemoUserProvider(OWNER));
         mvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new ApiExceptionHandler())
+                .setControllerAdvice(new ApiExceptionHandler(), new YoutubeExceptionHandler())
                 .build();
     }
 
@@ -73,6 +79,7 @@ class YoutubeResourceApiTest {
         var record = AnalysisRecord.fromCompleted(result);
         when(records.findFirstByOwnerIdAndVideoIdOrderByAnalyzedAtDescIdDesc(OWNER, VIDEO_ID))
                 .thenReturn(Optional.of(record));
+        givenCachedVideo(VIDEO_ID);
 
         mvc.perform(get(PATH).param("url", VIDEO_URL + "&list=PL_EXAMPLE"))
                 .andExpect(status().isOk())
@@ -80,7 +87,7 @@ class YoutubeResourceApiTest {
                 .andExpect(jsonPath("$.data.videoId").value(VIDEO_ID))
                 .andExpect(jsonPath("$.data.canonicalUrl").value(VIDEO_URL))
                 .andExpect(jsonPath("$.data.metadata").hasJsonPath())
-                .andExpect(jsonPath("$.data.metadata").isEmpty())
+                .andExpect(jsonPath("$.data.metadata.durationMs").value(123_000L))
                 .andExpect(jsonPath("$.data.existing.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.existing.analysisId").value(result.getId().toString()))
                 .andExpect(jsonPath("$.data.existing.recordId").value(record.getId().toString()))
@@ -92,6 +99,8 @@ class YoutubeResourceApiTest {
 
     @Test
     void mapsAnActiveJobToProcessingAndAnUnknownVideoToNone() throws Exception {
+        givenCachedVideo(VIDEO_ID);
+        givenCachedVideo("aaaaaaaaaaa");
         var job = AnalysisJob.queued(OWNER, UUID.randomUUID(), UUID.randomUUID(), VIDEO_ID,
                 UUID.randomUUID(), 1, null, Instant.parse("2026-11-01T00:00:00Z"));
         when(jobs.findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(OWNER, VIDEO_ID, ACTIVE_JOBS))
@@ -107,6 +116,12 @@ class YoutubeResourceApiTest {
                 .andExpect(jsonPath("$.data.existing.status").value("NONE"))
                 .andExpect(jsonPath("$.data.captionRequirement.language").value("ko"))
                 .andExpect(jsonPath("$.data.captionRequirement.maxDurationMs").value(3_600_000));
+    }
+
+    private void givenCachedVideo(String id) {
+        Video video = new Video(id);
+        video.updateMetadata(null, null, null, null, 123_000L, null);
+        when(videos.findById(id)).thenReturn(Optional.of(video));
     }
 
     @Test

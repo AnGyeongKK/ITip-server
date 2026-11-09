@@ -5,6 +5,8 @@ import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse.Existing;
 import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse.Metadata;
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.common.exception.ErrorCode;
+import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
+import com.gkk.itip.api.video.exception.YoutubeLookupException;
 import com.gkk.itip.domain.analysis.AnalysisJobRepository;
 import com.gkk.itip.domain.analysis.AnalysisRecordRepository;
 import com.gkk.itip.domain.analysis.JobStatus;
@@ -18,6 +20,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -33,14 +36,18 @@ public class YoutubeResourceService {
     private final VideoRepository videos;
     private final AnalysisRecordRepository records;
     private final AnalysisJobRepository jobs;
+    private final YoutubeDataClient youtube;
+    private final VideoMetadataStore metadata;
 
-    public YoutubeResourceService(VideoRepository videos, AnalysisRecordRepository records, AnalysisJobRepository jobs) {
+    public YoutubeResourceService(VideoRepository videos, AnalysisRecordRepository records, AnalysisJobRepository jobs,
+                                  YoutubeDataClient youtube, VideoMetadataStore metadata) {
         this.videos = videos;
         this.records = records;
         this.jobs = jobs;
+        this.youtube = youtube;
+        this.metadata = metadata;
     }
 
-    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public YoutubeResourceResponse resolve(String ownerId, String url) {
         YoutubeUrlParser.Resource resource;
         try {
@@ -52,7 +59,19 @@ public class YoutubeResourceService {
             return new YoutubeResourceResponse.Playlist(resource.type().name(), resource.id(), resource.canonicalUrl());
         }
 
-        Metadata metadata = videos.findById(resource.id()).map(YoutubeResourceService::metadataOf).orElse(null);
+        var video = videos.findById(resource.id());
+        if (video.isEmpty() || video.get().getDurationMs() == null) {
+            // 메타데이터 HTTP 조회 중 DB 트랜잭션을 유지하지 않는다.
+            var details = youtube.loadVideo(resource.id())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+            if (details.durationMs() == null || details.durationMs() <= 0) {
+                throw new YoutubeLookupException(YoutubeLookupException.Failure.YOUTUBE_LOOKUP_UNAVAILABLE);
+            }
+            metadata.saveAll(List.of(details));
+            video = videos.findById(resource.id());
+        }
+        Metadata metadata = video.map(YoutubeResourceService::metadataOf).orElseThrow(
+                () -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         return new YoutubeResourceResponse.Video(resource.type().name(), resource.id(), resource.canonicalUrl(),
                 metadata, existingAnalysis(ownerId, resource.id()), CAPTION_REQUIREMENT);
     }
