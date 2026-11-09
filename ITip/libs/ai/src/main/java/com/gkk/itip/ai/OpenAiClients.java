@@ -1,10 +1,8 @@
 package com.gkk.itip.ai;
 
 import com.openai.client.OpenAIClient;
-import com.openai.client.OpenAIClientImpl;
-import com.openai.core.ClientOptions;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.core.Timeout;
-import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 import java.net.URI;
 import java.time.Duration;
 
@@ -17,8 +15,8 @@ public final class OpenAiClients {
                 || !("https".equals(uri.getScheme()) || "http".equals(uri.getScheme())))
             throw new IllegalArgumentException("valid OpenAI API key and base URL required");
         var timeout=Timeout.builder().request(total).connect(Duration.ofSeconds(3)).read(idle).write(Duration.ofSeconds(8)).build();
-        var http=SpringAiOpenAiHttpClient.builder().timeout(timeout).build();
-        return new OpenAIClientImpl(ClientOptions.builder().httpClient(http).apiKey(key).baseUrl(baseUrl)
-            .timeout(timeout).maxRetries(0).build());
+        // 이 SDK transport는 retryOnConnectionFailure=false다. Spring AI의 기본 transport는 408을 다시 전송한다.
+        return OpenAIOkHttpClient.builder().apiKey(key).baseUrl(baseUrl)
+            .timeout(timeout).maxRetries(0).logLevel(com.openai.core.LogLevel.OFF).build();
     }
 }

@@ -17,7 +17,7 @@ class OpenAiEmbeddingConfigurationTest {
         runner.withPropertyValues("itip.ai.embedding.enabled=true","itip.ai.embedding.api-key=fixture-only-not-a-secret")
             .run(c->assertThat(c).hasFailed());
     }
-    @Test void actualSdkUsesConfiguredModelAndDimensionsAndDoesNotRetry429() throws Exception {
+    @Test void actualSdkUsesConfiguredModelAndDimensionsAndDoesNotRetry408Or429() throws Exception {
         var body=new AtomicReference<String>();var status=new AtomicInteger(200);var calls=new AtomicInteger();
         var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         server.createContext("/v1/embeddings",e->{
@@ -36,9 +36,11 @@ class OpenAiEmbeddingConfigurationTest {
                     assertThat(response.getResult().getOutput()).containsExactly(1,0);
                     assertThat(response.getMetadata().getModel()).isEqualTo("fixture-embedding");
                     assertThat(body.get()).contains("\"model\":\"fixture-embedding\"","\"dimensions\":2","원문");
-                    calls.set(0);status.set(429);
-                    assertThatThrownBy(()->model.call(new EmbeddingRequest(List.of("질문"),EmbeddingOptions.builder().build()))).isInstanceOf(RuntimeException.class);
-                    assertThat(calls.get()).as("SDK retries are disabled").isEqualTo(1);
+                    for(int failure:new int[]{408,429}) {
+                        calls.set(0);status.set(failure);
+                        assertThatThrownBy(()->model.call(new EmbeddingRequest(List.of("질문"),EmbeddingOptions.builder().build()))).isInstanceOf(RuntimeException.class);
+                        assertThat(calls.get()).as("SDK and transport retries are disabled for HTTP %s",failure).isEqualTo(1);
+                    }
                 });
         }finally{server.stop(0);}
     }
