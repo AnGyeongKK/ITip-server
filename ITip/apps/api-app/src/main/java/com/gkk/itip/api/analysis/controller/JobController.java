@@ -4,7 +4,7 @@ import com.gkk.itip.api.analysis.dto.request.RetryJobRequest;
 import com.gkk.itip.api.analysis.dto.request.SubmitJobRequest;
 import com.gkk.itip.api.analysis.dto.response.*;
 import com.gkk.itip.api.analysis.service.JobService;
-import com.gkk.itip.api.config.DemoUserProvider;
+import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.response.ApiResponse;
 import com.gkk.itip.domain.analysis.JobStatus;
 import jakarta.validation.Valid;

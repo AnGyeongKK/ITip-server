@@ -3,7 +3,7 @@ package com.gkk.itip.api.analysis.controller;
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse;
 import com.gkk.itip.api.analysis.dto.response.AnalysisSectionResponse;
 import com.gkk.itip.api.analysis.service.AnalysisResultQueryService;
-import com.gkk.itip.api.config.DemoUserProvider;
+import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

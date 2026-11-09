@@ -1,4 +1,4 @@
-package com.gkk.itip.api.config;
+package com.gkk.itip.common.web;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

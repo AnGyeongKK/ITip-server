@@ -1,5 +1,7 @@
 package com.gkk.itip.api.analysis.service;
 
+import com.gkk.itip.common.request.RequestFingerprint;
+
 import com.gkk.itip.api.analysis.dto.request.CreateBatchRequest;
 import com.gkk.itip.api.analysis.dto.request.ReportCollectionFailureRequest;
 import com.gkk.itip.api.analysis.dto.response.*;

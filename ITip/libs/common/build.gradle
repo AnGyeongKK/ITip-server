@@ -3,7 +3,10 @@ plugins { id 'java-library' }
 dependencies {
     implementation 'com.google.cloud:google-cloud-storage:2.75.0'
     implementation 'org.springframework:spring-context'
+    implementation 'org.springframework:spring-webmvc'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
     api 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'tools.jackson.core:jackson-databind'
 }

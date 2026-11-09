@@ -2,18 +2,19 @@
 
 ## API 호출 구조 보기
 
-[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·관련 커밋을 볼 수 있다. 구현 8개와 후속 설계 30개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
+[`yousum-api-pipelines.html`](yousum-api-pipelines.html)을 브라우저로 연다. API를 선택하면 전체 서버 경로·트랜잭션·함수·PR #10·#11·#12·관련 커밋을 볼 수 있다. 구현 14개와 후속 설계 24개를 구분하며, 결과·구간 GET은 저장 DB만 읽는 경로로 표시한다. 실제 GCS·모델 연동은 별도로 확인해야 한다.
 
 편집 원본은 [`visualizations/yousum-api-pipelines.fragment.html`](visualizations/yousum-api-pipelines.fragment.html)이다. 배포용 HTML은 이 원본에 테마·미리보기 실행 환경을 포함한 파일이며, 수정 후 두 파일의 동작을 함께 확인한다.
 
 ## 준비
 
-실제 Java 소스와 테스트 위치는 다음과 같다. `ITip/`는 Gradle 집계 루트이며 최상위 `ITip/src/`는 사용하지 않는다. IntelliJ도 `ITip/settings.gradle`의 네 모듈을 기준으로 불러온다.
+실제 Java 소스와 테스트 위치는 다음과 같다. `ITip/`는 Gradle 집계 루트이며 최상위 `ITip/src/`는 사용하지 않는다. IntelliJ도 `ITip/settings.gradle`에 등록된 모듈을 기준으로 불러온다.
 
 | 모듈 | 소스·설정 | 테스트 |
 | --- | --- | --- |
 | API | `ITip/apps/api-app/src/main` | `ITip/apps/api-app/src/test` |
 | Worker | `ITip/apps/worker-app/src/main` | `ITip/apps/worker-app/src/test` |
+| Chat | `ITip/apps/chat-app/src/main` | `ITip/apps/chat-app/src/test` |
 | 공통 응답·예외 | `ITip/libs/common/src/main` | `ITip/libs/common/src/test` |
 | Entity·Repository·공유 결과 | `ITip/libs/domain/src/main` | `ITip/libs/domain/src/test` |
 
@@ -28,6 +29,8 @@
 | `DB_USER`, `DB_NAME`, `DB_PORT` | DB 사용자·Compose DB명·노출 포트. 기본 `itip`, `itip`, `15432` |
 | `DB_POOL_MAX` | 프로세스별 최대 DB 연결 수. 기본 5 |
 | `WORKER_PORT` | Worker HTTP 포트. 기본 8081 |
+| `CHAT_PORT` | Chat HTTP 포트. 기본 8082 |
+| `DEMO_USER_ID` | API·Chat에서 동일하게 설정하는 데모 소유자. 기본 demo-user |
 
 `DB_NAME`·`DB_PORT`를 변경하면 앱의 `DB_URL`도 같은 DB를 가리키게 설정한다. 기존 volume이 있으면 환경변수 변경만으로 DB 계정·비밀번호가 바뀌지 않는다. 개인 데이터가 있는 volume을 임의로 삭제하지 않는다.
 
@@ -42,9 +45,11 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 ```sh
 ./gradlew :apps:worker-app:bootRun
+# 별도 터미널
+./gradlew :apps:chat-app:bootRun
 ```
 
-스키마는 Flyway가 생성·변경하고 두 앱은 `ddl-auto=validate`로 검사한다. Worker는 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
+스키마는 API의 Flyway가 생성·변경하고 세 앱은 `ddl-auto=validate`로 검사한다. Worker·Chat은 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
 영상 분석을 완료하려면 GCS 인증과 **`ChatModel`·`EmbeddingModel` Bean**이 필요하다. 현재 저장소는 공급자 공통 Spring AI 어댑터까지 포함하며 특정 공급자 starter·모델·API 키 자동 설정은 포함하지 않는다. [AI 문서와 현재 코드의 차이](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한 뒤 Worker에 두 Bean과 HTTP 타임아웃·SDK 총 시도 1회(내부 자동 재시도 0회)를 설정한다. 키 환경변수만 추가해도 모델 Bean이 생성되는 구조는 아니다. 설정 전에도 앱·DB 조회는 시작되지만 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. Python 채팅 서버 연동은 별도 기능이다.
 

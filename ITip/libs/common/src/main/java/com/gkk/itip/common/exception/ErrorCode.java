@@ -3,6 +3,9 @@ package com.gkk.itip.common.exception;
 public enum ErrorCode {
 
     INVALID_REQUEST("잘못된 요청이에요."),
+    INVALID_CURSOR("목록을 새로 불러와 주세요."),
+    EMPTY_CHAT_SCOPE("질문할 분석 기록이 없어요."),
+    CHAT_GENERATION_IN_PROGRESS("답변이 완료된 후 다시 요청해 주세요."),
     RESOURCE_NOT_FOUND("요청한 항목을 찾을 수 없어요."),
     IDEMPOTENCY_CONFLICT("같은 요청 키로 다른 요청을 보낼 수 없어요."),
     STATE_CONFLICT("현재 상태에서는 요청을 처리할 수 없어요."),
