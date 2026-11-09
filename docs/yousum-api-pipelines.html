@@ -1905,7 +1905,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     &lt;h2&gt;API별 서버 처리&lt;/h2&gt;
     &lt;span class=&quot;text-small text-muted&quot;&gt;백엔드 구현 15개 · 후속 설계 23개&lt;/span&gt;
   &lt;/div&gt;
-  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/19&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;dev 통합 PR #19 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/13&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Python·SSE 원본 PR #13 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/7-feat-ai-chat/docs/chat-code-reading.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅 코드 읽기 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/12&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅방·기록 PR #12 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;revision text-small&quot;&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/21&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Spring RAG PR #21 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/19&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;dev 통합 PR #19 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/13&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Python·SSE 원본 PR #13 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/feat/7-spring-rag-retrieval/docs/chat-code-reading.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅 코드 읽기 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/12&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;채팅방·기록 PR #12 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/11&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 PR #11 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/pull/10&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;분석 처리 PR #10 · 병합 ↗&lt;/a&gt;&lt;a href=&quot;https://github.com/AnGyeongKK/ITip-server/blob/5-feat-analysis-result/docs/analysis-result-review-log.md&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;결과 조회 검토 기록 ↗&lt;/a&gt;&lt;span&gt;GCS·실제 모델 연결 미확인&lt;/span&gt;&lt;/div&gt;
   &lt;div class=&quot;selectors&quot;&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;도메인&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;도메인 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
     &lt;label class=&quot;choice&quot;&gt;&lt;span class=&quot;form-label&quot;&gt;API&lt;/span&gt;&lt;select class=&quot;form-select&quot; aria-label=&quot;API 선택&quot;&gt;&lt;/select&gt;&lt;/label&gt;
@@ -1966,7 +1966,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       &#x27;CHAT-01&#x27;: write(&#x27;chat&#x27;,&#x27;ConversationService.create()&#x27;,&#x27;검색 범위·채팅방 저장&#x27;,&#x27;201 · conversationId / scope / recordCount&#x27;,&#x27;생성만으로 GPT를 호출하지 않음. 범위 변경은 새 방. 범위 고정·재평가 정책은 협의.&#x27;,&#x27;scope + Idempotency-Key&#x27;),
       &#x27;CHAT-02&#x27;: read(&#x27;chat&#x27;,&#x27;ConversationQueryService.list()&#x27;,&#x27;내 대화방·최근 활동 정보&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;updatedAt·conversationId 커서. 방 목록 조회는 Python·GPT를 호출하지 않음.&#x27;,&#x27;cursor / limit&#x27;),
       &#x27;CHAT-03&#x27;: read(&#x27;chat&#x27;,&#x27;MessageQueryService.list()&#x27;,&#x27;저장 메시지·상태·출처&#x27;,&#x27;200 · items / nextCursor / hasNext&#x27;,&#x27;오래된 메시지 방향으로 커서 조회하되 items는 과거→최근. clientRequestId 조회와 cursor는 함께 사용하지 않음.&#x27;,&#x27;conversationId / cursor 또는 clientRequestId&#x27;),
-      &#x27;CHAT-04&#x27;: {server:&#x27;chat&#x27;, input:&#x27;conversationId / content / clientRequestId / retryOfMessageId + Idempotency-Key&#x27;, output:&#x27;200 text/event-stream · meta → delta → sources → done&#x27;, edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;,&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;], labels:{chat:&#x27;질문 저장·SSE 중계&#x27;,db:&#x27;허용 기록·대화·벡터&#x27;,python:&#x27;권한 필터 RAG·스트림&#x27;,gpt:&#x27;답변 조각 생성&#x27;}, boundary:&#x27;같은 HTTP 응답으로 스트리밍. 방당 생성 1개·중복 409. 최종 DB 커밋 후 done. Worker·작업큐를 거치지 않음.&#x27;,steps:[s(&#x27;Chat·DB&#x27;,&#x27;ChatRequestService.begin()&#x27;,&#x27;범위·중복·진행 중 검사 → 질문 저장&#x27;,&#x27;쓰기 TX&#x27;),s(&#x27;Chat→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;서버가 확인한 사용자·허용 기록 전달&#x27;),s(&#x27;Python·DB&#x27;,&#x27;RagRetriever.search()&#x27;,&#x27;소유권·삭제 필터 후 chunk 검색&#x27;,&#x27;짧은 조회&#x27;),s(&#x27;Python→GPT&#x27;,&#x27;GptClient.stream()&#x27;,&#x27;근거와 질문으로 토큰 생성&#x27;),s(&#x27;Chat→앱&#x27;,&#x27;ChatEventRelay.onDelta()&#x27;,&#x27;이벤트 조립·SSE 전송·부분 저장&#x27;,&#x27;짧은 저장&#x27;),s(&#x27;Chat·DB&#x27;,&#x27;ChatCompletionService.finish()&#x27;,&#x27;답변·출처 커밋 → done 전송&#x27;,&#x27;쓰기 TX&#x27;)]},
+      &#x27;CHAT-04&#x27;: {server:&#x27;chat&#x27;, input:&#x27;conversationId / content / clientRequestId + Idempotency-Key&#x27;, output:&#x27;200 text/event-stream&#x27;, edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;],extraPending:[&#x27;chatProvider&#x27;,&#x27;pythonGpt&#x27;],labels:{chat:&#x27;질문 임베딩·근거 검색&#x27;,python:&#x27;원문 기반 답변 생성&#x27;},boundary:&#x27;Spring이 검색한 원문·출처만 Python에 전달. 최종 DB 커밋 후 done.&#x27;,steps:[s(&#x27;Spring&#x27;,&#x27;QuestionEmbeddingClient.embed()&#x27;,&#x27;질문 임베딩&#x27;),s(&#x27;Spring·DB&#x27;,&#x27;ChatContextQuery.search()&#x27;,&#x27;현재 범위의 원문 검색&#x27;),s(&#x27;Spring→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;question + contexts + history&#x27;),s(&#x27;Spring·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;전달한 근거·현재 권한 확인 후 저장&#x27;)]},
       &#x27;CHAT-05&#x27;: read(&#x27;chat&#x27;,&#x27;ChatMessageQueryService.get()&#x27;,&#x27;부분·최종 답변과 생성 상태&#x27;,&#x27;200 · content / status / sources / finishReason&#x27;,&#x27;재접속 상태 확인용. 조회로 GPT를 다시 호출하거나 SSE를 재생하지 않음.&#x27;,&#x27;conversationId / messageId&#x27;),
       &#x27;CHAT-06&#x27;: read(&#x27;chat&#x27;,&#x27;ConversationQueryService.get()&#x27;,&#x27;대화 범위·생성 중 메시지 ID&#x27;,&#x27;200 · scope / generation / activeAssistantMessageId&#x27;,&#x27;생성 중이면 CHAT-05로 상태 조회. 범위가 UNAVAILABLE이어도 기존 대화는 읽을 수 있음.&#x27;,&#x27;conversationId&#x27;),
       &#x27;CHAT-07&#x27;: write(&#x27;chat&#x27;,&#x27;ConversationService.delete()&#x27;,&#x27;대화방·메시지·출처 삭제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;생성 중인 방 삭제는 409. 분석 기록·폴더·GCS 자막은 유지.&#x27;,&#x27;conversationId&#x27;),
@@ -1974,7 +1974,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       &#x27;PUSH-02&#x27;: {...write(&#x27;api&#x27;,&#x27;DeviceService.disconnect()&#x27;,&#x27;해당 설치의 알림 연결 해제&#x27;,&#x27;200 · 성공 메시지&#x27;,&#x27;운영 후속. 이미 해제된 연결도 200. OS 알림 권한 자체를 변경하지 않음.&#x27;,&#x27;installationId&#x27;),future:true}
     };
     const repo = &#x27;https://github.com/AnGyeongKK/ITip-server&#x27;;
-    const implementation = &#x27;6b24ca1&#x27;;
+    const implementation = &#x27;4ab3ffe&#x27;;
     const apiSource = &#x27;ITip/apps/api-app/src/main/java/com/gkk/itip/api/analysis/&#x27;;
     const workerSource = &#x27;ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/&#x27;;
     const chatRoot = &#x27;ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/&#x27;;
@@ -1984,6 +1984,8 @@ html&gt;body{padding:0}&lt;/style&gt;
       ChatGenerationStore: chatRoot + &#x27;stream/ChatGenerationStore.java&#x27;,
       ChatStreamBridge: chatRoot + &#x27;stream/ChatStreamBridge.java&#x27;,
       ChatCitationQuery: chatRoot + &#x27;stream/ChatCitationQuery.java&#x27;,
+      QuestionEmbeddingClient: chatRoot + &#x27;retrieval/QuestionEmbeddingClient.java&#x27;,
+      ChatContextQuery: chatRoot + &#x27;retrieval/ChatContextQuery.java&#x27;,
       PythonChatClient: chatRoot + &#x27;infrastructure/PythonChatClient.java&#x27;,
       ConversationController: chatSource + &#x27;controller/ConversationController.java&#x27;,
       ConversationMessageController: chatSource + &#x27;controller/ConversationMessageController.java&#x27;,
@@ -2113,19 +2115,23 @@ html&gt;body{padding:0}&lt;/style&gt;
     });
     Object.assign(flows, {
       &#x27;CHAT-04&#x27;: {
-        server:&#x27;chat&#x27;,implemented:true,commits:[&#x27;fd018f1&#x27;,&#x27;fda03ff&#x27;,&#x27;66ff1cc&#x27;,&#x27;76059ca&#x27;,&#x27;7ecdad0&#x27;,&#x27;ad82441&#x27;,&#x27;30c547a&#x27;],
+        server:&#x27;chat&#x27;,implemented:true,commits:[&#x27;ef0b4e5&#x27;,&#x27;753fb94&#x27;,&#x27;4ab3ffe&#x27;,&#x27;616e993&#x27;],
         input:&#x27;JSON clientRequestId/content/retryOfMessageId? · 동일 UUID Idempotency-Key · Accept SSE&#x27;,
         output:&#x27;200 text/event-stream · meta / delta / sources / done · 실패는 error 또는 상태 GET&#x27;,
-        edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;],extraPending:[&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;],
-        labels:{chat:&#x27;접수·저장·POST SSE&#x27;,db:&#x27;부분·최종 답변·출처&#x27;,python:&#x27;계약 초안 · 실연동 대기&#x27;,gpt:&#x27;AI 파트 · 미검증&#x27;},
-        boundary:&#x27;AI 대기 동안 DB TX 없음. 같은 요청은 409로 기존 이력 조회. 최종 출처만 FOR SHARE로 확인·저장 후 done. 실제 HTTP 첫 조각·부분 저장은 검증했으며 Python/GPT 계약·시연은 미완료이며 원본 구현은 PR #13이다.&#x27;,
+        edges:[&#x27;appChat&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;],extraPending:[&#x27;chatProvider&#x27;,&#x27;pythonGpt&#x27;],
+        labels:{chat:&#x27;질문 임베딩·검색·SSE&#x27;,db:&#x27;허용 자막·벡터·대화&#x27;,provider:&#x27;모델 Bean 연결 대기&#x27;,python:&#x27;contexts로 답변 생성&#x27;,gpt:&#x27;AI 파트 · 미검증&#x27;},provider:&#x27;질문 임베딩 모델&#x27;,
+        boundary:&#x27;Spring 검색 → Python 생성. 현재 범위·동일 모델/차원으로 검색하고 전달한 인용만 완료 저장. AI 대기 동안 DB TX 없음. 내부2.0 동시 적용·모델 Bean 필요. 실제 모델·GPT 품질 미검증. PR #21.&#x27;,
         steps:[
           implementedStep(&#x27;Chat&#x27;,&#x27;ChatStreamController.send()&#x27;,&#x27;AI 설정·요청·처리 여유 확인 · 실제 servlet 출력 스트림&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.begin()&#x27;,&#x27;키 → 방 잠금 · 현재 범위·과거 문맥 · 질문/답변/키 저장 후 커밋&#x27;,&#x27;쓰기 TX&#x27;),
-          implementedStep(&#x27;Chat→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;WebClient 구독 · 질문·허용 ID·history · idle30초/전체120초&#x27;),
-          implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;meta · SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush&#x27;,&#x27;부분 TX&#x27;),
+          implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;meta 접수 정보 전달 · 이후 임베딩/검색 시작&#x27;),
+          implementedStep(&#x27;Chat→모델&#x27;,&#x27;QuestionEmbeddingClient.embed()&#x27;,&#x27;질문만 임베딩 · 10초 · 최대4개 · 실제 공급자 Bean 필요&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.refresh()&#x27;,&#x27;임베딩 후 현재 범위·안전한 history 재확인&#x27;,&#x27;짧은 읽기 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatContextQuery.search()&#x27;,&#x27;소유·기록·완료·모델/차원 제한 → 코사인 거리 topK · 원문 최대24000자&#x27;,&#x27;SQL 조회&#x27;),
+          implementedStep(&#x27;Chat→Python&#x27;,&#x27;PythonChatClient.stream()&#x27;,&#x27;내부2.0 question + contexts + history · idle30초/전체120초&#x27;),
+          implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush&#x27;,&#x27;부분 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;방 → 메시지 잠금 · 현재 토큰·lease 확인&#x27;,&#x27;쓰기 TX&#x27;),
-          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatCitationQuery.validate()&#x27;,&#x27;현재/최초 범위 · chunk/section · 기록 FOR SHARE&#x27;,&#x27;완료 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatCitationQuery.validate()&#x27;,&#x27;실제 전달한 인용 · 현재/최초 범위 · chunk/section · 기록 FOR SHARE&#x27;,&#x27;완료 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;본문·검증 출처·COMPLETED 저장 후 커밋&#x27;,&#x27;완료 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.get()&#x27;,&#x27;저장된 최종 본문·출처·개수 재조회&#x27;,&#x27;조회 TX&#x27;),
           implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;sources → done · upstream 닫기 · 오류는 부분 보존&#x27;)
@@ -2135,7 +2141,7 @@ html&gt;body{padding:0}&lt;/style&gt;
     for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
     const labels = {app:&#x27;Android&#x27;,api:&#x27;Spring API&#x27;,worker:&#x27;Spring Worker&#x27;,chat:&#x27;Spring Chat&#x27;,db:&#x27;PostgreSQL&#x27;,gcs:&#x27;Cloud Storage&#x27;,provider:&#x27;분석·임베딩 모델&#x27;,python:&#x27;Python AI&#x27;,gpt:&#x27;GPT API&#x27;};
     const fallback = {app:&#x27;요청·결과&#x27;,api:&#x27;일반 API · 로컬&#x27;,worker:&#x27;DB Poller · 로컬&#x27;,chat:&#x27;채팅 API · 로컬&#x27;,db:&#x27;pgvector · 로컬 Docker&#x27;,gcs:&#x27;실제 GCS&#x27;,provider:&#x27;연동 대상 협의&#x27;,python:&#x27;AI 파트 · 별도 서버&#x27;,gpt:&#x27;Python에서 호출&#x27;};
-    const edgeNodes = {appApi:[&#x27;app&#x27;,&#x27;api&#x27;],appChat:[&#x27;app&#x27;,&#x27;chat&#x27;],appGcs:[&#x27;app&#x27;,&#x27;gcs&#x27;],apiDb:[&#x27;api&#x27;,&#x27;db&#x27;],apiGcs:[&#x27;api&#x27;,&#x27;gcs&#x27;],apiProvider:[&#x27;api&#x27;,&#x27;provider&#x27;],dbWorker:[&#x27;db&#x27;,&#x27;worker&#x27;],workerDb:[&#x27;worker&#x27;,&#x27;db&#x27;],workerGcs:[&#x27;worker&#x27;,&#x27;gcs&#x27;],workerProvider:[&#x27;worker&#x27;,&#x27;provider&#x27;],chatDb:[&#x27;chat&#x27;,&#x27;db&#x27;],chatPython:[&#x27;chat&#x27;,&#x27;python&#x27;],pythonDb:[&#x27;python&#x27;,&#x27;db&#x27;],pythonGpt:[&#x27;python&#x27;,&#x27;gpt&#x27;]};
+    const edgeNodes = {appApi:[&#x27;app&#x27;,&#x27;api&#x27;],appChat:[&#x27;app&#x27;,&#x27;chat&#x27;],appGcs:[&#x27;app&#x27;,&#x27;gcs&#x27;],apiDb:[&#x27;api&#x27;,&#x27;db&#x27;],apiGcs:[&#x27;api&#x27;,&#x27;gcs&#x27;],apiProvider:[&#x27;api&#x27;,&#x27;provider&#x27;],dbWorker:[&#x27;db&#x27;,&#x27;worker&#x27;],workerDb:[&#x27;worker&#x27;,&#x27;db&#x27;],workerGcs:[&#x27;worker&#x27;,&#x27;gcs&#x27;],workerProvider:[&#x27;worker&#x27;,&#x27;provider&#x27;],chatDb:[&#x27;chat&#x27;,&#x27;db&#x27;],chatPython:[&#x27;chat&#x27;,&#x27;python&#x27;],chatProvider:[&#x27;chat&#x27;,&#x27;provider&#x27;],pythonGpt:[&#x27;python&#x27;,&#x27;gpt&#x27;]};
     const domainSelect = root.querySelector(&#x27;[aria-label=&quot;도메인 선택&quot;]&#x27;);
     const apiSelect = root.querySelector(&#x27;[aria-label=&quot;API 선택&quot;]&#x27;);
     const svg = root.querySelector(&#x27;.diagram&#x27;);
@@ -2187,10 +2193,10 @@ html&gt;body{padding:0}&lt;/style&gt;
         workerProvider:`M${x1+120} 319 V354 H${x3+75} V319`,
         chatDb:`M${springEnd+10} 432 H${x2-28} V304 H${x2-10}`,
         chatPython:`M${springEnd+10} 432 H${x2-10}`,
-        pythonDb:`M${x2+74} 383 V329`,
+        chatProvider:`M${springEnd+10} 408 H${x2-44} V366 H${x3+120} V319`,
         pythonGpt:`M${x2+w2+10} 432 H${x3-10}`
       };
-      const bidirectional=new Set([&#x27;appApi&#x27;,&#x27;appChat&#x27;,&#x27;appGcs&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;,&#x27;pythonDb&#x27;,&#x27;pythonGpt&#x27;]);
+      const bidirectional=new Set([&#x27;appApi&#x27;,&#x27;appChat&#x27;,&#x27;appGcs&#x27;,&#x27;apiDb&#x27;,&#x27;apiGcs&#x27;,&#x27;chatDb&#x27;,&#x27;chatPython&#x27;,&#x27;chatProvider&#x27;,&#x27;pythonGpt&#x27;]);
       const edges=[];
       for(const k of f.edges||[])edges.push([k,f.future||f.planned?&#x27;pending&#x27;:&#x27;sync&#x27;]);
       for(const k of f.background||[])edges.push([k,&#x27;background&#x27;]);

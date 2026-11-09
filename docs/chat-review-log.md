@@ -6,6 +6,7 @@
 - `ef0b4e5` 리뷰: 공급자 영구 오류도 재시도 가능으로 표시하는 P2 발견. `753fb94`에서 원인별 분류를 수정했고 신규 테스트의 실패→통과와 독립 재리뷰 PASS를 확인했다.
 - `4ab3ffe` 리뷰 PASS: 임베딩 후 현재 범위/history 확인, 실제 전달한 근거만 인용, 짧은 TX·완료 후 done 유지. 후속 Compose에서 모델 fallback·topK 전달을 확인한다.
 - Java21 `./gradlew build`: **294개**, 실패·오류·건너뜀0. API107·Worker99·Chat63·common6·domain19. 로컬 pgvector, HTTP fixture, 실제 HTTP 첫 delta·부분 저장·삭제 경합을 포함한다.
+- API 호출 HTML은 PR #21·실제 검색 함수로 연결한다. 브라우저에서 원문의 38개 API 전환·Chat 검색 화살표·Python DB 연결 제거를 확인했고, 독립 HTML의 CHAT-03/04 전환도 확인했다. 원문/독립 파일 일치·기존 스타일 wrapper 유지·고정 커밋의 코드 링크30개·JS 문법 검사를 통과했다.
 - 실제 공급자 Bean·Python2.0/GPT 실통신·의미 검색/답변 품질은 미검증이다. 이후 기준 질문 세트로 근거·답변·지연·비용을 측정하고 필요할 때 고급 RAG를 도입한다. [품질 개선 계획](chat-contract.md#답변-품질-개선-계획)을 따른다.
 
 아래는 각 이전 PR 시점의 검증 기록이다.
