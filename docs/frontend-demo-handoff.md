@@ -112,7 +112,7 @@ docker compose -f compose.yaml -f compose.demo.yaml up -d
 docker compose -f compose.yaml -f compose.demo.yaml ps
 ```
 
-API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작업을 조회한다. Metro 기본 8081과 충돌하지 않는다. 현재 `dev`의 Chat은 채팅방·기록 관리까지 지원하며, Python 질문 생성·SSE 연결은 후속 기능이다. 연결할 때는 Docker Desktop의 호스트 주소 `host.docker.internal`을 사용하고 Python이 컨테이너에서 접근 가능한 주소로 리슨하게 한다. 내부 API 형식·주소·인증은 AI 담당과 맞춘다. [채팅 계약](chat-contract.md)을 참고한다.
+API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작업을 조회한다. Metro 기본 8081과 충돌하지 않는다. Chat은 방·기록 관리와 POST SSE를 제공한다. 실제 Python 서버를 연결하려면 `CHAT_AI_BASE_URL=http://host.docker.internal:<합의한 포트>`를 설정하고 Chat을 재생성한다. Python은 컨테이너에서 접근 가능한 주소로 리슨해야 한다. AI 담당과 [내부 계약 초안](python-chat-contract.md)의 요청·이벤트·출처를 맞춘 뒤 실제 응답을 확인한다.
 
 | 시연 전 확인 | 기대 동작 |
 | --- | --- |
@@ -121,9 +121,9 @@ API·Chat은 호스트 8080·8082에 노출되고 Worker는 내부에서 DB 작�
 | 네이티브 수집 | 기기에서 YouTube 요청, 동시 수집 1개·중복 방지·제한 시 중단·재시도 제한 |
 | 자막 업로드 | 서버에서 받은 presigned URL에 지정한 method·Content-Type으로 GCS 직접 업로드 후 API 접수 |
 | 분석 상태·결과 | 상태 조회로 완료 표시. 자막 없음·지원하지 않는 자막 언어·60분 초과 등 오류 표시 |
-| 채팅 | 현재는 방·기록 조회 확인. 질문 생성 기능 병합 후 POST SSE의 delta와 done/error 처리 확인 |
+| 채팅 | POST SSE의 delta를 누적 표시하고 done/error까지 처리. 연결 종료만으로 완료 처리하지 않음 |
 
-**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** 현재 Worker에는 모델 Bean 연결, GCS에는 각자의 인증 설정이 필요하며, 모델 미설정 시 작업은 `AI_NOT_CONFIGURED`로 실패한다. Chat에는 질문 생성 기능 병합과 실제 Python AI 서버 연결이 필요하다. APK 배포 이미지를 추가해도 이 연결은 생성되지 않는다.
+**Compose 기동과 실제 분석·채팅 시연 성공은 별개다.** 현재 Worker에는 모델 Bean 연결, GCS에는 각자의 인증 설정이 필요하며, 모델 미설정 시 작업은 `AI_NOT_CONFIGURED`로 실패한다. Chat은 실제 Python AI 서버 연결이 필요하며, 주소 미설정 시 질문 접수 전에 JSON 503을 반환한다. APK 배포 이미지를 추가해도 이 연결은 생성되지 않는다.
 
 팀원은 **이미지 태그(또는 APK), 이미지 지원 플랫폼·실행 확인한 노트북 CPU, 소스 커밋, 앱 versionName/versionCode, Android 최소 버전·ABI, API·Chat 주소, Metro 없이 실행 확인 결과**만 전달한다. `.env`·서명키·API 키·인증 파일은 전달 대상이 아니다.
 
