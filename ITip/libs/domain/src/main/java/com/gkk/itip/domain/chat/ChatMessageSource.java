@@ -20,4 +20,12 @@ public class ChatMessageSource {
     @Column(nullable = false) private long startMs;
     @Column(nullable = false) private long endMs;
     @Column(nullable = false) private Instant analyzedAt;
+
+    public static ChatMessageSource snapshot(UUID message, String source, UUID record, UUID analysis, UUID section,
+            String video, String title, long start, long end, Instant analyzedAt) {
+        var s = new ChatMessageSource();
+        s.id=UUID.randomUUID(); s.messageId=message; s.sourceId=source; s.recordId=record; s.analysisId=analysis;
+        s.sectionId=section; s.videoId=video; s.title=title; s.startMs=start; s.endMs=end; s.analyzedAt=analyzedAt;
+        return s;
+    }
 }

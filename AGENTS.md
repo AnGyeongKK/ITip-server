@@ -69,7 +69,7 @@ gkk/
 | PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
 | AI 분석·마인드맵·결과 조회·임베딩·Python 연동 | [AI 설계 규칙](.agents/rules/ai.md), [AI 결과 계약](docs/analysis-ai-contract.md) |
-| 채팅 범위·기록·출처 보존·Python 연동 경계 | [채팅 계약](docs/chat-contract.md) |
+| 채팅 범위·기록·출처 보존·Python 연동 경계 | [채팅 계약](docs/chat-contract.md), [Python 계약 초안](docs/python-chat-contract.md), [코드 읽기 안내](docs/chat-code-reading.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 
 새 규칙은 해당 주제의 상세 파일에 작성하고 이 표에 연결한다. 같은 규칙을 여러 파일에 길게 중복 작성하지 않는다.

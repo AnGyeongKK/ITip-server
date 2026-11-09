@@ -38,3 +38,13 @@ Chat 기본 주소는 `http://localhost:8082`다. API가 Flyway V4·V5를 적용
 메시지 순서는 방별 position이며 동일 시각에도 질문→답변 순서를 유지한다. 출처는 당시 제목·영상·구간을 저장하고 원본 기록 삭제 시 availability=DELETED를 반환한다. 기존 답변·출처·당시 사용 개수는 유지한다. 목록 조회는 출처·현재 기록을 일괄 조회한다.
 
 공통 RequestIdFilter·ApiExceptionHandler·DemoUserProvider는 libs/common에 있다. 각 앱에 같은 처리 코드를 다시 만들지 않는다.
+
+## 질문 접수·복구 (#7)
+
+`Idempotency-Key`와 `clientRequestId`는 같은 UUID다. 같은 소유자·키는 방 ID·본문까지 비교한다. 동일 요청은 409 DUPLICATE_CHAT_REQUEST로 기존 이력 조회를 유도하고, 다른 방·본문 재사용은 IDEMPOTENCY_CONFLICT다. 키 기록은 대화 삭제 뒤에도 유지하며 자동 재생성하지 않는다.
+
+질문 접수 TX에서 방을 잠그고 현재 범위를 확인한 뒤 USER·ASSISTANT·멱등 키를 함께 저장한다. 방의 position을 두 개 예약해 질문→답변 순서를 보장한다. 한 방의 활성 답변은 DB 부분 unique index로도 제한한다. 외부 AI는 커밋 후 호출한다.
+
+재요청은 같은 질문의 재시도 가능한 FAILED·INCOMPLETE 답변에만 허용한다. 새 UUID와 retryOfMessageId로 새 두 메시지를 생성하며 과거 부분 답변은 보존한다. 완료 답변 재생성은 제공하지 않는다.
+
+구현 기본 제한은 질문 4000 UTF-16 문자, 생성 lease 150초다. 상품 한도와 별개인 서버 입력·작업 보호 값이며 실제 AI 모델 선정 후 팀과 조정한다. 만료 작업은 부분 텍스트가 있으면 INCOMPLETE, 없으면 FAILED로 바꾸고 토큰을 폐기한다. 모든 저장은 현재 생성 토큰·유효 lease를 확인한다.
