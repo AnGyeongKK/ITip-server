@@ -93,6 +93,49 @@ docker build -f apps/api-app/Dockerfile -t itip-api:local \
 
 GCS 인증은 이미지에 넣지 않는다. 기존 로컬 인증 파일을 읽기 전용으로 마운트하고 컨테이너의 `GOOGLE_APPLICATION_CREDENTIALS`가 그 경로를 가리키게 설정한다. 파일 소유권 때문에 읽지 못하면 로컬 사용자 UID/GID로 실행하는 방식을 사용한다. 실제 인증 파일·환경변수 파일을 저장소나 팀 채팅으로 공유하지 않는다.
 
+## Compose로 서버 3개 함께 실행
+
+기존 `compose.yaml`은 DB만 실행한다. `compose.demo.yaml`을 함께 지정하면 API·Worker·Chat도 실행한다. Android 설치·APK 이미지 전달은 [프론트엔드 전달 문서](frontend-demo-handoff.md)를 참고한다.
+
+Java 21 환경에서 실행 JAR와 이미지를 먼저 준비한다. 이 Compose는 JAR를 빌드하지 않으며 로컬 이미지 또는 팀이 배포한 이미지 태그를 실행한다.
+
+아래 `docker build`는 기본적으로 현재 CPU용 로컬 이미지를 만든다. **ARM Mac ↔ Intel/AMD Windows 간 공유에는 [두 플랫폼 빌드·배포 규칙](container-platforms.md)을 따른다.** 공유 이미지는 `linux/arm64,linux/amd64`로 배포하고 Compose는 실행 기기에 맞는 이미지를 선택한다. Windows는 Docker Desktop의 Linux containers/WSL 2 환경을 사용한다.
+
+```sh
+# ITip/에서 실행
+./gradlew :apps:api-app:bootJar :apps:worker-app:bootJar :apps:chat-app:bootJar
+docker build -f apps/api-app/Dockerfile -t itip-api:local .
+docker build -f apps/worker-app/Dockerfile -t itip-worker:local .
+docker build -f apps/chat-app/Dockerfile -t itip-chat:local .
+
+# DB_PASSWORD는 앞의 준비 절에 따라 각자 로컬 shell에 설정
+docker compose -f compose.yaml -f compose.demo.yaml up -d
+docker compose -f compose.yaml -f compose.demo.yaml ps
+docker compose -f compose.yaml -f compose.demo.yaml logs --tail=50 api worker chat
+```
+
+DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·Chat 순서다. API healthcheck는 GCS·AI 정상 여부를 검사하지 않는다. Worker·Chat의 실제 시작 실패는 `ps`·`logs`에서 확인한다. 새 버전에서 마이그레이션이 추가되면 실행 중인 Worker·Chat을 `stop worker chat`으로 중단한 뒤 `up -d`로 API부터 교체하고 다시 `start worker chat`한다. 기존 컨테이너에 depends_on이 마이그레이션 동기화를 자동 보장하지는 않는다.
+
+| 변수 | 용도·기본값 |
+| --- | --- |
+| `API_IMAGE`, `WORKER_IMAGE`, `CHAT_IMAGE` | 기본 `itip-api:local`, `itip-worker:local`, `itip-chat:local`. 원격 배포 시 버전 태그 지정 후 같은 Compose 명령의 `pull` 실행 |
+| `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
+| `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
+| `CHAT_AI_BASE_URL`, `CHAT_AI_TOKEN` | 후속 Python 연결용 전달 변수. 현재 `dev`의 Chat에는 질문 생성 기능이 없어 설정만으로 활성화되지 않음 |
+
+포트는 `127.0.0.1`에만 바인딩한다. Worker 포트는 호스트에 열지 않는다. Docker Desktop에서 호스트 Python에 연결할 때는 `localhost` 대신 `host.docker.internal`을 사용한다. `.env` 파일은 생성·배포하지 않는다. `docker compose config`는 치환된 비밀값을 출력할 수 있으므로 공유용으로 실행하지 말고 형식만 확인할 때는 `config --quiet`을 사용한다.
+
+GCS 파일이 필요하면 각자 준비한 인증 파일의 **절대경로**를 로컬 `GCS_CREDENTIALS_PATH`로 설정한다. 아래 선택 overlay가 API·Worker에 읽기 전용 마운트한다. 인증 파일은 이미지에 들어가지 않는다.
+
+```sh
+export LOCAL_UID="$(id -u)"
+export LOCAL_GID="$(id -g)"
+# GCS_CREDENTIALS_PATH는 본인 로컬 인증 파일로 설정한 상태
+docker compose -f compose.yaml -f compose.demo.yaml -f compose.gcs.yaml up -d
+```
+
+이 overlay는 파일 접근 권한을 위해 앱을 현재 호스트 UID/GID로 실행한다. 인증 파일이 없으면 시작 전에 실패한다. 버킷 접근·서명 권한과 Worker의 모델 Bean 설정은 별도로 필요하다. GCS overlay로 실행했다면 이후 `ps`·`logs`·`down`에도 같은 세 파일을 지정한다. `down`은 volume을 유지하며 **데이터 보존을 위해 `down -v`를 사용하지 않는다.**
+
 ## 테스트
 
 저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.

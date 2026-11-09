@@ -1,0 +1,6 @@
+# allowlist: 소스·.env·키·서명 keystore를 이미지에 보내지 않는다.
+**
+!Dockerfile
+!default.conf
+!index.html
+!itip-demo.apk
