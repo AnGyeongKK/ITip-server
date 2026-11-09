@@ -47,7 +47,7 @@ done
 
 `--platform`은 **결과 이미지의 플랫폼**이다. 파일명에 arm64를 붙이거나 단일 플랫폼 이미지를 retag하는 것으로 다른 CPU용 이미지가 만들어지지 않는다. `--push`는 두 변형을 같은 버전 태그의 manifest로 올린다. 이 경로는 로컬 이미지 저장소의 멀티 플랫폼 지원 여부에 의존하지 않으며, `--load`와 혼용하지 않는다. 로컬 단일 CPU 빌드는 `--platform linux/arm64 --load`처럼 하나만 지정할 수 있다.
 
-Dockerfile의 `FROM`에 `--platform=linux/amd64`를 고정하지 않는다. 현재 Java·Nginx Dockerfile은 대상 플랫폼의 베이스 이미지를 선택한다. 베이스 이미지·pgvector·추후 Python AI 이미지도 실제 사용할 **태그가 두 플랫폼을 제공하는지** 확인한다. 호스트에서 만든 `node_modules`, Python venv, `.so`·실행 바이너리를 이미지에 그대로 복사하지 않는다. Java JAR도 JNI·특정 CPU 바이너리 의존성을 추가하면 두 환경에서 별도 확인한다.
+Dockerfile의 `FROM`에 `--platform=linux/amd64`를 고정하지 않는다. 현재 Java·Nginx Dockerfile은 대상 플랫폼의 베이스 이미지를 선택한다. 베이스 이미지·pgvector도 실제 사용할 **태그가 두 플랫폼을 제공하는지** 확인한다. 호스트에서 만든 `node_modules`, Python venv, `.so`·실행 바이너리를 이미지에 그대로 복사하지 않는다. Java JAR도 JNI·특정 CPU 바이너리 의존성을 추가하면 두 환경에서 별도 확인한다.
 
 ## 받는 사람: 태그 확인 → pull → 실행
 

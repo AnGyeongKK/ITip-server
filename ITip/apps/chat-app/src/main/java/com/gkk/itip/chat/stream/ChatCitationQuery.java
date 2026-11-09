@@ -14,9 +14,10 @@ public class ChatCitationQuery {
     public ChatCitationQuery(JdbcTemplate jdbc) { this.jdbc=new NamedParameterJdbcTemplate(jdbc); }
     private record Evidence(ChatCitation citation, UUID analysis, String video, String title, long start, long end, Instant analyzedAt) {}
 
-    public List<ChatMessageSource> validate(GenerationTicket ticket, List<ChatCitation> input, List<RecordRef> current) {
+    public List<ChatMessageSource> validate(GenerationTicket ticket, List<ChatCitation> input, List<RecordRef> current, List<ChatCitation> candidates) {
         if (input.size()>ChatLimits.MAX_SOURCES) throw new ChatProtocolException();
         var citations=new LinkedHashSet<>(input);
+        if (!new HashSet<>(candidates).containsAll(citations)) throw new ChatProtocolException();
         if (citations.isEmpty()) return List.of();
         var allowed=new HashSet<>(ticket.records()); allowed.retainAll(current);
         var rows=jdbc.query("""

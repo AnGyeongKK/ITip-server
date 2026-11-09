@@ -1,0 +1,9 @@
+plugins { id 'java-library' }
+
+dependencies {
+    api 'org.springframework.ai:spring-ai-openai:2.0.2'
+    // Spring AI 2.0.2가 사용하는 SDK core와 같은 버전. HTTP408의 숨은 재전송도 끈 공식 transport.
+    implementation 'com.openai:openai-java-client-okhttp:4.80.0'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

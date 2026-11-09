@@ -1,6 +1,6 @@
 spring:
   config:
-    import: classpath:domain.yaml
+    import: [classpath:domain.yaml, classpath:ai-embedding.yaml]
   application:
     name: itip-chat
   flyway:
@@ -11,7 +11,16 @@ server:
 
 itip:
   chat:
-    ai-base-url: ${CHAT_AI_BASE_URL:}
-    ai-token: ${CHAT_AI_TOKEN:}
+    embedding-model-id: ${ANALYSIS_EMBEDDING_MODEL_ID:}
+    retrieval-top-k: ${CHAT_RETRIEVAL_TOP_K:8}
+    generation:
+      enabled: ${CHAT_GENERATION_ENABLED:false}
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      model: ${CHAT_MODEL:}
+      token-encoding: ${CHAT_TOKEN_ENCODING:}
+      context-tokens: ${CHAT_CONTEXT_TOKENS:0}
+      input-token-budget: ${CHAT_INPUT_TOKEN_BUDGET:8000}
+      max-output-tokens: ${CHAT_MAX_OUTPUT_TOKENS:2048}
   demo:
     owner-id: ${DEMO_USER_ID:demo-user}

@@ -158,13 +158,19 @@ public class SpringAiAnalysisClient {
 
     private AnalysisAiException providerFailure(RuntimeException exception) {
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof com.openai.errors.OpenAIServiceException response) {
+                boolean retryable=com.gkk.itip.ai.AiHttpRetryPolicy.retryable(response.statusCode());
+                return new AnalysisAiException(retryable?"AI_UNAVAILABLE":"AI_REQUEST_REJECTED",retryable);
+            }
+            if (cause instanceof com.openai.errors.OpenAIIoException)
+                return new AnalysisAiException("AI_UNAVAILABLE",true);
             if (cause instanceof NonTransientAiException)
                 return new AnalysisAiException("AI_REQUEST_REJECTED", false);
             if (cause instanceof TransientAiException || cause instanceof ResourceAccessException || cause instanceof IOException)
                 return new AnalysisAiException("AI_UNAVAILABLE", true);
             if (cause instanceof RestClientResponseException response) {
                 int status = response.getStatusCode().value();
-                boolean retryable = status == 408 || status == 429 || status >= 500;
+                boolean retryable = com.gkk.itip.ai.AiHttpRetryPolicy.retryable(status);
                 return new AnalysisAiException(retryable ? "AI_UNAVAILABLE" : "AI_REQUEST_REJECTED", retryable);
             }
             if (cause == cause.getCause()) break;

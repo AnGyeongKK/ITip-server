@@ -9,8 +9,9 @@ public final class ChatLimits {
     public static final int MAX_ANSWER_CHARS=65536;
     public static final int MAX_SOURCES=20;
     public static final int MAX_HISTORY_CHARS=32000;
+    public static final Duration EMBEDDING_TIMEOUT=Duration.ofSeconds(10);
     public static final Duration STREAM_DURATION=Duration.ofSeconds(120);
     public static final Duration IDLE_TIMEOUT=Duration.ofSeconds(30);
-    public static final Duration GENERATION_LEASE=STREAM_DURATION.plusSeconds(30);
-    public static final long MVC_TIMEOUT_MS=STREAM_DURATION.plusSeconds(5).toMillis();
+    public static final Duration GENERATION_LEASE=STREAM_DURATION.plus(EMBEDDING_TIMEOUT).plusSeconds(30);
+    public static final long MVC_TIMEOUT_MS=STREAM_DURATION.plus(EMBEDDING_TIMEOUT).plusSeconds(10).toMillis();
 }

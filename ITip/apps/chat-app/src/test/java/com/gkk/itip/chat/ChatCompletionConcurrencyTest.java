@@ -64,9 +64,10 @@ class ChatCompletionConcurrencyTest {
             Object actual=call.callRealMethod();selected.countDown();
             if(!allowCommit.await(10,TimeUnit.SECONDS)) throw new IllegalStateException("test completion gate expired");
             return actual;
-        }).when(citations).validate(eq(ticket),anyList(),anyList());
+        }).when(citations).validate(eq(ticket),anyList(),anyList(),anyList());
         try(var pool=Executors.newFixedThreadPool(2)) {
             var completing=pool.submit(()->store.complete(ticket,"기록 근거",FinishReason.STOP,
+                List.of(new ChatCitation(a.recordId(),chunk,a.sectionId())),
                 List.of(new ChatCitation(a.recordId(),chunk,a.sectionId()))));
             try {
                 assertThat(selected.await(10,TimeUnit.SECONDS)).isTrue();
@@ -100,9 +101,10 @@ class ChatCompletionConcurrencyTest {
         var selected=new CountDownLatch(1);var allowCommit=new CountDownLatch(1);
         doAnswer(call->{Object actual=call.callRealMethod();selected.countDown();
             if(!allowCommit.await(10,TimeUnit.SECONDS))throw new IllegalStateException("test completion gate expired");return actual;
-        }).when(citations).validate(eq(ticket),anyList(),anyList());
+        }).when(citations).validate(eq(ticket),anyList(),anyList(),anyList());
         try(var pool=Executors.newFixedThreadPool(2)) {
             var completing=pool.submit(()->store.complete(ticket,"완료 답변",FinishReason.STOP,
+                List.of(new ChatCitation(a.recordId(),chunk,a.sectionId())),
                 List.of(new ChatCitation(a.recordId(),chunk,a.sectionId()))));
             try {
                 assertThat(selected.await(10,TimeUnit.SECONDS)).isTrue();

@@ -31,7 +31,7 @@ class ChatApplicationTest {
     }
     @Autowired MockMvc mvc;
 
-    @Test void missingAiConfigurationRejectsBeforeQuestionAdmissionAsJson() throws Exception {
+    @Test void missingModelConfigurationRejectsBeforeQuestionAdmissionAsJson() throws Exception {
         UUID key=UUID.randomUUID();
         mvc.perform(post("/api/v1/conversations/"+UUID.randomUUID()+"/messages").header("Idempotency-Key",key)
                 .contentType(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_EVENT_STREAM)

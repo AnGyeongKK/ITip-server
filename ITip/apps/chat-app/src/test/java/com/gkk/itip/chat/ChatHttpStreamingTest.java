@@ -25,28 +25,30 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties={"spring.flyway.enabled=true","itip.demo.owner-id=demo-user"})
 @Testcontainers
+@org.springframework.context.annotation.Import(ChatEmbeddingFixture.class)
 class ChatHttpStreamingTest {
     @Container static final PostgreSQLContainer POSTGRES=new PostgreSQLContainer(
             DockerImageName.parse("pgvector/pgvector:pg17").asCompatibleSubstituteFor("postgres"));
     static final CountDownLatch CLIENT_SAW_FIRST=new CountDownLatch(1);
     static final AtomicBoolean RELEASED_BY_CLIENT=new AtomicBoolean();
-    static HttpServer python;
+    static HttpServer model;
     @DynamicPropertySource static void configure(DynamicPropertyRegistry r) throws Exception {
-        python=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
-        python.createContext("/v1/chat/stream",e->{
+        model=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        model.createContext("/v1/chat/completions",e->{
             e.getRequestBody().readAllBytes();e.getResponseHeaders().add("Content-Type","text/event-stream");e.sendResponseHeaders(200,0);
             try(var out=e.getResponseBody()) {
-                out.write("event: delta\ndata: {\"text\":\"첫 조각\"}\n\n".getBytes(StandardCharsets.UTF_8));out.flush();
+                out.write(ChatModelFixture.chunk("{\"answer\":\"첫 조각",null).getBytes(StandardCharsets.UTF_8));out.flush();
                 try { RELEASED_BY_CLIENT.set(CLIENT_SAW_FIRST.await(3,TimeUnit.SECONDS)); }
                 catch(InterruptedException interrupted){Thread.currentThread().interrupt();}
-                out.write(("event: sources\ndata: {\"items\":[]}\n\nevent: done\ndata: {\"finishReason\":\"INSUFFICIENT_EVIDENCE\"}\n\n").getBytes(StandardCharsets.UTF_8));out.flush();
+                out.write(ChatModelFixture.chunk("\",\"citations\":[],\"evidenceStatus\":\"INSUFFICIENT_EVIDENCE\"}","stop").getBytes(StandardCharsets.UTF_8));out.flush();
+                out.write("data: [DONE]\n\n".getBytes(StandardCharsets.UTF_8));
             }catch(IOException disconnected){ }
-        });python.start();
-        r.add("itip.chat.ai-base-url",()->"http://127.0.0.1:"+python.getAddress().getPort());
+        });model.start();
+        ChatModelFixture.properties(r,model.getAddress().getPort());
         r.add("spring.datasource.url",POSTGRES::getJdbcUrl);r.add("spring.datasource.username",POSTGRES::getUsername);
         r.add("spring.datasource.password",POSTGRES::getPassword);
     }
-    @AfterAll static void close(){CLIENT_SAW_FIRST.countDown();if(python!=null)python.stop(0);}
+    @AfterAll static void close(){CLIENT_SAW_FIRST.countDown();if(model!=null)model.stop(0);}
     @Autowired JdbcTemplate jdbc; @Autowired JsonMapper mapper;
     @Value("${local.server.port}") int port;
 
