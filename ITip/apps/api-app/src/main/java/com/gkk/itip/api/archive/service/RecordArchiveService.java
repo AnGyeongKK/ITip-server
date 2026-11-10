@@ -4,9 +4,9 @@ import com.gkk.itip.api.analysis.service.AnalysisResultQueryService;
 import com.gkk.itip.api.archive.dto.ReadingPositionResponse;
 import com.gkk.itip.api.archive.dto.ReadingPositionResponse.ReadingPosition;
 import com.gkk.itip.api.archive.dto.RecordDetailResponse;
-import com.gkk.itip.api.archive.dto.RecordDetailResponse.FolderInfo;
 import com.gkk.itip.api.archive.dto.RecordDetailResponse.RecordInfo;
 import com.gkk.itip.api.archive.dto.SaveReadingPositionRequest;
+import com.gkk.itip.api.archive.repository.FolderRepository;
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.domain.analysis.AnalysisOwnerLock;
 import com.gkk.itip.domain.analysis.AnalysisRecord;
@@ -28,14 +28,16 @@ import static com.gkk.itip.common.exception.ErrorCode.VALIDATION_FAILED;
 public class RecordArchiveService {
     private final AnalysisRecordRepository records;
     private final AnalysisResultQueryService results;
+    private final FolderRepository folders;
     private final AnalysisOwnerLock ownerLock;
     private final JdbcTemplate jdbc;
     private final Clock clock;
 
-    public RecordArchiveService(AnalysisRecordRepository records, AnalysisResultQueryService results,
+    public RecordArchiveService(AnalysisRecordRepository records, AnalysisResultQueryService results, FolderRepository folders,
                                 AnalysisOwnerLock ownerLock, JdbcTemplate jdbc, Clock clock) {
         this.records = records;
         this.results = results;
+        this.folders = folders;
         this.ownerLock = ownerLock;
         this.jdbc = jdbc;
         this.clock = clock;
@@ -45,16 +47,9 @@ public class RecordArchiveService {
     public RecordDetailResponse get(String ownerId, UUID recordId) {
         var record = ownedRecord(ownerId, recordId);
         var analysis = results.get(ownerId, record.getAnalysisId());
-        var folders = jdbc.query("""
-                select f.id, f.name
-                from folder_records fr
-                join folders f on f.id = fr.folder_id and f.owner_id = fr.owner_id
-                where fr.record_id = ? and fr.owner_id = ?
-                order by f.created_at desc, f.id desc
-                """, (row, index) -> new FolderInfo(row.getObject("id", UUID.class), row.getString("name")), recordId, ownerId);
         var info = new RecordInfo(recordId, record.getAnalysisId(), record.getVideoId(), record.getAnalyzedAt());
         var position = record.getLastViewedAt() == null ? null : readingPosition(record);
-        return new RecordDetailResponse(info, analysis, folders, position);
+        return new RecordDetailResponse(info, analysis, folders.memberships(ownerId, recordId), position);
     }
 
     @Transactional

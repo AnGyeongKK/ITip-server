@@ -14,13 +14,20 @@ import java.util.function.Consumer;
 public class RecordSearchRepository {
     private static final String COMPLETED_RECORDS = """
             select record_id, analysis_id, analyzed_at, result_json, latest.video_id, v.title, v.channel_name,
-                   v.channel_image_url, v.thumbnail_url, v.published_at, v.duration_ms
+                   v.channel_image_url, v.thumbnail_url, v.published_at, v.duration_ms, included
             from (
-                select distinct on (r.video_id) r.video_id, r.id as record_id, r.analysis_id, r.analyzed_at, a.result_json
+                select distinct on (scope_key) r.video_id, r.id as record_id, r.analysis_id, r.analyzed_at, a.result_json,
+                       case when scope.folder_id is null then r.video_id else r.id::text end as scope_key,
+                       exists(select 1 from folder_records fr where fr.folder_id = scope.target_folder_id
+                              and fr.record_id = r.id and fr.owner_id = r.owner_id) as included
                 from analysis_records r
                 join analysis_results a on a.id = r.analysis_id and a.owner_id = r.owner_id and a.video_id = r.video_id
+                cross join (select ?::uuid as folder_id, ?::uuid as target_folder_id) scope
                 where r.owner_id = ? and a.chat_ready
-                order by r.video_id, r.analyzed_at desc, r.id desc
+                  and (scope.folder_id is null or exists(
+                      select 1 from folder_records fr where fr.folder_id = scope.folder_id
+                      and fr.record_id = r.id and fr.owner_id = r.owner_id))
+                order by scope_key, r.analyzed_at desc, r.id desc
             ) latest
             join videos v on v.video_id = latest.video_id
             order by analyzed_at desc, record_id desc
@@ -32,11 +39,13 @@ public class RecordSearchRepository {
         this.jdbc = jdbc;
     }
 
-    public void scanCompleted(String ownerId, Consumer<StoredRecord> consumer) {
+    public void scanCompleted(String ownerId, UUID folderId, UUID targetFolderId, Consumer<StoredRecord> consumer) {
         // The service opens a read transaction so PostgreSQL can fetch the result in batches.
         jdbc.query(connection -> {
             var statement = connection.prepareStatement(COMPLETED_RECORDS);
-            statement.setString(1, ownerId);
+            statement.setObject(1, folderId);
+            statement.setObject(2, targetFolderId);
+            statement.setString(3, ownerId);
             statement.setFetchSize(100);
             return statement;
         }, (ResultSet row) -> {
@@ -46,9 +55,10 @@ public class RecordSearchRepository {
                     publishedAt == null ? null : publishedAt.toInstant(), row.getObject("duration_ms", Long.class));
             consumer.accept(new StoredRecord(row.getObject("record_id", UUID.class),
                     row.getObject("analysis_id", UUID.class), row.getObject("analyzed_at", OffsetDateTime.class).toInstant(),
-                    video, row.getString("result_json")));
+                    video, row.getString("result_json"), row.getBoolean("included")));
         });
     }
 
-    public record StoredRecord(UUID recordId, UUID analysisId, Instant analyzedAt, VideoInfo video, String resultJson) {}
+    public record StoredRecord(UUID recordId, UUID analysisId, Instant analyzedAt, VideoInfo video, String resultJson,
+                               boolean included) {}
 }

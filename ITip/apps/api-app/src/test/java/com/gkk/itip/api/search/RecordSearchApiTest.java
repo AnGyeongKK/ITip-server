@@ -1,6 +1,7 @@
 package com.gkk.itip.api.search;
 
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse.VideoInfo;
+import com.gkk.itip.api.archive.repository.FolderRepository;
 import com.gkk.itip.api.search.controller.RecordSearchController;
 import com.gkk.itip.api.search.repository.RecordSearchRepository;
 import com.gkk.itip.api.search.repository.RecordSearchRepository.StoredRecord;
@@ -25,6 +26,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,12 +57,13 @@ class RecordSearchApiTest {
                 record(SECOND, "video-2", "Spring Guide", List.of(RAG, SPRING), "query planner", List.of()),
                 record("60000000-0000-4000-8000-000000000003", "video-3", "Other Guide", List.of(LLM), "decoder", List.of()));
         doAnswer(invocation -> {
-            Consumer<StoredRecord> consumer = invocation.getArgument(1);
+            Consumer<StoredRecord> consumer = invocation.getArgument(3);
             records.forEach(consumer);
             return null;
-        }).when(repository).scanCompleted(eq(OWNER), any());
+        }).when(repository).scanCompleted(eq(OWNER), isNull(), isNull(), any());
         mvc = MockMvcBuilders.standaloneSetup(
-                        new RecordSearchController(new RecordSearchService(repository, mapper), new DemoUserProvider(OWNER)))
+                        new RecordSearchController(new RecordSearchService(repository, mock(FolderRepository.class), mapper),
+                                new DemoUserProvider(OWNER)))
                 .setControllerAdvice(new ApiExceptionHandler()).build();
     }
 
@@ -175,6 +178,6 @@ class RecordSearchApiTest {
         var summary = new ResultDocument.Summary("A short summary", List.of(), List.of(), List.of(), keywords, List.of(SECTION));
         var document = new ResultDocument("1.0", summary, List.of(section), new ResultDocument.Mindmap(title, List.of(SECTION)));
         return new StoredRecord(UUID.fromString(id), UUID.randomUUID(), NOW,
-                new VideoInfo(videoId, title, null, null, null, null, null), mapper.writeValueAsString(document));
+                new VideoInfo(videoId, title, null, null, null, null, null), mapper.writeValueAsString(document), false);
     }
 }

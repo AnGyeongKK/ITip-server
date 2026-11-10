@@ -31,12 +31,15 @@ import tools.jackson.databind.json.JsonMapper;
 import java.time.Instant;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -44,6 +47,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 class AnalysisResultApiTest {
+    private static final String FOLDERS = "/api/v1/folders";
+    private static final String RECORDS = "/api/v1/records";
+    private static final String RECORD_KEYWORDS = "/api/v1/record-keywords";
     static final String OWNER = "demo-user", VIDEO = "dQw4w9WgXcQ", BASE = "/api/v1/analyses/";
     static final Instant NOW = Instant.parse("2026-11-08T00:00:00Z");
     static final UUID FIRST = UUID.fromString("11111111-1111-4111-8111-111111111111");
@@ -63,7 +69,7 @@ class AnalysisResultApiTest {
     @MockitoBean GcsObjects gcs;
 
     @BeforeEach void clear() {
-        jdbc.execute("truncate videos, analysis_batches, idempotency_requests cascade");
+        jdbc.execute("truncate videos, analysis_batches, idempotency_requests, folders cascade");
         tx.executeWithoutResult(status -> {
             var video = new Video(VIDEO);
             video.updateMetadata("RAG 원본 영상", "예시 채널", "https://example.com/channel.jpg",
@@ -404,6 +410,133 @@ class AnalysisResultApiTest {
 
     private ResultActions savePosition(String path, String body) throws Exception {
         return mvc.perform(put(path + "/reading-position").contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    @Test void createsListsRenamesAndDeletesFoldersWithIdempotentCreationAndStableCursor() throws Exception {
+        UUID key = UUID.randomUUID();
+        String first = createFolder("첫 폴더", key);
+        assertThat(createFolder("첫 폴더", key)).isEqualTo(first);
+        error(requestFolder("다른 이름", key), 409, "IDEMPOTENCY_CONFLICT");
+        error(requestFolder("   ", UUID.randomUUID()), 400, "INVALID_REQUEST");
+        String second = createFolder("두 번째 폴더", UUID.randomUUID());
+        jdbc.update("update folders set created_at = ?", java.sql.Timestamp.from(NOW));
+        String latest = List.of(first, second).stream().max(String::compareTo).orElseThrow();
+        String previous = latest.equals(first) ? second : first;
+
+        var page = data(mvc.perform(get(FOLDERS).param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].folderId").value(latest))
+                .andExpect(jsonPath("data.items[0].recordCount").value(0))
+                .andExpect(jsonPath("data.hasNext").value(true)));
+        mvc.perform(get(FOLDERS).param("cursor", page.path("nextCursor").asString()).param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].folderId").value(previous))
+                .andExpect(jsonPath("data.hasNext").value(false));
+        error(mvc.perform(get(FOLDERS).param("cursor", "bad!")), 400, "INVALID_CURSOR");
+
+        String path = FOLDERS + "/" + first;
+        mvc.perform(patch(path).contentType(MediaType.APPLICATION_JSON).content("""
+                {"name":"이름 변경"}
+                """)).andExpect(status().isOk()).andExpect(jsonPath("data.name").value("이름 변경"));
+        mvc.perform(get(path)).andExpect(status().isOk()).andExpect(jsonPath("data.name").value("이름 변경"));
+        mvc.perform(delete(path)).andExpect(status().isOk());
+        error(mvc.perform(get(path)), 404, "RESOURCE_NOT_FOUND");
+        error(requestFolder("첫 폴더", key), 404, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test void searchesLinkedRecordsAndCountsKeywordsWithoutChangingGlobalLatestOrDeletingOriginals() throws Exception {
+        String secondVideo = "9bZkp7q19f0";
+        tx.executeWithoutResult(status -> em.persist(new Video(secondVideo)));
+        var older = fixture(OWNER, true);
+        var newer = fixture(OWNER, true);
+        jdbc.update("update analysis_records set analyzed_at = ? where id = ?",
+                java.sql.Timestamp.from(NOW.plusSeconds(50)), newer.recordId());
+        var second = fixture(OWNER, true, secondVideo);
+        var foreign = fixture("another-user", true);
+        String folder = createFolder("분석", UUID.randomUUID());
+        String path = FOLDERS + "/" + folder;
+        String otherFolder = createFolder("두 번째", UUID.randomUUID());
+
+        error(addFolderRecords(path, older.recordId(), foreign.recordId()), 404, "RESOURCE_NOT_FOUND");
+        mvc.perform(get(path)).andExpect(status().isOk()).andExpect(jsonPath("data.recordCount").value(0));
+        addFolderRecords(path, older.recordId(), second.recordId(), older.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.addedRecordIds.length()").value(2))
+                .andExpect(jsonPath("data.addedRecordIds[0]").value(older.recordId().toString()))
+                .andExpect(jsonPath("data.alreadyIncludedRecordIds").isEmpty());
+        addFolderRecords(path, older.recordId(), second.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.addedRecordIds").isEmpty())
+                .andExpect(jsonPath("data.alreadyIncludedRecordIds.length()").value(2));
+        addFolderRecords(FOLDERS + "/" + otherFolder, older.recordId()).andExpect(status().isOk());
+
+        mvc.perform(get(RECORDS).param("folderId", folder).param("q", "RAG")
+                        .param("keywordIds", "33333333-3333-4333-8333-333333333333"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.filters.folderId").value(folder))
+                .andExpect(jsonPath("data.items[*].recordId").value(org.hamcrest.Matchers.hasItem(older.recordId().toString())));
+        mvc.perform(get(RECORD_KEYWORDS).param("folderId", folder).param("q", "RAG"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.keywords[0].recordCount").value(2));
+
+        var firstPage = data(mvc.perform(get(RECORDS).param("targetFolderId", folder).param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.selectionContext.targetFolderId").value(folder))
+                .andExpect(jsonPath("data.items[0].recordId").value(newer.recordId().toString()))
+                .andExpect(jsonPath("data.items[0].folderMembership.included").value(false)));
+        String cursor = firstPage.path("nextCursor").asString();
+        mvc.perform(get(RECORDS).param("targetFolderId", folder).param("cursor", cursor))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].folderMembership.included").value(true));
+        error(mvc.perform(get(RECORDS).param("targetFolderId", otherFolder).param("cursor", cursor)), 400, "INVALID_CURSOR");
+
+        addFolderRecords(path, newer.recordId()).andExpect(status().isOk());
+        mvc.perform(get(RECORDS).param("folderId", folder))
+                .andExpect(status().isOk()).andExpect(jsonPath("data.matchedCount").value(3));
+        mvc.perform(delete(path + "/records/" + older.recordId())).andExpect(status().isOk());
+        mvc.perform(get(path)).andExpect(status().isOk()).andExpect(jsonPath("data.recordCount").value(2));
+        mvc.perform(delete(path)).andExpect(status().isOk());
+        error(mvc.perform(get(RECORDS).param("folderId", folder)), 404, "RESOURCE_NOT_FOUND");
+        mvc.perform(get(RECORDS + "/" + older.recordId())).andExpect(status().isOk())
+                .andExpect(jsonPath("data.folders[0].folderId").value(otherFolder));
+        result(newer).andExpect(status().isOk());
+        result(second).andExpect(status().isOk());
+    }
+
+    @Test void hidesForeignFoldersFromListsWritesAndSearch() throws Exception {
+        var mine = fixture(OWNER, true);
+        UUID foreign = UUID.randomUUID();
+        jdbc.update("insert into folders(id, owner_id, name, created_at) values (?, ?, ?, now())",
+                foreign, "another-user", "비공개");
+        String path = FOLDERS + "/" + foreign;
+        mvc.perform(get(FOLDERS)).andExpect(status().isOk()).andExpect(jsonPath("data.items").isEmpty());
+        error(mvc.perform(get(path)), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(patch(path).contentType(MediaType.APPLICATION_JSON).content("""
+                {"name":"변경"}
+                """)), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(delete(path)), 404, "RESOURCE_NOT_FOUND");
+        error(addFolderRecords(path, mine.recordId()), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(delete(path + "/records/" + mine.recordId())), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(get(RECORDS).param("targetFolderId", foreign.toString())), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(get(RECORD_KEYWORDS).param("folderId", foreign.toString())), 404, "RESOURCE_NOT_FOUND");
+    }
+
+    private String createFolder(String name, UUID key) throws Exception {
+        var created = requestFolder(name, key).andExpect(status().isCreated()).andExpect(header().exists("Location"));
+        String id = data(created).path("folderId").asString();
+        created.andExpect(header().string("Location", FOLDERS + "/" + id));
+        return id;
+    }
+
+    private ResultActions requestFolder(String name, UUID key) throws Exception {
+        return mvc.perform(post(FOLDERS).header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("name", name))));
+    }
+
+    private ResultActions addFolderRecords(String path, UUID... ids) throws Exception {
+        return mvc.perform(post(path + "/records").contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("recordIds", List.of(ids)))));
     }
 
     private UUID linkFolder(UUID recordId) {
