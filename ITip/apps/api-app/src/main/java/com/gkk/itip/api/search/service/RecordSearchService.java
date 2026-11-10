@@ -46,7 +46,6 @@ public class RecordSearchService {
     private static final int MAX_QUERY_LENGTH = 200;
     private static final int MAX_MATCHES = 12;
     private static final int MATCH_TEXT_LENGTH = 160;
-    private static final Pattern WHITESPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
     private final RecordSearchRepository repository;
     private final JsonMapper mapper;
@@ -120,9 +119,6 @@ public class RecordSearchService {
     private static Map<String, Keyword> collectKeywords(ResultDocument document) {
         Map<String, Keyword> keywords = new LinkedHashMap<>();
         document.summary().keywords().forEach(keyword -> keywords.putIfAbsent(keyword.keywordId(), keyword));
-        for (var section : document.sections()) {
-            section.keywords().forEach(keyword -> keywords.putIfAbsent(keyword.keywordId(), keyword));
-        }
         return keywords;
     }
 
@@ -187,7 +183,7 @@ public class RecordSearchService {
     }
 
     private static String normalize(String text) {
-        return WHITESPACE.matcher(text).replaceAll(" ").strip();
+        return text.strip();
     }
 
     private static String encodeCursor(Item item, String fingerprint) {

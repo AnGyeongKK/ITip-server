@@ -144,4 +144,23 @@ class ConversationCreateApiTest {
                 .andExpect(status().isCreated()).andExpect(jsonPath("data.recordCount").value(1))
                 .andExpect(jsonPath("data.scope.q").value("큰  그림"));
     }
+
+    @Test void usesTheSameSummaryKeywordAndLiteralTextFiltersAsRecordSearch() throws Exception {
+        var record = f.analysis("demo-user", "vector   database");
+        String sectionKeyword = "44444444-4444-4444-8444-444444444444";
+        String resultJson = jdbc.queryForObject("select result_json from analysis_results where id=?",
+                String.class, record.analysisId());
+        var document = mapper.readTree(resultJson).deepCopy();
+        ((tools.jackson.databind.node.ObjectNode) document.path("sections").get(0)).set("keywords",
+                mapper.readTree("[{\"keywordId\":\"" + sectionKeyword + "\",\"name\":\"pgvector\"}]"));
+        jdbc.update("update analysis_results set result_json=? where id=?", mapper.writeValueAsString(document), record.analysisId());
+
+        create(UUID.randomUUID(), "{\"scope\":{\"type\":\"FILTERED\",\"keywordIds\":[\"33333333-3333-4333-8333-333333333333\"],\"q\":\"  vector   database  \"}}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("data.recordCount").value(1))
+                .andExpect(jsonPath("data.scope.q").value("vector   database"));
+        create(UUID.randomUUID(), "{\"scope\":{\"type\":\"FILTERED\",\"keywordIds\":[\"" + sectionKeyword + "\"]}}")
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("code").value("EMPTY_CHAT_SCOPE"));
+        create(UUID.randomUUID(), "{\"scope\":{\"type\":\"FILTERED\",\"q\":\"vector database\"}}")
+                .andExpect(status().isUnprocessableEntity());
+    }
 }

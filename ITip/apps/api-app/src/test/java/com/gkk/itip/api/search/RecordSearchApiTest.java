@@ -21,6 +21,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -40,6 +42,7 @@ class RecordSearchApiTest {
     private static final Keyword RAG = new Keyword("11111111-1111-4111-8111-111111111111", "RAG");
     private static final Keyword LLM = new Keyword("22222222-2222-4222-8222-222222222222", "LLM");
     private static final Keyword SPRING = new Keyword("33333333-3333-4333-8333-333333333333", "Spring");
+    private static final Keyword PGVECTOR = new Keyword("44444444-4444-4444-8444-444444444444", "pgvector");
 
     private final JsonMapper mapper = JsonMapper.builder().build();
     private MockMvc mvc;
@@ -48,7 +51,7 @@ class RecordSearchApiTest {
     void setup() {
         var repository = mock(RecordSearchRepository.class);
         List<StoredRecord> records = List.of(
-                record(FIRST, "video-1", "RAG Guide", List.of(RAG, LLM), "vector   database", List.of(RAG)),
+                record(FIRST, "video-1", "RAG Guide", List.of(RAG, LLM), "vector   database", List.of(RAG, PGVECTOR)),
                 record(SECOND, "video-2", "Spring Guide", List.of(RAG, SPRING), "query planner", List.of()),
                 record("60000000-0000-4000-8000-000000000003", "video-3", "Other Guide", List.of(LLM), "decoder", List.of()));
         doAnswer(invocation -> {
@@ -85,7 +88,7 @@ class RecordSearchApiTest {
 
     @Test
     void findsDetailTechnologyAndToolsWithTheirSectionReferences() throws Exception {
-        mvc.perform(get(RECORDS).param("q", "  VECTOR  database "))
+        mvc.perform(get(RECORDS).param("q", "  VECTOR   database "))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.matchedCount").value(1))
                 .andExpect(jsonPath("$.data.items[0].matches[0].field").value("TECHNOLOGY"))
@@ -96,6 +99,31 @@ class RecordSearchApiTest {
         mvc.perform(get(RECORDS).param("q", "psql"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].matches[0].field").value("TOOL"));
+    }
+
+    @Test
+    void preservesLiteralInternalSpacesLikeFilteredChat() throws Exception {
+        mvc.perform(get(RECORDS).param("q", "  vector   database  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.filters.q").value("vector   database"))
+                .andExpect(jsonPath("$.data.matchedCount").value(1));
+        mvc.perform(get(RECORDS).param("q", "vector database"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.matchedCount").value(0));
+    }
+
+    @Test
+    void exposesOnlySummaryFilterKeywordsButStillSearchesSectionKeywordText() throws Exception {
+        mvc.perform(get(KEYWORDS))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.keywords[*].keywordId", not(hasItem(PGVECTOR.keywordId()))));
+        mvc.perform(get(RECORDS).param("keywordIds", PGVECTOR.keywordId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.matchedCount").value(0));
+        mvc.perform(get(RECORDS).param("q", "pgvector").param("keywordIds", RAG.keywordId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.matchedCount").value(1))
+                .andExpect(jsonPath("$.data.items[0].keywords.length()").value(2));
     }
 
     @Test
