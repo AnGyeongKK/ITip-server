@@ -338,7 +338,7 @@ class JobApiTest {
             UUID token = job.claim(NOW, Duration.ofMinutes(1)); job.changeStage(token, AnalysisStage.FINISHING, NOW);
             job.complete(token, draft, record.getId(), NOW); return record.getId();
         });
-        jdbc.update("delete from analysis_records where id=?", recordId);
+        mvc.perform(delete("/api/v1/records/" + recordId)).andExpect(status().isOk());
         clearInvocations(gcs);
         error(retry(UUID.randomUUID(), oldId), 409, "JOB_NOT_RETRYABLE");
         assertThat(countJobs()).isEqualTo(2);
