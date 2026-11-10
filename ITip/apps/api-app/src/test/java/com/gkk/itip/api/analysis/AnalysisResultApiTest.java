@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -34,7 +35,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = "itip.demo.owner-id=demo-user")
@@ -308,6 +311,114 @@ class AnalysisResultApiTest {
     }
     private JsonNode data(ResultActions action) throws Exception {
         return mapper.readTree(action.andReturn().getResponse().getContentAsString()).path("data");
+    }
+
+    @Test void opensOwnedRecordWithItsFoldersAndRestoresSavedReadingPosition() throws Exception {
+        var f = fixture(OWNER, true);
+        UUID folderId = linkFolder(f.recordId());
+        addSection(f.analysisId(), FIRST);
+        String path = "/api/v1/records/" + f.recordId();
+
+        mvc.perform(get(path)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.record.recordId").value(f.recordId().toString()))
+                .andExpect(jsonPath("data.analysis.analysisId").value(f.analysisId().toString()))
+                .andExpect(jsonPath("data.folders[0].folderId").value(folderId.toString()))
+                .andExpect(jsonPath("data.readingPosition").hasJsonPath())
+                .andExpect(jsonPath("data.readingPosition").isEmpty());
+
+        var saved = data(savePosition(path, """
+                {"tab":"DETAIL","sectionId":"%s"}
+                """.formatted(FIRST)).andExpect(status().isOk())).path("readingPosition");
+        assertThat(saved.path("sectionId").asString()).isEqualTo(FIRST.toString());
+        assertThat(saved.path("positionMs").isNull()).isTrue();
+        var detail = data(mvc.perform(get(path)).andExpect(status().isOk()));
+        assertThat(detail.path("readingPosition")).isEqualTo(saved);
+        assertThat(detail.path("record").path("analyzedAt").asString()).isEqualTo(NOW.plusSeconds(10).toString());
+
+        savePosition(path, """
+                {"tab":"SUMMARY","sectionId":null,"positionMs":null}
+                """).andExpect(status().isOk())
+                .andExpect(jsonPath("data.readingPosition.tab").value("SUMMARY"))
+                .andExpect(jsonPath("data.readingPosition.sectionId").hasJsonPath())
+                .andExpect(jsonPath("data.readingPosition.sectionId").isEmpty());
+    }
+
+    @Test void rejectsUnownedRecordsAndInvalidReadingPositions() throws Exception {
+        var other = fixture("another-user", true);
+        var mine = fixture(OWNER, true);
+        addSection(other.analysisId(), FIRST);
+        String otherPath = "/api/v1/records/" + other.recordId();
+        String myPath = "/api/v1/records/" + mine.recordId();
+        String valid = """
+                {"tab":"SUMMARY","sectionId":null}
+                """;
+        error(mvc.perform(get(otherPath)), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(delete(otherPath)), 404, "RESOURCE_NOT_FOUND");
+        error(savePosition(otherPath, valid), 404, "RESOURCE_NOT_FOUND");
+        error(savePosition(myPath, """
+                {"tab":"SUMMARY"}
+                """), 400, "INVALID_REQUEST");
+        error(savePosition(myPath, """
+                {"tab":"UNKNOWN","sectionId":null}
+                """), 400, "INVALID_REQUEST");
+        error(savePosition(myPath, """
+                {"tab":"SUMMARY","sectionId":null,"positionMs":10}
+                """), 400, "INVALID_REQUEST");
+        error(savePosition(myPath, """
+                {"tab":"DETAIL","sectionId":"%s"}
+                """.formatted(FIRST)), 422, "VALIDATION_FAILED");
+        mvc.perform(get(myPath)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.readingPosition").isEmpty());
+    }
+
+    @Test void deletesPersonalResultAndFolderLinksWhileRetainingSharedVideoAndCaption() throws Exception {
+        var f = fixture(OWNER, true);
+        var other = fixture("another-user", true);
+        UUID folderId = linkFolder(f.recordId());
+        addSection(f.analysisId(), FIRST);
+        jdbc.update("""
+                insert into analysis_chunks
+                (id, owner_id, analysis_id, section_ids, source_segment_ids, text, start_ms, end_ms, source_type,
+                 embedding, embedding_model, embedding_dimensions)
+                values (?, ?, ?, array[?]::uuid[], array['segment-1'], 'test chunk', 0, 1000, 'CAPTION', '[1,0]'::vector, 'test', 2)
+                """, UUID.randomUUID(), OWNER, f.analysisId(), FIRST);
+        String path = "/api/v1/records/" + f.recordId();
+
+        mvc.perform(delete(path)).andExpect(status().isOk()).andExpect(jsonPath("data").doesNotExist());
+        error(mvc.perform(get(path)), 404, "RESOURCE_NOT_FOUND");
+        error(result(f), 404, "RESOURCE_NOT_FOUND");
+        error(section(f, FIRST), 404, "RESOURCE_NOT_FOUND");
+        error(savePosition(path, """
+                {"tab":"SUMMARY","sectionId":null}
+                """), 404, "RESOURCE_NOT_FOUND");
+        assertThat(jdbc.queryForObject("select count(*) from folder_records where record_id = ?", Integer.class, f.recordId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_chunks where analysis_id = ?", Integer.class, f.analysisId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_sections where analysis_id = ?", Integer.class, f.analysisId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_results where id = ?", Integer.class, f.analysisId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from folders where id = ?", Integer.class, folderId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from analysis_records where id = ?", Integer.class, other.recordId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from videos where video_id = ?", Integer.class, VIDEO)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from caption_uploads", Integer.class)).isEqualTo(2);
+        verifyNoInteractions(gcs);
+    }
+
+    private ResultActions savePosition(String path, String body) throws Exception {
+        return mvc.perform(put(path + "/reading-position").contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private UUID linkFolder(UUID recordId) {
+        UUID folderId = UUID.randomUUID();
+        jdbc.update("insert into folders(id, owner_id, name, created_at) values (?, ?, ?, ?)",
+                folderId, OWNER, "보관 폴더", java.sql.Timestamp.from(NOW));
+        jdbc.update("insert into folder_records(folder_id, record_id, owner_id) values (?, ?, ?)", folderId, recordId, OWNER);
+        return folderId;
+    }
+
+    private void addSection(UUID analysisId, UUID sectionId) {
+        jdbc.update("""
+                insert into analysis_sections(id, analysis_id, title, start_ms, end_ms, detail_json)
+                values (?, ?, '구간', 0, 1000, '{}')
+                """, sectionId, analysisId);
     }
     private void error(ResultActions action, int status, String code) throws Exception {
         action.andExpect(status().is(status)).andExpect(jsonPath("code").value(code))

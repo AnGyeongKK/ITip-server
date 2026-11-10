@@ -27,6 +27,16 @@ public class AnalysisRecord {
     private UUID analysisId;
     @Column(nullable = false)
     private Instant analyzedAt;
+    @Column(length = 16)
+    private String readingTab;
+    private UUID readingSectionId;
+    private Instant lastViewedAt;
+
+    public void saveReadingPosition(String tab, UUID sectionId, Instant viewedAt) {
+        readingTab = Objects.requireNonNull(tab);
+        readingSectionId = sectionId;
+        lastViewedAt = Objects.requireNonNull(viewedAt);
+    }
 
     public static AnalysisRecord fromCompleted(AnalysisResult result) {
         Objects.requireNonNull(result);

@@ -161,8 +161,12 @@ public class JobDbService {
             remember(ownerId, RETRY, key, previousJobId, completed.getId());
             return new RetryContext(null, null, retried(completed, previousJobId));
         }
-        if (previous.getAnalysisId() != null && results.findByIdAndOwnerIdAndChatReadyTrue(previous.getAnalysisId(), ownerId).isPresent())
+        UUID previousAnalysisId = previous.getAnalysisId();
+        if (previousAnalysisId != null && (results.findByIdAndOwnerIdAndChatReadyTrue(previousAnalysisId, ownerId).isPresent()
+                || jobs.findFirstByOwnerIdAndAnalysisIdAndStatusOrderByCreatedAtDescIdDesc(
+                        ownerId, previousAnalysisId, JobStatus.COMPLETED).isPresent())) {
             throw new BusinessException(JOB_NOT_RETRYABLE);
+        }
         if (jobs.findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(ownerId, previous.getVideoId(), ACTIVE).isPresent())
             throw new BusinessException(JOB_NOT_RETRYABLE);
         var upload = uploads.findByIdAndOwnerId(previous.getUploadId(), ownerId).orElseThrow(() -> new BusinessException(CAPTION_REUPLOAD_REQUIRED));
