@@ -1,12 +1,16 @@
 package com.gkk.itip.common.storage;
 
 import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.HttpMethod;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.gkk.itip.common.storage.GcsAccessException.Reason.*;
@@ -16,6 +20,26 @@ public class GcsObjects {
     private final Supplier<Storage> provider;
 
     public GcsObjects(Supplier<Storage> provider) { this.provider = provider; }
+
+    public record SignedPut(String url, Map<String, String> headers) {}
+
+    public SignedPut signPut(String bucket, String objectKey, String contentType, long sizeBytes, long validSeconds) {
+        var blob = BlobInfo.newBuilder(bucket, objectKey).build();
+        var headers = Map.of("content-type", contentType, "x-goog-if-generation-match", "0",
+                "x-goog-content-length-range", sizeBytes + "," + sizeBytes);
+        try {
+            var url = storage().signUrl(blob, validSeconds, TimeUnit.SECONDS,
+                    Storage.SignUrlOption.withV4Signature(), Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
+                    Storage.SignUrlOption.withExtHeaders(headers));
+            return new SignedPut(url.toExternalForm(), Map.of("Content-Type", contentType,
+                    "x-goog-if-generation-match", headers.get("x-goog-if-generation-match"),
+                    "x-goog-content-length-range", headers.get("x-goog-content-length-range")));
+        } catch (StorageException exception) {
+            throw translate(exception);
+        } catch (IllegalStateException exception) {
+            throw new GcsAccessException(STORAGE_NOT_CONFIGURED, false);
+        }
+    }
 
     public record Metadata(long generation, long sizeBytes, String contentType) {}
 

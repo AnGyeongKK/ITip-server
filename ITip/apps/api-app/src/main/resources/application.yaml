@@ -9,6 +9,9 @@ spring:
 itip:
   demo:
     owner-id: ${DEMO_USER_ID:demo-user}
+  upload:
+    bucket: ${GCS_CAPTION_BUCKET:}
+    url-ttl: ${GCS_CAPTION_UPLOAD_TTL:PT10M}
   analysis:
     preparation-ttl: ${ANALYSIS_PREPARATION_TTL:PT30M}
     next-poll-after-ms: ${ANALYSIS_POLL_AFTER_MS:3000}
