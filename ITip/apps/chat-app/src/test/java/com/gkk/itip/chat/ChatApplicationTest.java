@@ -13,6 +13,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import java.util.UUID;
+import org.springframework.http.MediaType;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = "spring.flyway.enabled=true")
@@ -27,6 +30,15 @@ class ChatApplicationTest {
         r.add("spring.datasource.password", POSTGRES::getPassword);
     }
     @Autowired MockMvc mvc;
+
+    @Test void missingModelConfigurationRejectsBeforeQuestionAdmissionAsJson() throws Exception {
+        UUID key=UUID.randomUUID();
+        mvc.perform(post("/api/v1/conversations/"+UUID.randomUUID()+"/messages").header("Idempotency-Key",key)
+                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_EVENT_STREAM)
+                .content("{\"clientRequestId\":\""+key+"\",\"content\":\"질문\"}"))
+                .andExpect(status().isServiceUnavailable()).andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("code").value("CHAT_AI_NOT_CONFIGURED"));
+    }
 
     @Test void unknownChatRouteUsesSharedErrorAndRequestId() throws Exception {
         mvc.perform(get("/api/v1/unknown-chat-resource")).andExpect(status().isNotFound())

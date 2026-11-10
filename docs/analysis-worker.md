@@ -84,6 +84,6 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 ./gradlew :apps:worker-app:test --tests '*WorkerResultStoreTest'
 ```
 
-실제 PostgreSQL의 draft 재사용·벡터/배열 값·잘못된 임베딩·batch rollback·완료 rollback·중복 완료·만료 token·수동 재시도를 확인한다. 실제 GCS·AI 모델·임베딩 품질·Python 채팅 연결은 별도 검증 대상이다. 공개 결과·채팅 검색의 연결 범위는 [analysis-integration.md](analysis-integration.md), 화면 결과 형식은 [analysis-ai-contract.md](analysis-ai-contract.md)를 따른다.
+실제 PostgreSQL의 draft 재사용·벡터/배열 값·잘못된 임베딩·batch rollback·완료 rollback·중복 완료·만료 token·수동 재시도를 확인한다. 실제 GCS·AI 모델·임베딩 품질은 별도 검증 대상이다. 공개 결과·채팅 검색의 연결 범위는 [analysis-integration.md](analysis-integration.md), 화면 결과 형식은 [analysis-ai-contract.md](analysis-ai-contract.md)를 따른다.
 
 `./gradlew :apps:worker-app:test --tests '*AnalysisWorkerTest'`는 실제 PostgreSQL·Spring 컨텍스트·실제 parser/validator/AI 어댑터를 연결하고 GCS·Spring AI `ChatModel`·`EmbeddingModel` 통신만 대체한다. 정상 완료의 결과·구간·vector·기록, 외부 대기의 트랜잭션 부재, 오류·재시도 상한, draft ID·JSON 재사용, 인덱스 이후 완료 재시도, 오래된 token의 저장 차단, 모델 대기 중 실제 heartbeat commit·종료 후 예약 취소, runtime 이후 실제 주기 호출 지속, 준비 만료와 접수 작업의 분리를 확인한다. 완료 저장의 일시 잠금 실패는 DB 경계에서 한 번 주입하며 실제 DB 장애를 재현한 검증은 아니다. 고정 모델 JSON은 테스트용 외부 응답 예시다. 실제 GCS 인증·공급자 인증·HTTP timeout·요약/임베딩 품질·Python 서버는 검증하지 않는다.

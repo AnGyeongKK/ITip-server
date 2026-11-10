@@ -24,9 +24,9 @@ AI 문서의 마인드맵 예시는 `sections[].sectionKey/title/subtopics`와 `
 | 공개 조회 | `AnalysisResultController.get()`·`getSection()` 제공 | GET은 저장된 데이터만 조회. 관련 영상 추천은 별도 후속 범위 |
 | 자막 입력 | `generate()`가 원본 `CaptionDocument` 전체를 JSON으로 전달 | AI 실험은 10~20초 묶음의 ID·텍스트 중심. 집계 ID ↔ 원본 segmentId·시간 대응과 전체 입력 계약 합의 필요 |
 | 구간 수 | sections·mindmap 참조가 비어 있으면 거절. 1개는 허용 | AI 실험은 0개 또는 2개 이상 조건. 0개의 의미·작업 상태·앱 표시 합의 전 현재 검증 유지 |
-| 분석 모델 | 실제 `ChatModel` Bean·공급자 starter 없음 | AI 문서 선택은 `gpt-6-luna`, effort `low`. 이 선택을 서버 설정·연동에서 확인할 단계가 남음 |
-| 임베딩 | 실제 `EmbeddingModel` Bean 없음 | 분석용 텍스트 생성 모델과 별도로 선택. Python 검색과 같은 모델·차원 사용 |
-| 분석 호출 방식 | 현재 어댑터는 Spring AI 모델 Bean을 직접 호출 | 외부 AI 서버 HTTP 연동은 WebClient로 결정. 분석 endpoint·Schema·프롬프트는 AI 파트와 맞추며 Python 채팅과 별도 계약. 이번 GET에는 외부 호출 없음 |
+| 분석 모델 | 분석용 `ChatModel` Bean은 별도 설정 필요 | AI 문서 선택은 `gpt-6-luna`, effort `low`. 이 선택을 서버 설정·연동에서 확인할 단계가 남음 |
+| 임베딩 | libs/ai의 실제 OpenAI Bean 설정 구현, 기본 비활성 | 분석용 텍스트 생성 모델과 별도로 선택. Spring Chat의 질문 임베딩과 같은 모델·버전·차원 및 입력 규칙 사용 |
+| 분석 호출 방식 | 현재 어댑터는 Spring AI 모델 Bean을 직접 호출 | 분석 endpoint·Schema·프롬프트는 AI 파트와 별도 확인. 채팅 직접 호출 전환에서 이 입력/출력과 구간 매핑은 변경하지 않음. GET에 외부 호출 없음 |
 
 위 차이는 자동 적용할 정책이 아니다. 특히 sections 0개를 임의의 빈 성공 결과로 바꾸거나 집계 ID를 원본 ID처럼 취급하지 않는다. 모델·프롬프트·Schema의 실제 연결과 한국어·최대 60분 영상의 검증은 아직 완료되지 않았다.
 

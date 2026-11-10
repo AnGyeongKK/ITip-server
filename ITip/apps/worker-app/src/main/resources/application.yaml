@@ -2,7 +2,7 @@ server:
   port: ${WORKER_PORT:8081}
 spring:
   config:
-    import: classpath:domain.yaml
+    import: [classpath:domain.yaml, classpath:ai-embedding.yaml]
   application:
     name: itip-worker
   flyway:

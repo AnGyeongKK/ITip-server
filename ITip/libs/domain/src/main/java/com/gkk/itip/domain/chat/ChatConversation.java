@@ -27,4 +27,13 @@ public class ChatConversation {
         room.createdAt = now; room.updatedAt = now;
         return room;
     }
+    public long acceptQuestion(String question, Instant now) {
+        long first = Math.addExact(nextPosition, 1);
+        nextPosition = Math.addExact(nextPosition, 2);
+        if (lastQuestion == null) title = question.substring(0, question.offsetByCodePoints(0, Math.min(60, question.codePointCount(0, question.length()))));
+        lastQuestion = question;
+        touch(now);
+        return first;
+    }
+    public void touch(Instant now) { if (now.isAfter(updatedAt)) updatedAt = now; }
 }
