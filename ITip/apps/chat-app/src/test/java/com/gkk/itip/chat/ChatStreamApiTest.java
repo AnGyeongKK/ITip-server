@@ -135,11 +135,81 @@ class ChatStreamApiTest {
                 new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(second.recordId(),second.analysisId()),
                 new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(foreign.recordId(),foreign.analysisId()),
                 new com.gkk.itip.chat.conversation.service.ChatScopeQuery.RecordRef(deleted.recordId(),deleted.analysisId()));
-        var found=retrieval.search("demo-user",allowed,new com.gkk.itip.chat.retrieval.QuestionEmbeddingClient.Vector("fixture",new float[]{1,0}));
+        var found=retrieval.search("demo-user",allowed,new com.gkk.itip.chat.retrieval.QuestionEmbeddingClient.Vector("fixture",new float[]{1,0}),null);
         assertThat(found).extracting(com.gkk.itip.chat.retrieval.ChatContext::chunkId).containsExactly(chunk,secondChunk);
         assertThat(found.getFirst().text()).isEqualTo("원문");
         assertThat(found.getFirst().sectionIds()).containsExactly(a.sectionId());
     }
+    @Test void recordScopeSearchPrioritizesFocusButCanUseOtherSectionsOnlyInSameVideo() throws Exception {
+        UUID focused = addFocusSection();
+        UUID focusedChunk = addChunk(a,"demo-user","[0,1]","fixture",2);
+        jdbc.update("update analysis_chunks set section_ids=array[?]::uuid[],start_ms=1000,end_ms=2000,text='선택 구간 원문' where id=?", focused, focusedChunk);
+        UUID contextChunk = addChunk(a,"demo-user","[1,0]","fixture",2);
+        jdbc.update("update analysis_chunks set text='같은 영상 앞뒤 맥락' where id=?", contextChunk);
+        var outside = f.analysis("demo-user","다른 영상");
+        addChunk(outside,"demo-user","[1,0]","fixture",2);
+        var foreign = f.analysis("other-user","타인 영상");
+        addChunk(foreign,"other-user","[1,0]","fixture",2);
+        room = createRecordRoom(focused);
+        RESPONSE.set(ChatModelFixture.answer("선택 구간 답변","C1",focused));
+        UUID key = UUID.randomUUID();
+        assertThat(send(key)).contains("event: done");
+        var contexts = modelInput().path("contexts");
+        assertThat(contexts.size()).isEqualTo(2);
+        assertThat(contexts.get(0).path("text").asString()).isEqualTo("선택 구간 원문");
+        assertThat(contexts.get(1).path("text").asString()).isEqualTo("같은 영상 앞뒤 맥락");
+        mvc.perform(get(path()).param("clientRequestId",key.toString())).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[1].sources[0].recordId").value(a.recordId().toString()))
+                .andExpect(jsonPath("data.items[1].sources[0].sectionId").value(focused.toString()));
+    }
+
+    @Test void deletedRecordScopeAfterEmbeddingNeverCallsAnswerModel() throws Exception {
+        room = createRecordRoom(null);
+        embedding.response = request -> {
+            jdbc.update("delete from analysis_records where id=?",a.recordId());
+            return ChatEmbeddingFixture.vector("fixture",1,0);
+        };
+        assertThat(send(UUID.randomUUID())).contains("event: error").doesNotContain("event: done");
+        assertThat(CALLS.get()).isZero();
+    }
+
+    @Test void removedFocusDuringGenerationCannotPublishEvenInsufficientEvidenceCompletion() throws Exception {
+        UUID focused = addFocusSection();
+        room = createRecordRoom(focused);
+        var gate = new CountDownLatch(1); HOLD.set(gate); UUID key = UUID.randomUUID();
+        var initial = mvc.perform(post(path()).header("Idempotency-Key",key).contentType(MediaType.APPLICATION_JSON)
+                .content(body(key))).andExpect(request().asyncStarted()).andReturn();
+        try {
+            assertThat(RECEIVED.get().await(5,TimeUnit.SECONDS)).isTrue();
+            jdbc.update("delete from analysis_sections where id=?",focused);
+        } finally { gate.countDown(); }
+        initial.getAsyncResult(10000);
+        String text = mvc.perform(asyncDispatch(initial)).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(text).contains("event: error").doesNotContain("event: done","event: sources");
+    }
+
+    private UUID createRecordRoom(UUID focus) throws Exception {
+        String body = "{\"scope\":{\"type\":\"RECORD\",\"recordId\":\"" + a.recordId() + "\",\"focusSectionId\":"
+                + (focus == null ? "null" : "\"" + focus + "\"") + "}}";
+        var created = mvc.perform(post("/api/v1/conversations").header("Idempotency-Key",UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated()).andReturn();
+        return UUID.fromString(mapper.readTree(created.getResponse().getContentAsString()).path("data").path("conversationId").asString());
+    }
+
+    private UUID addFocusSection() {
+        UUID focused = UUID.randomUUID();
+        var doc = (tools.jackson.databind.node.ObjectNode) mapper.readTree(jdbc.queryForObject(
+                "select result_json from analysis_results where id=?", String.class,a.analysisId()));
+        var section = ((tools.jackson.databind.node.ObjectNode)doc.path("sections").get(0)).deepCopy();
+        section.put("sectionId",focused.toString()); section.put("title","선택 구간");
+        section.put("startMs",1000); section.put("endMs",2000);
+        ((tools.jackson.databind.node.ArrayNode)doc.path("sections")).add(section);
+        ((tools.jackson.databind.node.ArrayNode)doc.path("mindmap").path("sectionIds")).add(focused.toString());
+        jdbc.update("update analysis_results set result_json=? where id=?",mapper.writeValueAsString(doc),a.analysisId());
+        jdbc.update("insert into analysis_sections(id,analysis_id,title,start_ms,end_ms,detail_json) values (?,?,'선택 구간',1000,2000,'{}')",focused,a.analysisId());
+        return focused;
+    }
+
     @Test void rejectsValidCitationThatWasNotRetrievedAndSentToModel() throws Exception {
         addChunk(a,"demo-user","[1,0]","fixture",2);
         addChunk(a,"demo-user","[0,1]","fixture",2);

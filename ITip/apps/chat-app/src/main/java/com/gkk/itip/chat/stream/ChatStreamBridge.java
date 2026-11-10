@@ -40,7 +40,7 @@ public class ChatStreamBridge {
                 "assistantMessageId",ticket.assistantMessageId(),"clientRequestId",ticket.clientRequestId(),"scopeRecordCount",ticket.scopeRecordCount()));
             var vector=embeddings.embed(question);
             var fresh=store.refresh(ticket);
-            var retrieved=contexts.search(fresh.ownerId(),fresh.records(),vector);
+            var retrieved=contexts.search(fresh.ownerId(),fresh.records(),vector,fresh.focusSectionId());
             var prepared=generator.prepare(question,fresh.history(),retrieved);
             var candidates=prepared.contexts().stream().flatMap(context->context.citations().stream()).toList();
             var decoder=new AnswerJsonStream();
