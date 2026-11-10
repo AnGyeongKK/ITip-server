@@ -2128,13 +2128,13 @@ html&gt;body{padding:0}&lt;/style&gt;
           implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;meta 접수 정보 전달 · 이후 임베딩/검색 시작&#x27;),
           implementedStep(&#x27;Chat→모델&#x27;,&#x27;QuestionEmbeddingClient.embed()&#x27;,&#x27;질문만 임베딩 · 10초 · 최대4개 · 실제 공급자 Bean 필요&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.refresh()&#x27;,&#x27;임베딩 후 현재 범위·안전한 history 재확인&#x27;,&#x27;짧은 읽기 TX&#x27;),
-          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatContextQuery.search()&#x27;,&#x27;소유·기록·완료·모델/차원 제한 → 코사인 거리 topK · 원문 최대24000자&#x27;,&#x27;SQL 조회&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatContextQuery.search()&#x27;,&#x27;소유·기록·완료·모델/차원 제한 → 선택 구간 우선·같은 영상 맥락 거리순 topK&#x27;,&#x27;SQL 조회&#x27;),
           implementedStep(&#x27;Chat&#x27;,&#x27;ChatAnswerGenerator.prepare()&#x27;,&#x27;고정 system + JSON 입력 · 오래된 대화/후순위 원문 제외 · 실제 후보 보존&#x27;),
           implementedStep(&#x27;Chat→GPT&#x27;,&#x27;ChatAnswerGenerator.stream()&#x27;,&#x27;Spring AI 실제 SDK · strict schema · idle30초/전체120초 · 재시도0&#x27;),
           implementedStep(&#x27;Chat&#x27;,&#x27;AnswerJsonStream.accept()&#x27;,&#x27;answer만 점진 decode · JSON 구문/인용 메타데이터는 본문에서 제외&#x27;),
           implementedStep(&#x27;Chat→앱&#x27;,&#x27;ChatStreamBridge.write()&#x27;,&#x27;SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush&#x27;,&#x27;부분 TX&#x27;),
           implementedStep(&#x27;Chat&#x27;,&#x27;AnswerJsonStream.finish()&#x27;,&#x27;실제 공급자 STOP · 완전한 JSON · 전송 context/section 인용 검증&#x27;),
-          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;방 → 메시지 잠금 · 현재 토큰·lease 확인&#x27;,&#x27;쓰기 TX&#x27;),
+          implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;방 → 메시지 잠금 · 토큰·lease·현재 기록/구간 가용성 확인&#x27;,&#x27;쓰기 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatCitationQuery.validate()&#x27;,&#x27;실제 전달한 인용 · 현재/최초 범위 · chunk/section · 기록 FOR SHARE&#x27;,&#x27;완료 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatGenerationStore.complete()&#x27;,&#x27;본문·검증 출처·COMPLETED 저장 후 커밋&#x27;,&#x27;완료 TX&#x27;),
           implementedStep(&#x27;Chat·DB&#x27;,&#x27;MessageQueryService.get()&#x27;,&#x27;저장된 최종 본문·출처·개수 재조회&#x27;,&#x27;조회 TX&#x27;),
@@ -2142,6 +2142,19 @@ html&gt;body{padding:0}&lt;/style&gt;
         ]
       }
     });
+    Object.assign(flows, {
+      &#x27;ARCHIVE-06&#x27;: {server:&#x27;api&#x27;,implemented:true,local:true,commits:[&#x27;d058fcd&#x27;],input:&#x27;name + UUID Idempotency-Key&#x27;,output:&#x27;201 · folderId / name / createdAt&#x27;,edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;],boundary:&#x27;앞뒤 공백 제거·20 Unicode 코드 포인트. 내부 표기 보존. 사용자별 영문 대소문자 중복은 409.&#x27;,steps:[implementedStep(&#x27;API&#x27;,&#x27;FolderController.create()&#x27;,&#x27;요청·UUID 키 검증&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;FolderService.create()&#x27;,&#x27;사용자 잠금 → 멱등 키 → 이름 검증·중복 검사&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;FolderRepository.create()&#x27;,&#x27;길이 CHECK·사용자별 unique index → 저장&#x27;,&#x27;쓰기 TX&#x27;)]},
+      &#x27;ARCHIVE-08&#x27;: {server:&#x27;api&#x27;,implemented:true,local:true,commits:[&#x27;d058fcd&#x27;],input:&#x27;folderId / name&#x27;,output:&#x27;200 · folderId / name / recordCount&#x27;,edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;],boundary:&#x27;자기 폴더를 중복 검사에서 제외. 대소문자만 변경 가능. 중복 오류 시 기존 이름 유지.&#x27;,steps:[implementedStep(&#x27;API&#x27;,&#x27;FolderController.rename()&#x27;,&#x27;경로·이름 검증&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;FolderService.rename()&#x27;,&#x27;사용자 잠금 → 소유권 → 20자·중복 검사 → 갱신&#x27;,&#x27;쓰기 TX&#x27;)]},
+      &#x27;ARCHIVE-10&#x27;: {server:&#x27;api&#x27;,implemented:true,local:true,commits:[&#x27;1b384bb&#x27;],input:&#x27;folderId / recordIds&#x27;,output:&#x27;200 · folderId / addedRecordIds / alreadyIncludedRecordIds / recordCount&#x27;,edges:[&#x27;appApi&#x27;,&#x27;apiDb&#x27;],boundary:&#x27;전체 기록 소유권 확인. 중복 연결 제외·다른 폴더 유지. recordCount는 처리 후 전체 수.&#x27;,steps:[implementedStep(&#x27;API&#x27;,&#x27;FolderController.addRecords()&#x27;,&#x27;UUID 목록 검증&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;FolderService.addRecords()&#x27;,&#x27;사용자 잠금 → 폴더·전체 기록 소유권 → 중복 제외 연결&#x27;,&#x27;쓰기 TX&#x27;),implementedStep(&#x27;API·DB&#x27;,&#x27;FolderService.get()&#x27;,&#x27;추가 후 실제 폴더 전체 기록 수 조회 → 응답&#x27;,&#x27;같은 TX&#x27;)]}
+    });
+    flows[&#x27;CHAT-01&#x27;].commits = [&#x27;9550ff5&#x27;];
+    flows[&#x27;CHAT-01&#x27;].input = &#x27;ALL/FILTERED 또는 RECORD · recordId / focusSectionId? + UUID Idempotency-Key&#x27;;
+    flows[&#x27;CHAT-01&#x27;].boundary = &#x27;RECORD는 본인 완료 기록 하나·같은 결과 구간만 허용. 영상/구간을 바꾸면 새 방. 기존 ALL/FILTERED·멱등 키 유지.&#x27;;
+    flows[&#x27;CHAT-01&#x27;].steps[2] = implementedStep(&#x27;Chat·DB&#x27;,&#x27;ChatScopeQuery.resolve()/resolveRecord()&#x27;,&#x27;저장 조건 재평가 또는 개인 기록·구간 소속 검증&#x27;,&#x27;쓰기 TX&#x27;);
+    flows[&#x27;CHAT-04&#x27;].commits = [&#x27;3757689&#x27;];
+    flows[&#x27;CHAT-06&#x27;].boundary = &#x27;RECORD의 기록·구간 삭제 시 UNAVAILABLE. 과거 대화·출처 표시는 유지. 생성 중 상태는 CHAT-05로 조회.&#x27;;
+    flows[&#x27;ANALYSIS-06&#x27;].boundary = &#x27;관련 영상 추천은 MVP 이후 보류. 모바일에서 진입·호출을 중지하며 서버는 추천 API를 새로 구현하지 않음.&#x27;;
+    flows[&#x27;ANALYSIS-06&#x27;].output = &#x27;MVP 보류 · 구현 없음&#x27;;
     for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
     const labels = {app:&#x27;Android&#x27;,api:&#x27;Spring API&#x27;,worker:&#x27;Spring Worker&#x27;,chat:&#x27;Spring Chat&#x27;,db:&#x27;PostgreSQL&#x27;,gcs:&#x27;Cloud Storage&#x27;,provider:&#x27;분석·임베딩 모델&#x27;,gpt:&#x27;GPT API&#x27;};
     const fallback = {app:&#x27;요청·결과&#x27;,api:&#x27;일반 API · 로컬&#x27;,worker:&#x27;DB Poller · 로컬&#x27;,chat:&#x27;채팅 API · 로컬&#x27;,db:&#x27;pgvector · 로컬 Docker&#x27;,gcs:&#x27;실제 GCS&#x27;,provider:&#x27;연동 대상 협의&#x27;,gpt:&#x27;Spring Chat 직접 호출&#x27;};
