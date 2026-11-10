@@ -4,6 +4,7 @@ public enum ErrorCode {
 
     INVALID_REQUEST("잘못된 요청이에요."),
     INVALID_CURSOR("목록을 새로 불러와 주세요."),
+    FOLDER_NAME_DUPLICATED("이미 사용 중인 폴더 이름이에요."),
     EMPTY_CHAT_SCOPE("질문할 분석 기록이 없어요."),
     CHAT_GENERATION_IN_PROGRESS("답변이 완료된 후 다시 요청해 주세요."),
     DUPLICATE_CHAT_REQUEST("이미 접수한 질문이에요."),

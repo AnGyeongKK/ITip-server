@@ -64,6 +64,15 @@ public class FolderRepository {
                 folder.folderId(), ownerId, folder.name(), folder.createdAt().atOffset(ZoneOffset.UTC));
     }
 
+    public boolean nameExists(String ownerId, String name, UUID excludingId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+                select exists(select 1 from folders where owner_id = ?
+                  and translate(name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') =
+                      translate(?, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')
+                  and (?::uuid is null or id <> ?))
+                """, Boolean.class, ownerId, name, excludingId, excludingId));
+    }
+
     public int rename(String ownerId, UUID folderId, String name) {
         return jdbc.update("update folders set name = ? where id = ? and owner_id = ?", name, folderId, ownerId);
     }

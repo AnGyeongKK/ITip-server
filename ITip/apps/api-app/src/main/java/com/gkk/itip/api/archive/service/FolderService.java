@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.gkk.itip.common.exception.ErrorCode.IDEMPOTENCY_CONFLICT;
+import static com.gkk.itip.common.exception.ErrorCode.FOLDER_NAME_DUPLICATED;
 import static com.gkk.itip.common.exception.ErrorCode.INVALID_CURSOR;
 import static com.gkk.itip.common.exception.ErrorCode.INVALID_REQUEST;
 import static com.gkk.itip.common.exception.ErrorCode.RESOURCE_NOT_FOUND;
@@ -70,7 +71,7 @@ public class FolderService {
     @Transactional
     public Created create(String ownerId, UUID key, String name) {
         ownerLock.lock(ownerId);
-        String normalized = name.strip();
+        String normalized = normalizeName(name);
         String hash = RequestFingerprint.of(mapper, normalized);
         var replay = requests.findByOwnerIdAndOperationAndKey(ownerId, CREATE_FOLDER, key);
         if (replay.isPresent()) {
@@ -79,6 +80,7 @@ public class FolderService {
                     .orElseThrow(() -> new BusinessException(RESOURCE_NOT_FOUND));
             return new Created(existing.folderId(), existing.name(), existing.createdAt());
         }
+        if (folders.nameExists(ownerId, normalized, null)) throw new BusinessException(FOLDER_NAME_DUPLICATED);
         var now = clock.instant().truncatedTo(ChronoUnit.MICROS);
         var folder = new Created(UUID.randomUUID(), normalized, now);
         folders.create(ownerId, folder);
@@ -94,7 +96,10 @@ public class FolderService {
     @Transactional
     public FolderResponse rename(String ownerId, UUID folderId, String name) {
         ownerLock.lock(ownerId);
-        if (folders.rename(ownerId, folderId, name.strip()) == 0) throw new BusinessException(RESOURCE_NOT_FOUND);
+        folders.requireOwned(ownerId, folderId);
+        String normalized = normalizeName(name);
+        if (folders.nameExists(ownerId, normalized, folderId)) throw new BusinessException(FOLDER_NAME_DUPLICATED);
+        if (folders.rename(ownerId, folderId, normalized) == 0) throw new BusinessException(RESOURCE_NOT_FOUND);
         return get(ownerId, folderId);
     }
 
@@ -123,6 +128,14 @@ public class FolderService {
         folders.requireOwned(ownerId, folderId);
         records.findByIdAndOwnerId(recordId, ownerId).orElseThrow(() -> new BusinessException(RESOURCE_NOT_FOUND));
         folders.removeRecord(ownerId, folderId, recordId);
+    }
+
+    private static String normalizeName(String name) {
+        if (name == null) throw new BusinessException(INVALID_REQUEST);
+        String normalized = name.strip();
+        if (normalized.isEmpty() || normalized.codePointCount(0, normalized.length()) > 20)
+            throw new BusinessException(INVALID_REQUEST);
+        return normalized;
     }
 
     private static Cursor decodeCursor(String value, String scope) {
