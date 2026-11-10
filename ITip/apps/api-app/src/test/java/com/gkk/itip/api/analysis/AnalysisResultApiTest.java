@@ -615,13 +615,54 @@ class AnalysisResultApiTest {
         var home = data(mvc.perform(get(HOME)).andExpect(status().isOk())
                 .andExpect(jsonPath("data.recentAnalyses.length()").value(2))
                 .andExpect(jsonPath("data.recentAnalyses[0].recordId").value(newest.recordId().toString()))
-                .andExpect(jsonPath("data.continueReading.record.recordId").value(opened.recordId().toString()))
-                .andExpect(jsonPath("data.continueReading.sectionTitle").value("구간")));
-        assertThat(home.path("continueReading").path("readingPosition")).isEqualTo(saved);
+                .andExpect(jsonPath("data.recentAnalyses[0].oneLine").value("영상 전체 한 줄 요약"))
+                .andExpect(jsonPath("data.recentAnalyses[0].keywords[0].name").value("RAG"))
+                .andExpect(jsonPath("data.recentAnalyses[0].lastViewedAt").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("data.continueReading.recordId").value(opened.recordId().toString()))
+                .andExpect(jsonPath("data.continueReading.analysisId").value(opened.analysisId().toString()))
+                .andExpect(jsonPath("data.continueReading.videoTitle").value("RAG 원본 영상"))
+                .andExpect(jsonPath("data.continueReading.tab").value("DETAIL"))
+                .andExpect(jsonPath("data.continueReading.sectionId").value(FIRST.toString()))
+                .andExpect(jsonPath("data.continueReading.sectionTitle").value("검색과 답변"))
+                .andExpect(jsonPath("data.continueReading.startMs").value(1500))
+                .andExpect(jsonPath("data.continueReading.endMs").value(60000))
+                .andExpect(jsonPath("data.continueReading.positionMs").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("data.continueReading.sectionSummary").value("첫 구간 요약"))
+                .andExpect(jsonPath("data.continueReading.practicalTipCount").value(1)));
+        assertThat(home.path("continueReading").path("lastViewedAt")).isEqualTo(saved.path("lastViewedAt"));
+        assertThat(home.path("recentAnalyses").get(1).path("lastViewedAt")).isEqualTo(saved.path("lastViewedAt"));
         assertThat(data(mvc.perform(get(HOME)).andExpect(status().isOk()))).isEqualTo(home);
         mvc.perform(delete(RECORDS + "/" + opened.recordId())).andExpect(status().isOk());
         mvc.perform(get(HOME)).andExpect(status().isOk()).andExpect(jsonPath("data.recentAnalyses.length()").value(1))
                 .andExpect(jsonPath("data.continueReading").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test void homeRequiresAnExistingSectionForContinueReading() throws Exception {
+        var record = fixture(OWNER, true);
+        savePosition(RECORDS + "/" + record.recordId(), "{\"tab\":\"SUMMARY\",\"sectionId\":null}")
+                .andExpect(status().isOk());
+        mvc.perform(get(HOME)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.continueReading").value(org.hamcrest.Matchers.nullValue()));
+        addSection(record.analysisId(), FIRST);
+        savePosition(RECORDS + "/" + record.recordId(), """
+                {"tab":"DETAIL","sectionId":"%s"}
+                """.formatted(FIRST)).andExpect(status().isOk());
+        mvc.perform(get(HOME)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.continueReading.sectionId").value(FIRST.toString()));
+        jdbc.update("delete from analysis_sections where id=? and analysis_id=?", FIRST, record.analysisId());
+        mvc.perform(get(HOME)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.continueReading").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test void homeExcludesForeignAndDraftDocumentsBeforeParsingAndFailsClosedOnCorruption() throws Exception {
+        var mine = fixture(OWNER, true);
+        corrupt(fixture("another-user", true), "{private-broken-json");
+        corrupt(fixture(OWNER, false), "{draft-broken-json");
+        mvc.perform(get(HOME)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.recentAnalyses.length()").value(1));
+        corrupt(mine, "{broken-json");
+        error(mvc.perform(get(HOME)), 500, "INTERNAL_ERROR");
+        verifyNoInteractions(gcs);
     }
 
     private void createPlaylistBatch(String playlistId, String... videoIds) throws Exception {
