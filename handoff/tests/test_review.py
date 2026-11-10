@@ -58,6 +58,30 @@ class Review(unittest.TestCase):
         self.assertEqual("".join(record["answerDeltas"]), self.output["answer"])
         self.assertEqual(record["metadata"]["usage"]["total_tokens"], 15)
 
+    def test_stream_record_contains_exact_sdk_request(self):
+        client, _ = self.mock_client([chunk(json.dumps(self.output), "stop")])
+        with patch("openai.OpenAI", return_value=client):
+            record = run.invoke("chat", self.data, stream=True)
+        sent = client.__enter__.return_value.chat.completions.create.call_args.kwargs
+        self.assertEqual(record["request"], sent)
+        self.assertIs(sent["stream"], True)
+        self.assertEqual(sent["stream_options"], {"include_usage": True})
+        self.assertTrue(sent["response_format"]["json_schema"]["strict"])
+
+    def test_request_only_stream_records_options_without_call(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "request.json"
+            with patch.object(sys, "argv", ["run.py", "chat", str(ROOT / "examples/chat.supported.input.json"),
+                    str(target), "--stream", "--request-only"]), patch("openai.OpenAI") as factory, contextlib.redirect_stdout(io.StringIO()):
+                run.main()
+                factory.assert_not_called()
+            record = json.loads(target.read_text())
+            self.assertIs(record["request"]["stream"], True)
+            self.assertEqual(record["request"]["stream_options"], {"include_usage": True})
+        body, _, _ = run.request("chat", self.data)
+        self.assertNotIn("stream", body)
+        self.assertNotIn("stream_options", body)
+
     def test_content_after_stop_is_rejected_and_recorded(self):
         record = {}
         with self.assertRaises(ContractError):

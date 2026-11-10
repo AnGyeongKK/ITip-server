@@ -1,6 +1,14 @@
 # 스트리밍 예시와 실패 분류
 
-`chat.*.actual.json`의 request는 실제 Chat Completions 요청 본문이고 response는 전체 구조화 출력이다. providerChunks는 SDK가 실제로 받은 ChatCompletionChunk의 model_dump JSON이다. 원시 HTTP 헤더·API 키·전송 바이트는 기록하지 않았으며, SDK가 파싱한 공급자 chunk를 그대로 저장했다. answerDeltas는 JSON 파서에서 answer만 해제한 본문이다.
+`chat.*.actual.json` 및 `review.chat.*.actual.json`의 request에는 당시 실제 호출의 공통 Chat Completions 인자를 저장했고 response는 전체 구조화 출력이다. 이 과거 기록 8건과 `chat.request.json`에는 SDK 호출 시 별도로 추가했던 `stream=true`, `stream_options={"include_usage":true}`가 빠져 있다. 기존 기록을 보존하므로, 이 요청 JSON으로 스트리밍을 재현할 때는 아래 두 인자를 추가해야 한다.
+
+```python
+stream_request = {**record["request"], "stream": True, "stream_options": {"include_usage": True}}
+with client.chat.completions.create(**stream_request) as chunks:
+    ...
+```
+
+현재 실행기는 완성한 요청 객체를 저장과 SDK 호출에 함께 사용한다. `--stream --request-only`도 이 두 인자를 포함한다. 이 수정은 mock SDK 호출과 요청 생성으로 검증했으며 수정 후 공급자를 새로 호출하지 않았다. providerChunks는 SDK가 실제로 받은 ChatCompletionChunk의 model_dump JSON이다. 원시 HTTP 헤더·API 키·전송 바이트는 기록하지 않았으며, SDK가 파싱한 공급자 chunk를 그대로 저장했다. answerDeltas는 JSON 파서에서 answer만 해제한 본문이다.
 
 일반 텍스트만 스트리밍한 시험이 아니다. 실제 호출에 `response_format.type=json_schema`, `json_schema.strict=true`, 전체 `chat.spring-v1.json`을 넣은 상태에서 스트리밍했다. JSON 구문·citations·evidenceStatus는 answer 본문으로 내보내지 않는다. `invocation/answer_stream.py`가 첫 answer 문자열만 escape·Unicode 단위로 해제하고, 종료 후 전체 JSON의 중복 필드·잘림·본문 일치를 검사한다. `validation/contracts.py`가 실제로 전송한 contextId/sectionIds 쌍을 검증한다.
 

@@ -37,3 +37,9 @@
 Spring 호환 기본값인 최소1구간은 유지했다. 최소2구간은 명시적 권장 대안이며, 0구간/NOT_ANALYZABLE 처리·실무 팁 title·복수 sectionIds의 세부 위치 대응은 여전히 합의 대상이다. 실제 Spring 실행·DB·검색 품질·모바일 SSE·실제60분 영상 검증을 이번 코드 검토만으로 완료 처리하지 않았다.
 
 이번 버전은 Python 실험·Java 이식용 참조 코드다. 별도 Python 서버나 앱용 SSE 이벤트 생성기를 추가하지 않았다.
+
+## 저장소 게시 전 독립 리뷰
+
+실제 채팅 호출 시 별도로 넣은 `stream=true`·`stream_options.include_usage=true`가 저장 요청 JSON에서는 빠졌음을 확인했다. 현재 실행기는 전체 요청을 먼저 구성해 저장·호출에 같은 객체를 쓰며 `--stream --request-only`에도 포함한다. 기존 실제 기록 8건과 `chat.request.json`은 보존하고 STREAMING.md에 재현 시 추가할 인자를 명시했다.
+
+전송 요청 일치와 API 호출 없는 스트림 요청 생성을 확인하는 회귀 검사 2개를 추가했다. 현재 **44/44 통과**이며 저장 응답 12건 검사도 동일하게 통과했다. 게시 확인은 `examples/repository-verification.json`을 따른다. 기존 `review-verification.json`의 소스 체크섬·42개 검사는 수정 전 검토 시점의 기록이다. 이 수정 이후 공급자 재호출이나 Spring 실행은 하지 않았다.

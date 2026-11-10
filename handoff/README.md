@@ -27,7 +27,7 @@ Python은 실험용이다. Spring Worker가 전처리·분석·검증·원문 �
 
 ## 재현
 
-레포 루트에서 Python 3.13으로 실행한다. 아래 검사는 저장된 공개 예시를 사용하며 API 키나 외부 호출이 필요하지 않다.
+레포 루트에서 Python 3.13으로 실행한다. 아래 검사는 저장된 공개 예시를 사용하며 API 키나 모델 API 호출이 필요하지 않다. 의존성 설치와 tiktoken의 최초 tokenizer 다운로드에는 네트워크가 필요하다.
 
 ```bash
 python3.13 -m venv handoff/.venv
@@ -41,7 +41,7 @@ handoff/.venv/bin/python handoff/invocation/run.py analysis handoff/examples/ana
 handoff/.venv/bin/python handoff/invocation/run.py analysis handoff/examples/analysis.input.json /tmp/analysis-min2-new.json --profile recommended-v1
 handoff/.venv/bin/python handoff/invocation/run.py chat handoff/examples/chat.supported.input.json /tmp/chat-new.json --stream
 # 호출 없이 실제 요청 JSON 구성 확인
-handoff/.venv/bin/python handoff/invocation/run.py chat handoff/examples/chat.supported.input.json /tmp/chat-request.json --request-only
+handoff/.venv/bin/python handoff/invocation/run.py chat handoff/examples/chat.supported.input.json /tmp/chat-request.json --stream --request-only
 ```
 
 이미 있는 결과 파일은 덮어쓰지 않는다. 새 경로로 재현한다. 고정 System과 동적 JSON UserMessage를 분리하고, Schema는 DTO에서 재생성하지 말고 파일 그대로 공급자 strict 옵션에 전달한다. 분석 Schema의 sections 필드 순서는 기존 실험처럼 summary보다 앞이다. 채팅 첫 필드는 answer이며 스트리밍 파서가 이 순서를 전제로 한다.
@@ -87,7 +87,9 @@ Chat은 계약과 같이 history 최대5쌍/32000 UTF-16 문자, contexts 최대
 
 ## 검증 범위
 
-현재 계약·회귀 검사는 42개다. 실행기는 결과 파일을 호출 전에 배타적으로 생성해 기존 파일을 보호한다. 실패 시에도 요청·SDK 조각·부분 본문·안전한 오류 코드를 보존한다. 중단된 실행은 최소 IN_PROGRESS 기록을 남긴다. 이 파일들은 개발용 실험 아티팩트이며, 서비스 로그에 원문을 남기라는 뜻이 아니다.
+현재 계약·회귀 검사는 44개다. 실행기는 결과 파일을 호출 전에 배타적으로 생성해 기존 파일을 보호한다. 실패 시에도 요청·SDK 조각·부분 본문·안전한 오류 코드를 보존한다. 중단된 실행은 최소 IN_PROGRESS 기록을 남긴다. 이 파일들은 개발용 실험 아티팩트이며, 서비스 로그에 원문을 남기라는 뜻이 아니다.
+
+게시 전 독립 리뷰에서 과거 채팅 요청 기록의 스트리밍 옵션 누락을 확인했다. 당시 기록은 수정하지 않고 [재현 보완 방법](examples/STREAMING.md)을 명시했다. 현재 코드는 저장 요청과 SDK 전송 요청의 일치를 검사한다. 게시 검증은 `examples/repository-verification.json`에 기록하며, 기존 `review-verification.json`의 체크섬과 42개 검사는 이전 검토 시점의 기록이다. 이 수정 후 새로운 실제 모델 호출은 하지 않았다.
 
 `examples/verification.json`에 이번 Spring 전달 버전의 실제 호출·오프라인 검사 결과를 기록한다. 공개 샘플은 직접 작성한 가상 자막·질문이며 실제 API가 생성한 전체 응답이다. 다른 사람의 원본 자막·실제 사용자 대화·개인정보·키를 포함하지 않는다.
 

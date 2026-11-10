@@ -49,10 +49,11 @@ def prepare_chat(data, system, output_schema, budget=8000):
         else: raise ContractError("CHAT_PROMPT_TOO_LARGE")
 
 
-def request(kind,data,profile="spring-v1"):
+def request(kind,data,profile="spring-v1", *, stream=False):
     if kind not in ("analysis", "chat") or profile not in ("spring-v1", "recommended-v1"):
         raise ValueError("unknown invocation kind/profile")
     if kind=="chat" and profile!="spring-v1":raise ValueError("chat supports spring-v1 only")
+    if stream and kind != "chat":raise ValueError("stream example is chat-only")
     name=f"{kind}.{profile}"
     system=(ROOT/"prompts"/(kind+".spring-v1.system.md")).read_text()
     output_schema=schema(name)
@@ -66,6 +67,8 @@ def request(kind,data,profile="spring-v1"):
           "max_completion_tokens":2048 if kind=="chat" else 16000,
           "messages":[{"role":"system","content":system},{"role":"user","content":dump(data)}],
           "response_format":{"type":"json_schema","json_schema":{"name":name.replace(".","_"),"strict":True,"schema":output_schema}}}
+    if stream:
+        body.update(stream=True, stream_options={"include_usage": True})
     return body,data,extra
 
 
@@ -118,7 +121,9 @@ def invoke(kind, data, *, stream=False, profile="spring-v1", record=None, prepar
     from openai import OpenAI, OpenAIError
     if stream and kind != "chat":
         raise ValueError("stream example is chat-only")
-    body, transmitted, budget = prepared_request or request(kind, data, profile)
+    body, transmitted, budget = prepared_request or request(kind, data, profile, stream=stream)
+    if body.get("stream", False) != stream:
+        raise ValueError("prepared request stream option does not match invocation")
     record = {} if record is None else record
     record.update({"request": body, "transmittedInput": transmitted, "providerFinishReason": None,
         "providerChunks": [], "answerDeltas": [], "metadata": {
@@ -133,7 +138,7 @@ def invoke(kind, data, *, stream=False, profile="spring-v1", record=None, prepar
             raise ContractError("CHAT_AI_NOT_CONFIGURED" if kind == "chat" else "AI_NOT_CONFIGURED") from exc
         with client as client:
             if stream:
-                with client.chat.completions.create(**body, stream=True, stream_options={"include_usage": True}) as chunks:
+                with client.chat.completions.create(**body) as chunks:
                     consume_stream(chunks, record, began=began)
             else:
                 response = client.chat.completions.create(**body)
@@ -182,7 +187,7 @@ def main():
     if args.kind=="analysis":
         prepared=normalize(data["captions"],duration_ms=data["durationMs"],metadata=data.get("metadata"))
         data=prepared["modelInput"]
-    prepared_request=request(args.kind,data,args.profile)
+    prepared_request=request(args.kind,data,args.profile,stream=args.stream)
     body,transmitted,budget=prepared_request
     result={"request":body,"transmittedInput":transmitted,"budget":budget}
     if prepared:result["preprocessing"]=prepared
