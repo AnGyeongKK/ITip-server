@@ -28,6 +28,7 @@ public class ChatScopeQuery {
     }
 
     public Selection resolve(String owner, ChatScope scope) {
+        if (scope.type() == ChatScope.Type.RECORD) return resolveRecord(owner, scope);
         String folder = null;
         if (scope.folderId() != null) {
             var names = jdbc.queryForList("select name from folders where id=? and owner_id=?", String.class, scope.folderId(), owner);
@@ -68,6 +69,37 @@ public class ChatScopeQuery {
         String label = parts.isEmpty() ? "전체 기록" : String.join(" · ", parts);
         if (label.codePointCount(0, label.length()) > 500) label = label.substring(0, label.offsetByCodePoints(0, 497)) + "...";
         return new Selection(matches.isEmpty() ? "EMPTY" : "AVAILABLE", label, matches);
+    }
+
+    private Selection resolveRecord(String owner, ChatScope scope) {
+        var selected = jdbc.query("""
+                select r.id, r.analysis_id, a.result_json, v.title
+                from analysis_records r
+                join analysis_results a on a.id=r.analysis_id and a.owner_id=r.owner_id and a.video_id=r.video_id
+                join videos v on v.video_id=r.video_id
+                where r.owner_id=? and r.id=? and a.chat_ready=true and a.completed_at is not null
+                """, (row, index) -> {
+            ResultDocument document;
+            try {
+                document = mapper.readValue(row.getString("result_json"), ResultDocument.class);
+                ResultDocumentValidator.validate(document);
+            } catch (RuntimeException exception) { throw new BusinessException(INTERNAL_ERROR); }
+            String label = row.getString("title");
+            if (scope.focusSectionId() != null) {
+                var section = document.sections().stream()
+                        .filter(s -> s.sectionId().equals(scope.focusSectionId().toString())).findFirst();
+                if (section.isEmpty() || !Boolean.TRUE.equals(jdbc.queryForObject(
+                        "select exists(select 1 from analysis_sections where id=? and analysis_id=?)", Boolean.class,
+                        scope.focusSectionId(), row.getObject("analysis_id", UUID.class))))
+                    return new Selection("UNAVAILABLE", "사용할 수 없는 구간", List.of());
+                label = (label == null ? "선택 영상" : label) + " · " + section.get().title();
+            }
+            if (label == null) label = "선택 영상";
+            if (label.codePointCount(0, label.length()) > 500) label = label.substring(0, label.offsetByCodePoints(0, 497)) + "...";
+            return new Selection("AVAILABLE", label, List.of(new RecordRef(row.getObject("id", UUID.class),
+                    row.getObject("analysis_id", UUID.class))));
+        }, owner, scope.recordId());
+        return selected.isEmpty() ? new Selection("UNAVAILABLE", "사용할 수 없는 영상", List.of()) : selected.getFirst();
     }
 
     private static List<String> searchable(String title, ResultDocument doc) {

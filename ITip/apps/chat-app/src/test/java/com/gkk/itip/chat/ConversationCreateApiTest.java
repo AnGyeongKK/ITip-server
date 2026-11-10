@@ -91,6 +91,18 @@ class ConversationCreateApiTest {
                 .andExpect(status().isConflict()).andExpect(jsonPath("code").value("IDEMPOTENCY_CONFLICT"));
     }
 
+    @Test void addingRecordScopeFieldsPreservesExistingAllScopeIdempotencyHash() throws Exception {
+        f.analysis("demo-user", "영상");
+        UUID key = UUID.randomUUID();
+        var created = create(key, ALL).andExpect(status().isCreated()).andReturn();
+        String legacy = "{\"scope\":{\"type\":\"ALL\",\"folderId\":null,\"keywordIds\":[],\"q\":null}}";
+        String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                .digest(legacy.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        jdbc.update("update idempotency_requests set request_hash=? where request_key=?", hash, key);
+        var replay = create(key, ALL).andExpect(status().isCreated()).andReturn();
+        assertThat(replay.getResponse().getContentAsString()).isEqualTo(created.getResponse().getContentAsString());
+    }
+
     @Test void concurrentRetriesCreateOneRoom() throws Exception {
         f.analysis("demo-user", "영상"); UUID key = UUID.randomUUID();
         CountDownLatch start = new CountDownLatch(1);
@@ -104,6 +116,57 @@ class ConversationCreateApiTest {
                     .isEqualTo(mapper.readTree(second.getResponse().getContentAsString()));
         }
         assertThat(jdbc.queryForObject("select count(*) from chat_conversations", Integer.class)).isEqualTo(1);
+    }
+
+    @Test void recordScopeReturnsOnlySelectedRecordAndChecksSectionMembership() throws Exception {
+        var selected = f.analysis("demo-user", "선택 영상");
+        var other = f.analysis("demo-user", "다른 영상");
+        create(UUID.randomUUID(), recordScope(selected.recordId(), null)).andExpect(status().isCreated())
+                .andExpect(jsonPath("data.recordCount").value(1))
+                .andExpect(jsonPath("data.scope.recordId").value(selected.recordId().toString()))
+                .andExpect(jsonPath("data.scopeLabel").value("선택 영상"));
+        create(UUID.randomUUID(), recordScope(selected.recordId(), selected.sectionId())).andExpect(status().isCreated())
+                .andExpect(jsonPath("data.scope.focusSectionId").value(selected.sectionId().toString()))
+                .andExpect(jsonPath("data.scopeLabel").value("선택 영상 · 근거 검색"));
+        create(UUID.randomUUID(), recordScope(selected.recordId(), other.sectionId())).andExpect(status().isNotFound());
+        create(UUID.randomUUID(), recordScope(selected.recordId(), UUID.randomUUID())).andExpect(status().isNotFound());
+    }
+
+    @Test void recordScopeRejectsForeignMissingDeletedAndUnreadyRecordsWithoutFallback() throws Exception {
+        f.analysis("demo-user", "대체하면 안 되는 영상");
+        var foreign = f.analysis("other-user", "타인 영상");
+        var unready = f.analysis("demo-user", "미완료 영상");
+        var deleted = f.analysis("demo-user", "삭제 영상");
+        jdbc.update("update analysis_results set chat_ready=false,completed_at=null where id=?", unready.analysisId());
+        jdbc.update("delete from analysis_records where id=?", deleted.recordId());
+        for (UUID id : java.util.List.of(foreign.recordId(), unready.recordId(), deleted.recordId(), UUID.randomUUID())) {
+            create(UUID.randomUUID(), recordScope(id, null)).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("code").value("RESOURCE_NOT_FOUND"));
+        }
+        assertThat(jdbc.queryForObject("select count(*) from chat_conversations", Integer.class)).isZero();
+    }
+
+    @Test void recordScopeRejectsMissingRecordAndMixedFiltersAndScopeChangesCreateNewRoom() throws Exception {
+        var selected = f.analysis("demo-user", "영상");
+        for (String body : java.util.List.of(
+                "{\"scope\":{\"type\":\"RECORD\"}}",
+                "{\"scope\":{\"type\":\"FILTERED\",\"recordId\":\"" + selected.recordId() + "\"}}",
+                "{\"scope\":{\"type\":\"ALL\",\"focusSectionId\":\"" + selected.sectionId() + "\"}}",
+                "{\"scope\":{\"type\":\"RECORD\",\"recordId\":\"" + selected.recordId() + "\",\"q\":\"검색\"}}")) {
+            create(UUID.randomUUID(), body).andExpect(status().isBadRequest());
+        }
+        UUID key = UUID.randomUUID();
+        String body = recordScope(selected.recordId(), null);
+        var first = create(key, body).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        assertThat(create(key, body).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).isEqualTo(first);
+        create(key, recordScope(selected.recordId(), selected.sectionId())).andExpect(status().isConflict());
+        create(UUID.randomUUID(), recordScope(selected.recordId(), selected.sectionId())).andExpect(status().isCreated());
+        assertThat(jdbc.queryForObject("select count(*) from chat_conversations", Integer.class)).isEqualTo(2);
+    }
+
+    private String recordScope(UUID record, UUID section) {
+        return "{\"scope\":{\"type\":\"RECORD\",\"recordId\":\"" + record + "\",\"focusSectionId\":"
+                + (section == null ? "null" : "\"" + section + "\"") + "}}";
     }
 
     @Test void filtersKeywordAndLiteralTextWithoutSearchingJsonFieldNamesOrCaptionText() throws Exception {
