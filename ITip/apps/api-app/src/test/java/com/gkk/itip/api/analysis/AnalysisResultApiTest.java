@@ -50,6 +50,8 @@ class AnalysisResultApiTest {
     private static final String FOLDERS = "/api/v1/folders";
     private static final String RECORDS = "/api/v1/records";
     private static final String RECORD_KEYWORDS = "/api/v1/record-keywords";
+    private static final String PLAYLIST_GROUPS = "/api/v1/playlist-groups";
+    private static final String HOME = "/api/v1/users/me/home";
     static final String OWNER = "demo-user", VIDEO = "dQw4w9WgXcQ", BASE = "/api/v1/analyses/";
     static final Instant NOW = Instant.parse("2026-11-08T00:00:00Z");
     static final UUID FIRST = UUID.fromString("11111111-1111-4111-8111-111111111111");
@@ -69,7 +71,7 @@ class AnalysisResultApiTest {
     @MockitoBean GcsObjects gcs;
 
     @BeforeEach void clear() {
-        jdbc.execute("truncate videos, analysis_batches, idempotency_requests, folders cascade");
+        jdbc.execute("truncate videos, analysis_batches, idempotency_requests, folders, youtube_playlist_metadata cascade");
         tx.executeWithoutResult(status -> {
             var video = new Video(VIDEO);
             video.updateMetadata("RAG 원본 영상", "예시 채널", "https://example.com/channel.jpg",
@@ -520,6 +522,113 @@ class AnalysisResultApiTest {
         error(mvc.perform(delete(path + "/records/" + mine.recordId())), 404, "RESOURCE_NOT_FOUND");
         error(mvc.perform(get(RECORDS).param("targetFolderId", foreign.toString())), 404, "RESOURCE_NOT_FOUND");
         error(mvc.perform(get(RECORD_KEYWORDS).param("folderId", foreign.toString())), 404, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test void groupsPlaylistBatchesByOwnerAndFiltersTheirCompletedRecords() throws Exception {
+        String otherVideo = "9bZkp7q19f0";
+        tx.executeWithoutResult(status -> em.persist(new Video(otherVideo)));
+        var first = fixture(OWNER, true);
+        var second = fixture(OWNER, true, otherVideo);
+        var foreign = fixture("another-user", true);
+        createPlaylistBatch("PL_test_a", VIDEO, otherVideo);
+        createPlaylistBatch("PL_test_a", VIDEO);
+        createPlaylistBatch("PL_test_b", otherVideo);
+        jdbc.update("insert into youtube_playlist_metadata (playlist_id, title) values (?, ?)", "PL_test_a", "공개 제목");
+        tx.executeWithoutResult(status -> {
+            var batch = new AnalysisBatch("another-user", "PL_foreign", NOW);
+            em.persist(batch);
+            em.persist(AnalysisBatchItem.openResult(batch.getId(), VIDEO, foreign.analysisId(), foreign.recordId(), NOW));
+        });
+
+        var page = data(mvc.perform(get(PLAYLIST_GROUPS).param("limit", "1")).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items.length()").value(1))
+                .andExpect(jsonPath("data.hasNext").value(true)));
+        mvc.perform(get(PLAYLIST_GROUPS).param("cursor", page.path("nextCursor").asString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("data.items.length()").value(1))
+                .andExpect(jsonPath("data.hasNext").value(false));
+        error(mvc.perform(get(PLAYLIST_GROUPS).param("cursor", "invalid!")), 400, "INVALID_CURSOR");
+
+        var groups = data(mvc.perform(get(PLAYLIST_GROUPS)).andExpect(status().isOk())).path("items");
+        var group = groups.get(0).path("playlistId").asString().equals("PL_test_a") ? groups.get(0) : groups.get(1);
+        String groupId = group.path("groupId").asString();
+        mvc.perform(get(PLAYLIST_GROUPS + "/" + groupId)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.playlistId").value("PL_test_a"))
+                .andExpect(jsonPath("data.title").value("공개 제목"))
+                .andExpect(jsonPath("data.originalUrl").value("https://www.youtube.com/playlist?list=PL_test_a"))
+                .andExpect(jsonPath("data.recordCount").value(2));
+        UUID foreignId = jdbc.queryForObject("select md5(jsonb_build_array(?::text, ?::text)::text)::uuid",
+                UUID.class, "another-user", "PL_foreign");
+        error(mvc.perform(get(PLAYLIST_GROUPS + "/" + foreignId)), 404, "RESOURCE_NOT_FOUND");
+        error(mvc.perform(get(RECORDS).param("playlistGroupId", foreignId.toString())), 404, "RESOURCE_NOT_FOUND");
+
+        String folderId = createFolder("재생목록 일부", UUID.randomUUID());
+        addFolderRecords(FOLDERS + "/" + folderId, first.recordId()).andExpect(status().isOk());
+        mvc.perform(get(RECORDS).param("playlistGroupId", groupId).param("folderId", folderId).param("q", "RAG"))
+                .andExpect(status().isOk()).andExpect(jsonPath("data.matchedCount").value(1))
+                .andExpect(jsonPath("data.items[0].recordId").value(first.recordId().toString()));
+        mvc.perform(get(RECORD_KEYWORDS).param("playlistGroupId", groupId)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.keywords[0].recordCount").value(2));
+        mvc.perform(delete(RECORDS + "/" + first.recordId())).andExpect(status().isOk());
+        mvc.perform(get(PLAYLIST_GROUPS + "/" + groupId)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.recordCount").value(1));
+        mvc.perform(delete(RECORDS + "/" + second.recordId())).andExpect(status().isOk());
+        error(mvc.perform(get(PLAYLIST_GROUPS + "/" + groupId)), 404, "RESOURCE_NOT_FOUND");
+        mvc.perform(get(PLAYLIST_GROUPS)).andExpect(status().isOk()).andExpect(jsonPath("data.items").isEmpty());
+    }
+
+    @Test void followsPlaylistJobRetriesAndOmitsUnfinishedRecords() throws Exception {
+        var previous = fixture(OWNER, false);
+        jdbc.update("""
+                update analysis_jobs set status='FAILED', next_attempt_at=null, error_code='TEST', error_message='Test', retryable=true
+                where id=?
+                """, previous.jobId());
+        jdbc.update("update analysis_batches set playlist_id = 'PL_retry' where id = (select batch_id from analysis_jobs where id = ?)",
+                previous.jobId());
+        jdbc.update("update analysis_batch_items set job_id = ?, status = 'QUEUED' where id = (select batch_item_id from analysis_jobs where id = ?)",
+                previous.jobId(), previous.jobId());
+        mvc.perform(get(PLAYLIST_GROUPS)).andExpect(status().isOk()).andExpect(jsonPath("data.items").isEmpty());
+        var retried = fixture(OWNER, true);
+        jdbc.update("update analysis_jobs set previous_job_id = ? where id = ?", previous.jobId(), retried.jobId());
+        var groups = data(mvc.perform(get(PLAYLIST_GROUPS)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].playlistId").value("PL_retry"))
+                .andExpect(jsonPath("data.items[0].recordCount").value(1)));
+        mvc.perform(get(RECORDS).param("playlistGroupId", groups.path("items").get(0).path("groupId").asString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].recordId").value(retried.recordId().toString()));
+    }
+
+    @Test void homeKeepsRecentAnalysesSeparateFromReadingPositionAndDoesNotUpdateIt() throws Exception {
+        mvc.perform(get(HOME)).andExpect(status().isOk()).andExpect(jsonPath("data.recentAnalyses").isEmpty())
+                .andExpect(jsonPath("data.continueReading").value(org.hamcrest.Matchers.nullValue()));
+        var opened = fixture(OWNER, true);
+        var newest = fixture(OWNER, true);
+        var other = fixture("another-user", true);
+        jdbc.update("update analysis_records set analyzed_at = ? where id = ?",
+                java.sql.Timestamp.from(NOW.plusSeconds(50)), newest.recordId());
+        jdbc.update("update analysis_records set reading_tab='SUMMARY', last_viewed_at = now() + interval '1 day' where id = ?",
+                other.recordId());
+        addSection(opened.analysisId(), FIRST);
+        var saved = data(savePosition(RECORDS + "/" + opened.recordId(), """
+                {"tab":"DETAIL","sectionId":"%s"}
+                """.formatted(FIRST)).andExpect(status().isOk())).path("readingPosition");
+        var home = data(mvc.perform(get(HOME)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.recentAnalyses.length()").value(2))
+                .andExpect(jsonPath("data.recentAnalyses[0].recordId").value(newest.recordId().toString()))
+                .andExpect(jsonPath("data.continueReading.record.recordId").value(opened.recordId().toString()))
+                .andExpect(jsonPath("data.continueReading.sectionTitle").value("구간")));
+        assertThat(home.path("continueReading").path("readingPosition")).isEqualTo(saved);
+        assertThat(data(mvc.perform(get(HOME)).andExpect(status().isOk()))).isEqualTo(home);
+        mvc.perform(delete(RECORDS + "/" + opened.recordId())).andExpect(status().isOk());
+        mvc.perform(get(HOME)).andExpect(status().isOk()).andExpect(jsonPath("data.recentAnalyses.length()").value(1))
+                .andExpect(jsonPath("data.continueReading").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    private void createPlaylistBatch(String playlistId, String... videoIds) throws Exception {
+        mvc.perform(post("/api/v1/analysis-batches").header("Idempotency-Key", UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("playlistId", playlistId, "videoIds", List.of(videoIds)))))
+                .andExpect(status().isCreated());
     }
 
     private String createFolder(String name, UUID key) throws Exception {

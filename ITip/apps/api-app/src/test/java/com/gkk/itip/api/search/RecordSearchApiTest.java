@@ -2,6 +2,7 @@ package com.gkk.itip.api.search;
 
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse.VideoInfo;
 import com.gkk.itip.api.archive.repository.FolderRepository;
+import com.gkk.itip.api.archive.service.PlaylistGroupQuery;
 import com.gkk.itip.api.search.controller.RecordSearchController;
 import com.gkk.itip.api.search.repository.RecordSearchRepository;
 import com.gkk.itip.api.search.repository.RecordSearchRepository.StoredRecord;
@@ -57,12 +58,13 @@ class RecordSearchApiTest {
                 record(SECOND, "video-2", "Spring Guide", List.of(RAG, SPRING), "query planner", List.of()),
                 record("60000000-0000-4000-8000-000000000003", "video-3", "Other Guide", List.of(LLM), "decoder", List.of()));
         doAnswer(invocation -> {
-            Consumer<StoredRecord> consumer = invocation.getArgument(3);
+            Consumer<StoredRecord> consumer = invocation.getArgument(4);
             records.forEach(consumer);
             return null;
-        }).when(repository).scanCompleted(eq(OWNER), isNull(), isNull(), any());
+        }).when(repository).scanCompleted(eq(OWNER), isNull(), isNull(), isNull(), any());
         mvc = MockMvcBuilders.standaloneSetup(
-                        new RecordSearchController(new RecordSearchService(repository, mock(FolderRepository.class), mapper),
+                        new RecordSearchController(new RecordSearchService(repository, mock(FolderRepository.class),
+                                mock(PlaylistGroupQuery.class), mapper),
                                 new DemoUserProvider(OWNER)))
                 .setControllerAdvice(new ApiExceptionHandler()).build();
     }

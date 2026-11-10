@@ -67,7 +67,7 @@ class YoutubeImportAnalysisIntegrationTest {
     @MockitoBean YoutubeDataClient youtube;
 
     @BeforeEach void reset() {
-        jdbc.execute("truncate table videos, idempotency_requests cascade");
+        jdbc.execute("truncate table videos, idempotency_requests, youtube_playlist_metadata cascade");
     }
 
     @Test void playlistImportPersistsMetadataBeforeCreatingAnAnalysisBatch() throws Exception {
@@ -77,6 +77,8 @@ class YoutubeImportAnalysisIntegrationTest {
         });
         mvc.perform(get(PLAYLIST)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].videoId").value(VIDEO_ID));
+        assertThat(jdbc.queryForObject("select title from youtube_playlist_metadata where playlist_id = ?",
+                String.class, "PL_EXAMPLE")).isEqualTo("Playlist");
 
         assertCreatesBatch();
         assertStoredVideo();

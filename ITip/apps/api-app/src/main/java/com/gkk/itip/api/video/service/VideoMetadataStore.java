@@ -18,6 +18,17 @@ public class VideoMetadataStore {
     }
 
     @Transactional
+    public void savePlaylist(String playlistId, String title, List<PlaylistVideo> videos) {
+        if (title != null && !title.isBlank()) {
+            jdbc.update("""
+                    insert into youtube_playlist_metadata (playlist_id, title) values (?, ?)
+                    on conflict (playlist_id) do update set title = excluded.title
+                    """, playlistId, title);
+        }
+        saveAll(videos);
+    }
+
+    @Transactional
     public void saveAll(List<PlaylistVideo> videos) {
         // 같은 페이지의 중복 제거·잠금 순서 통일. 동시 가져오기는 PK와 ON CONFLICT로 처리한다.
         var unique = new TreeMap<String, PlaylistVideo>();
