@@ -113,8 +113,8 @@ public class FolderService {
             throw new BusinessException(RESOURCE_NOT_FOUND);
         }
         var added = new HashSet<>(folders.addRecords(ownerId, folderId, distinct));
-        return new RecordsAdded(distinct.stream().filter(added::contains).toList(),
-                distinct.stream().filter(id -> !added.contains(id)).toList());
+        return new RecordsAdded(folderId, distinct.stream().filter(added::contains).toList(),
+                distinct.stream().filter(id -> !added.contains(id)).toList(), get(ownerId, folderId).recordCount());
     }
 
     @Transactional

@@ -462,10 +462,14 @@ class AnalysisResultApiTest {
         error(addFolderRecords(path, older.recordId(), foreign.recordId()), 404, "RESOURCE_NOT_FOUND");
         mvc.perform(get(path)).andExpect(status().isOk()).andExpect(jsonPath("data.recordCount").value(0));
         addFolderRecords(path, older.recordId(), second.recordId(), older.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.folderId").value(folder))
+                .andExpect(jsonPath("data.recordCount").value(2))
                 .andExpect(jsonPath("data.addedRecordIds.length()").value(2))
                 .andExpect(jsonPath("data.addedRecordIds[0]").value(older.recordId().toString()))
                 .andExpect(jsonPath("data.alreadyIncludedRecordIds").isEmpty());
         addFolderRecords(path, older.recordId(), second.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.folderId").value(folder))
+                .andExpect(jsonPath("data.recordCount").value(2))
                 .andExpect(jsonPath("data.addedRecordIds").isEmpty())
                 .andExpect(jsonPath("data.alreadyIncludedRecordIds.length()").value(2));
         addFolderRecords(FOLDERS + "/" + otherFolder, older.recordId()).andExpect(status().isOk());
@@ -493,7 +497,8 @@ class AnalysisResultApiTest {
                 .andExpect(jsonPath("data.items[0].folderMembership.included").value(true));
         error(mvc.perform(get(RECORDS).param("targetFolderId", otherFolder).param("cursor", cursor)), 400, "INVALID_CURSOR");
 
-        addFolderRecords(path, newer.recordId()).andExpect(status().isOk());
+        addFolderRecords(path, newer.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.recordCount").value(3));
         mvc.perform(get(RECORDS).param("folderId", folder))
                 .andExpect(status().isOk()).andExpect(jsonPath("data.matchedCount").value(3));
         mvc.perform(delete(path + "/records/" + older.recordId())).andExpect(status().isOk());
