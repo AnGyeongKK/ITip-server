@@ -49,11 +49,7 @@ public class ChatScopeQuery {
         sql += " order by r.analyzed_at desc,r.id desc";
         Map<UUID, String> labels = new HashMap<>();
         var matches = jdbc.query(sql, (rs, row) -> {
-            ResultDocument document;
-            try {
-                document = mapper.readValue(rs.getString("result_json"), ResultDocument.class);
-                ResultDocumentValidator.validate(document);
-            } catch (RuntimeException exception) { throw new BusinessException(INTERNAL_ERROR); }
+            var document = readDocument(rs.getString("result_json"));
             var keywords = document.summary().keywords();
             var ids = new HashSet<UUID>();
             keywords.forEach(k -> { var id = UUID.fromString(k.keywordId()); ids.add(id); labels.putIfAbsent(id, k.name()); });
@@ -79,11 +75,7 @@ public class ChatScopeQuery {
                 join videos v on v.video_id=r.video_id
                 where r.owner_id=? and r.id=? and a.chat_ready=true and a.completed_at is not null
                 """, (row, index) -> {
-            ResultDocument document;
-            try {
-                document = mapper.readValue(row.getString("result_json"), ResultDocument.class);
-                ResultDocumentValidator.validate(document);
-            } catch (RuntimeException exception) { throw new BusinessException(INTERNAL_ERROR); }
+            var document = readDocument(row.getString("result_json"));
             String label = row.getString("title");
             if (scope.focusSectionId() != null) {
                 var section = document.sections().stream()
@@ -100,6 +92,14 @@ public class ChatScopeQuery {
                     row.getObject("analysis_id", UUID.class))));
         }, owner, scope.recordId());
         return selected.isEmpty() ? new Selection("UNAVAILABLE", "사용할 수 없는 영상", List.of()) : selected.getFirst();
+    }
+
+    private ResultDocument readDocument(String json) {
+        try {
+            var document = mapper.readValue(json, ResultDocument.class);
+            ResultDocumentValidator.validate(document);
+            return document;
+        } catch (RuntimeException exception) { throw new BusinessException(INTERNAL_ERROR); }
     }
 
     private static List<String> searchable(String title, ResultDocument doc) {
