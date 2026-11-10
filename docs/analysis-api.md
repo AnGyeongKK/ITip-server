@@ -84,6 +84,14 @@ items의 상태를 합산하므로 `total = items.length = 모든 상태 개수�
 
 일반 오류 형식과 HTTP 상태는 [API 규칙](../.agents/rules/api.md)을 따른다. 없는 배치와 타인 소유 배치는 모두 404다.
 
+## 자막 업로드
+
+1. 배치 항목이 `COLLECT_CAPTIONS`이면 `POST /api/v1/caption-uploads`에 `batchId`, `batchItemId`, `videoId`, `contentType: application/json`, `sizeBytes`를 보낸다. `sizeBytes`는 실제 전송할 UTF-8 JSON 바이트 길이다.
+2. 응답의 `uploadUrl`, `method`, `headers`를 그대로 사용하고 같은 JSON 바이트를 GCS에 전송한다. Bearer 토큰은 보내지 않는다. 동일 객체에 재전송해 GCS가 412를 반환하면 업로드 상태부터 조회한다.
+3. 앱 복귀나 PUT 응답 유실 시 `GET /api/v1/caption-uploads/{uploadId}`를 호출한다. `UPLOADED`이면 기존 분석 접수 API에 `uploadId`를 보내고, `CONSUMED`이면 응답의 `jobId`로 이동한다. `EXPIRED` 또는 `REJECTED`이면 준비 시간이 남은 배치 항목으로 새 URL을 발급받는다.
+
+API에는 `GCS_CAPTION_BUCKET`과 서명이 가능한 Google 서비스 계정 자격 증명이 필요하다. `GCS_CAPTION_UPLOAD_TTL` 기본값은 `PT10M`이며, 발급 시 배치 항목의 남은 준비 시간으로 제한한다. 자막 최대 크기는 기존 `ANALYSIS_MAX_CAPTION_BYTES`를 사용한다.
+
 ## 분석 접수
 
 ```http

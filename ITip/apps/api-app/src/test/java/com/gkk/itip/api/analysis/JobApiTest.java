@@ -34,6 +34,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.*;
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -46,7 +48,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {"itip.demo.owner-id=demo-user", "itip.analysis.max-caption-bytes=1024"})
+@SpringBootTest(properties = {"itip.demo.owner-id=demo-user", "itip.analysis.max-caption-bytes=1024", "itip.upload.bucket=test-bucket", "itip.upload.url-ttl=PT10M"})
 @AutoConfigureMockMvc
 @Import(JobApiTest.FixedClock.class)
 @Testcontainers
@@ -79,6 +81,42 @@ class JobApiTest {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             return new GcsObjects.Metadata(123, 10, "application/json");
         });
+    }
+
+    @Test void persistsIssuedCaptionUploadAndConsumesItOnJobSubmission() throws Exception {
+        var batchResponse = mvc.perform(post("/api/v1/analysis-batches").contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .content(mapper.writeValueAsString(Map.of("videoIds", List.of(VIDEO)))))
+                .andExpect(status().isCreated()).andReturn();
+        var batchData = data(batchResponse);
+        var batchId = UUID.fromString(batchData.path("batchId").asString());
+        var itemId = UUID.fromString(batchData.path("items").get(0).path("itemId").asString());
+        when(gcs.signPut(eq("test-bucket"), anyString(), eq("application/json"), eq(10L), eq(600L)))
+                .thenReturn(new GcsObjects.SignedPut("https://storage.example.test/upload",
+                        Map.of("Content-Type", "application/json")));
+
+        String uploads = "/api/v1/caption-uploads";
+        var response = mvc.perform(post(uploads).contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(Map.of("batchId", batchId, "batchItemId", itemId,
+                                "videoId", VIDEO, "contentType", "application/json", "sizeBytes", 10))))
+                .andExpect(status().isCreated()).andReturn();
+        var uploadId = UUID.fromString(data(response).path("uploadId").asString());
+        assertThat(response.getResponse().getHeader("Location")).isEqualTo(uploads + "/" + uploadId);
+        assertThat(jdbc.queryForObject("select status from caption_uploads where id=?", String.class, uploadId))
+                .isEqualTo("ISSUED");
+
+        mvc.perform(get(uploads + "/" + uploadId)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.status").value("UPLOADED"));
+        var submitted = submit(UUID.randomUUID(), new Fixture(batchId, itemId, uploadId));
+        assertThat(submitted.getResponse().getStatus()).isEqualTo(202);
+        var jobId = UUID.fromString(data(submitted).path("jobId").asString());
+        assertThat(jdbc.queryForObject("select upload_id from analysis_jobs where id=?", UUID.class, jobId))
+                .isEqualTo(uploadId);
+        assertThat(jdbc.queryForObject("select status from caption_uploads where id=?", String.class, uploadId))
+                .isEqualTo("CONSUMED");
+        mvc.perform(get(uploads + "/" + uploadId)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.status").value("CONSUMED"))
+                .andExpect(jsonPath("data.jobId").value(jobId.toString()));
     }
 
     @Test void admitsFixedGenerationAndReturnsLocationAndNullableResults() throws Exception {
