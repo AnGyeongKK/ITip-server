@@ -1,6 +1,7 @@
 package com.gkk.itip.api.search.service;
 
 import com.gkk.itip.api.archive.repository.FolderRepository;
+import com.gkk.itip.api.archive.service.PlaylistGroupQuery;
 import com.gkk.itip.api.search.dto.response.RecordKeywordsResponse;
 import com.gkk.itip.api.search.dto.response.RecordKeywordsResponse.KeywordCount;
 import com.gkk.itip.api.search.dto.response.RecordSearchResponse;
@@ -51,11 +52,14 @@ public class RecordSearchService {
 
     private final RecordSearchRepository repository;
     private final FolderRepository folders;
+    private final PlaylistGroupQuery playlistGroups;
     private final JsonMapper mapper;
 
-    public RecordSearchService(RecordSearchRepository repository, FolderRepository folders, JsonMapper mapper) {
+    public RecordSearchService(RecordSearchRepository repository, FolderRepository folders,
+                               PlaylistGroupQuery playlistGroups, JsonMapper mapper) {
         this.repository = repository;
         this.folders = folders;
+        this.playlistGroups = playlistGroups;
         this.mapper = mapper;
     }
 
@@ -63,13 +67,15 @@ public class RecordSearchService {
                                         String targetFolderId, List<String> keywordIds, String cursor, int limit) {
         UUID folder = ownedFolder(ownerId, folderId);
         UUID target = ownedFolder(ownerId, targetFolderId);
-        var filters = filters(q, folder, playlistGroupId, keywordIds);
+        UUID groupId = scopeId(playlistGroupId);
+        String playlist = groupId == null ? null : playlistGroups.get(ownerId, groupId).playlistId();
+        var filters = filters(q, folder, groupId, keywordIds);
         if (limit < 1 || limit > MAX_PAGE_SIZE) throw new BusinessException(INVALID_REQUEST);
         String fingerprint = RequestFingerprint.of(mapper,
                 target == null ? List.of(ownerId, filters) : List.of(ownerId, filters, target));
         var boundary = decodeCursor(cursor, fingerprint);
         List<Item> page = new ArrayList<>(limit + 1);
-        long matchedCount = scan(ownerId, folder, target, filters, null, found -> {
+        long matchedCount = scan(ownerId, folder, target, playlist, filters, null, found -> {
             var record = found.record();
             if (page.size() <= limit && (boundary == null || boundary.isBefore(record))) {
                 var membership = target == null ? null : new FolderMembership(target.toString(), record.included());
@@ -87,11 +93,13 @@ public class RecordSearchService {
     public RecordKeywordsResponse keywords(String ownerId, String q, String folderId, String playlistGroupId,
                                            List<String> keywordIds) {
         UUID folder = ownedFolder(ownerId, folderId);
-        var filters = filters(q, folder, playlistGroupId, keywordIds);
+        UUID groupId = scopeId(playlistGroupId);
+        String playlist = groupId == null ? null : playlistGroups.get(ownerId, groupId).playlistId();
+        var filters = filters(q, folder, groupId, keywordIds);
         Map<String, String> selectedNames = new LinkedHashMap<>();
         filters.keywordIds().forEach(id -> selectedNames.put(id, null));
         Map<String, KeywordCount> counts = new LinkedHashMap<>();
-        long matchedCount = scan(ownerId, folder, null, filters, selectedNames, found ->
+        long matchedCount = scan(ownerId, folder, null, playlist, filters, selectedNames, found ->
                 found.keywords().forEach((id, keyword) -> counts.compute(id, (key, count) ->
                         new KeywordCount(id, count == null ? keyword.name() : count.name(),
                                 count == null ? 1 : count.recordCount() + 1, selectedNames.containsKey(id)))));
@@ -104,13 +112,13 @@ public class RecordSearchService {
         return new RecordKeywordsResponse(keywords, matchedCount);
     }
 
-    private long scan(String ownerId, UUID folderId, UUID targetFolderId, Filters filters, Map<String, String> selectedNames,
-                      Consumer<MatchingRecord> accept) {
+    private long scan(String ownerId, UUID folderId, UUID targetFolderId, String playlistId, Filters filters,
+                      Map<String, String> selectedNames, Consumer<MatchingRecord> accept) {
         Pattern query = filters.q() == null ? null
                 : Pattern.compile(Pattern.quote(filters.q()), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
         // Both responses need the exact count. Stream the owner's completed records within the requested scope.
         long[] matchedCount = {0};
-        repository.scanCompleted(ownerId, folderId, targetFolderId, record -> {
+        repository.scanCompleted(ownerId, folderId, targetFolderId, playlistId, record -> {
             var document = mapper.readValue(record.resultJson(), ResultDocument.class);
             var keywords = collectKeywords(document);
             if (selectedNames != null) {
@@ -171,10 +179,7 @@ public class RecordSearchService {
         matches.add(new Match(field, text.substring(start, end).strip(), sectionId));
     }
 
-    private static Filters filters(String q, UUID folderId, String playlistGroupId, List<String> keywordIds) {
-        if (playlistGroupId != null) {
-            throw new BusinessException(playlistGroupId.isBlank() ? INVALID_REQUEST : RESOURCE_NOT_FOUND);
-        }
+    private static Filters filters(String q, UUID folderId, UUID playlistGroupId, List<String> keywordIds) {
         String query = q == null ? "" : normalize(q);
         if (query.length() > MAX_QUERY_LENGTH) throw new BusinessException(INVALID_REQUEST);
         var ids = new TreeSet<String>();
@@ -185,21 +190,27 @@ public class RecordSearchService {
                 ids.add(id.strip());
             }
         }
-        return new Filters(query.isEmpty() ? null : query, folderId == null ? null : folderId.toString(), List.copyOf(ids), null);
+        return new Filters(query.isEmpty() ? null : query, folderId == null ? null : folderId.toString(),
+                List.copyOf(ids), playlistGroupId == null ? null : playlistGroupId.toString());
     }
 
     private UUID ownedFolder(String ownerId, String id) {
+        UUID folderId = scopeId(id);
+        if (folderId != null) folders.requireOwned(ownerId, folderId);
+        return folderId;
+    }
+
+    private static UUID scopeId(String id) {
         if (id == null) return null;
         if (id.isBlank()) throw new BusinessException(INVALID_REQUEST);
-        UUID folderId;
+        UUID scope;
         try {
-            folderId = UUID.fromString(id);
+            scope = UUID.fromString(id);
         } catch (IllegalArgumentException exception) {
             throw new BusinessException(RESOURCE_NOT_FOUND);
         }
-        if (!folderId.toString().equalsIgnoreCase(id)) throw new BusinessException(RESOURCE_NOT_FOUND);
-        folders.requireOwned(ownerId, folderId);
-        return folderId;
+        if (!scope.toString().equalsIgnoreCase(id)) throw new BusinessException(RESOURCE_NOT_FOUND);
+        return scope;
     }
 
     private static String normalize(String text) {

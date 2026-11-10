@@ -36,7 +36,7 @@ public class YoutubePlaylistService {
         }
 
         var page = youtube.loadPlaylist(playlistId, cursor, limit);
-        metadata.saveAll(page.items());
+        metadata.savePlaylist(playlistId, page.title(), page.items());
         var ids = page.items().stream().map(PlaylistVideo::videoId).collect(Collectors.toSet());
         var existing = resources.existingAnalyses(ownerId, ids);
         var items = page.items().stream().map(video -> toItem(video, existing)).toList();
