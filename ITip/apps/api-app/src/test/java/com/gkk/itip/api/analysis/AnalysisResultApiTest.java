@@ -69,6 +69,44 @@ class AnalysisResultApiTest {
         });
     }
 
+    @Test void searchesAndCountsOnlyLatestOwnedCompletedRecordsInPostgresql() throws Exception {
+        String otherVideo = "9bZkp7q19f0";
+        String foreignVideo = "abcdefghijk";
+        String keyword = "33333333-3333-4333-8333-333333333333";
+        tx.executeWithoutResult(status -> {
+            em.persist(new Video(otherVideo));
+            em.persist(new Video(foreignVideo));
+        });
+        var older = fixture(OWNER, true);
+        jdbc.update("update analysis_records set analyzed_at=? where id=?",
+                java.sql.Timestamp.from(NOW.minusSeconds(10)), older.recordId());
+        var firstVideo = fixture(OWNER, true);
+        var secondVideo = fixture(OWNER, true, otherVideo);
+        fixture("another-owner", true, foreignVideo);
+        fixture(OWNER, false, otherVideo);
+
+        var expected = java.util.stream.Stream.of(firstVideo, secondVideo)
+                .map(f -> f.recordId().toString()).sorted(java.util.Comparator.reverseOrder()).toList();
+        String records = "/api/v1/records";
+        var firstPage = data(mvc.perform(get(records).param("q", "RAG").param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].recordId").value(expected.getFirst()))
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.hasNext").value(true)));
+        mvc.perform(get(records).param("q", "RAG").param("limit", "1")
+                        .param("cursor", firstPage.path("nextCursor").asString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].recordId").value(expected.getLast()))
+                .andExpect(jsonPath("data.hasNext").value(false))
+                .andExpect(jsonPath("data.matchedCount").value(2));
+        mvc.perform(get("/api/v1/record-keywords").param("q", "RAG").param("keywordIds", keyword))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.matchedCount").value(2))
+                .andExpect(jsonPath("data.keywords.length()").value(1))
+                .andExpect(jsonPath("data.keywords[0].recordCount").value(2))
+                .andExpect(jsonPath("data.keywords[0].selected").value(true));
+    }
+
     @Test void returnsSummaryKeywordsAndOrderedMindmapWithoutSectionDetails() throws Exception {
         var f = fixture(OWNER, true);
         result(f).andExpect(status().isOk()).andExpect(jsonPath("code").value("OK"))
@@ -283,14 +321,18 @@ class AnalysisResultApiTest {
 
     private record Fixture(UUID analysisId, UUID recordId, UUID jobId) {}
     private Fixture fixture(String owner, boolean ready) {
+        return fixture(owner, ready, VIDEO);
+    }
+
+    private Fixture fixture(String owner, boolean ready, String videoId) {
         return tx.execute(status -> {
             var batch = new AnalysisBatch(owner, null, NOW); em.persist(batch);
-            var item = AnalysisBatchItem.collectCaptions(batch.getId(), VIDEO, NOW.plusSeconds(1800), NOW); em.persist(item);
-            var upload = CaptionUpload.issued(owner, item.getId(), VIDEO, "test-bucket", UUID.randomUUID() + ".json",
+            var item = AnalysisBatchItem.collectCaptions(batch.getId(), videoId, NOW.plusSeconds(1800), NOW); em.persist(item);
+            var upload = CaptionUpload.issued(owner, item.getId(), videoId, "test-bucket", UUID.randomUUID() + ".json",
                     "application/json", 100, NOW.plusSeconds(600)); em.persist(upload); upload.consume(7);
-            var job = AnalysisJob.queued(owner, batch.getId(), item.getId(), VIDEO, upload.getId(), 7, null, NOW); em.persist(job);
+            var job = AnalysisJob.queued(owner, batch.getId(), item.getId(), videoId, upload.getId(), 7, null, NOW); em.persist(job);
             // The persisted JSON is the Worker output boundary; GET must not regenerate its IDs or contents.
-            var result = AnalysisResult.draft(UUID.randomUUID(), owner, VIDEO, job.getId(), mapper.writeValueAsString(document()), NOW);
+            var result = AnalysisResult.draft(UUID.randomUUID(), owner, videoId, job.getId(), mapper.writeValueAsString(document()), NOW);
             em.persist(result);
             UUID recordId = null;
             if (ready) {
