@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string"
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string"
+          },
+          "sectionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contextId",
+          "sectionId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "evidenceStatus": {
+      "type": "string",
+      "enum": [
+        "SUPPORTED",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    }
+  },
+  "required": [
+    "answer",
+    "citations",
+    "evidenceStatus"
+  ],
+  "additionalProperties": false
+}

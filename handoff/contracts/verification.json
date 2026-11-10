@@ -1,0 +1,43 @@
+{
+  "repository": "AnGyeongKK/ITip-server",
+  "commit": "ced9ac382c73f54658e00e24ecf6b7513758bbec",
+  "documents": [
+    {
+      "path": "docs/analysis-ai-contract.md",
+      "blobSha": "ec9cffe9401b2c6ae665052f11533b1ad1a1e246",
+      "url": "https://github.com/AnGyeongKK/ITip-server/blob/ced9ac3/docs/analysis-ai-contract.md"
+    },
+    {
+      "path": "docs/chat-generation-contract.md",
+      "blobSha": "0e339285d53fb64855759cd0241ab80b8b6b875c",
+      "url": "https://github.com/AnGyeongKK/ITip-server/blob/ced9ac3/docs/chat-generation-contract.md"
+    }
+  ],
+  "javaSources": [
+    {
+      "path": "ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/generation/AnswerJsonStream.java",
+      "blobSha": "bc2d15ec94ae611541798b870c8529a25c853869"
+    },
+    {
+      "path": "ITip/apps/chat-app/src/main/java/com/gkk/itip/chat/generation/ChatAnswerGenerator.java",
+      "blobSha": "0c1f322e88acc5785086b4dac965baf396bea65f"
+    },
+    {
+      "path": "ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/analysis/caption/CaptionDocument.java",
+      "blobSha": "9aa55020d7bc88db6c7b9799b0356c10677350c9"
+    },
+    {
+      "path": "ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/analysis/caption/CaptionParser.java",
+      "blobSha": "d0bf5a70cefe9c4adc94d3dd61ba08b412f61d5e"
+    },
+    {
+      "path": "ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/analysis/output/AnalysisOutput.java",
+      "blobSha": "2f01672bae2d4efaad47f0beaf31bbc5b6ba958e"
+    },
+    {
+      "path": "ITip/apps/worker-app/src/main/java/com/gkk/itip/worker/analysis/output/AnalysisOutputValidator.java",
+      "blobSha": "ad611bf1b37516207ee9ded0a0127863916c9c26"
+    }
+  ],
+  "status": "documents-and-java-dtos-read; Spring execution not tested"
+}
