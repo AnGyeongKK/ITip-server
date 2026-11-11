@@ -18,10 +18,13 @@ public class ChatContextQuery {
         bounded.setQueryTimeout(3);
         this.jdbc = new NamedParameterJdbcTemplate(bounded); this.topK = topK;
     }
-    public List<ChatContext> search(String owner, List<RecordRef> allowed, QuestionEmbeddingClient.Vector query) {
+    public List<ChatContext> search(String owner, List<RecordRef> allowed, QuestionEmbeddingClient.Vector query, UUID focusSectionId) {
         if (allowed.isEmpty()) return List.of();
-        var args = Map.of("owner", owner, "records", allowed.stream().map(RecordRef::recordId).toList(),
-            "model", query.model(), "dimensions", query.values().length, "vector", Arrays.toString(query.values()), "limit", topK);
+        var args = new HashMap<String, Object>();
+        args.put("owner", owner); args.put("records", allowed.stream().map(RecordRef::recordId).toList());
+        args.put("model", query.model()); args.put("dimensions", query.values().length);
+        args.put("vector", Arrays.toString(query.values())); args.put("limit", topK);
+        args.put("focus", focusSectionId);
         // MATERIALIZED는 혼재된 모델·차원의 벡터에 거리 연산을 먼저 적용하는 실행 계획을 막는다.
         var rows = jdbc.query("""
             with eligible as materialized (
@@ -36,7 +39,8 @@ public class ChatContextQuery {
                 and c.source_type='CAPTION' and c.embedding_model=:model and c.embedding_dimensions=:dimensions
             )
             select * from eligible where cardinality(section_ids)>0
-            order by embedding <=> cast(:vector as vector),record_id,chunk_id limit :limit
+            order by case when cast(:focus as uuid)=any(section_ids) then 0 else 1 end,
+                embedding <=> cast(:vector as vector),record_id,chunk_id limit :limit
             """, args, (r,n) -> new ChatContext(r.getObject("record_id",UUID.class),r.getObject("analysis_id",UUID.class),
                 r.getObject("chunk_id",UUID.class), Arrays.asList((UUID[])r.getArray("section_ids").getArray()),
                 r.getString("video_id"),r.getString("title"),r.getString("text"),r.getLong("start_ms"),r.getLong("end_ms")));

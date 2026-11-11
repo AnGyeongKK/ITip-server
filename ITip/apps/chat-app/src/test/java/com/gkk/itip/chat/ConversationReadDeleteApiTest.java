@@ -43,6 +43,27 @@ class ConversationReadDeleteApiTest {
         return UUID.fromString(mapper.readTree(r.getResponse().getContentAsString()).path("data").path("conversationId").asString());
     }
 
+    @Test void deletingRecordDisablesRecordScopeButKeepsExistingConversationAndAnswer() throws Exception {
+        var selected = f.analysis("demo-user", "영상");
+        var created = mvc.perform(post("/api/v1/conversations").header("Idempotency-Key", UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                    {"scope":{"type":"RECORD","recordId":"%s","focusSectionId":"%s"}}
+                    """.formatted(selected.recordId(), selected.sectionId())))
+                .andExpect(status().isCreated()).andReturn();
+        UUID room = UUID.fromString(mapper.readTree(created.getResponse().getContentAsString()).path("data").path("conversationId").asString());
+        UUID request = UUID.randomUUID();
+        UUID question = f.question(room, request, 1, "기존 질문");
+        UUID answer = f.answer(room, request, question, 2, "COMPLETED", "기존 답변", 1);
+        f.source(answer, selected);
+        jdbc.update("delete from analysis_records where id=?", selected.recordId());
+        mvc.perform(get(path(room))).andExpect(status().isOk())
+                .andExpect(jsonPath("data.scopeStatus").value("UNAVAILABLE"))
+                .andExpect(jsonPath("data.recordCount").value(0));
+        mvc.perform(get(path(room) + "/messages")).andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[1].content").value("기존 답변"))
+                .andExpect(jsonPath("data.items[1].sources[0].availability").value("DELETED"));
+    }
+
     @Test void deletedRoomIsNotRecreatedByReplayingItsCreationKey() throws Exception {
         f.analysis("demo-user", "RAG");
         UUID key = UUID.randomUUID();

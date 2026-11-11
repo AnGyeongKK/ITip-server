@@ -71,6 +71,7 @@ gkk/
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
 | AI 분석·마인드맵·결과 조회·임베딩·모델 설정 | [AI 설계 규칙](.agents/rules/ai.md), [AI 결과 계약](docs/analysis-ai-contract.md) |
 | 채팅 범위·기록·출처 보존·직접 생성·스트리밍 | [채팅 계약](docs/chat-contract.md), [직접 생성 계약](docs/chat-generation-contract.md), [코드 읽기 안내](docs/chat-code-reading.md) |
+| 영상·구간 채팅·폴더 이름·기록 추가 응답 | [모바일 합의 반영 계약](docs/mobile-backend-contract.md). RECORD 범위와 폴더 규칙은 이 문서의 현재 구현을 따른다 |
 | Compose 시연·React Native APK 전달 | [로컬 실행](docs/local-run.md), [프론트엔드 전달 안내](docs/frontend-demo-handoff.md), [Mac·Windows 배포 규칙](docs/container-platforms.md) |
 | PR 본문 작성 | [PR 템플릿](.github/pull_request_template.md) |
 

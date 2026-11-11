@@ -2,6 +2,8 @@
 
 먼저 `ChatStreamBridge.write()`를 열고 호출하는 함수를 따라간다. Java 경로는 `ITip/apps/chat-app/src/main/java/com/gkk/itip/` 기준이다. API·Worker·Chat은 각각 실행되고 같은 PostgreSQL을 사용한다.
 
+영상·구간 채팅은 [모바일 합의 반영 계약](mobile-backend-contract.md)을 함께 본다. `ChatScopeQuery.resolveRecord()`가 본인 완료 기록 하나·구간 소속을 확인하고, `GenerationTicket.focusSectionId`가 `ChatContextQuery.search()`의 우선 정렬로 이어진다. `ChatGenerationStore.refresh()/complete()`는 삭제·가용성을 재확인한다.
+
 ## 전체 흐름
 
 ```text

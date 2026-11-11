@@ -446,6 +446,62 @@ class AnalysisResultApiTest {
         error(requestFolder("첫 폴더", key), 404, "RESOURCE_NOT_FOUND");
     }
 
+    @Test void folderNamesKeepInternalCharactersAndValidateTrimmedTwentyCodePoints() throws Exception {
+        String name = "AI  공부-노트";
+        String id = createFolder("  " + name + "  ", UUID.randomUUID());
+        mvc.perform(get(FOLDERS + "/" + id)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.name").value(name));
+        createFolder("가".repeat(20), UUID.randomUUID());
+        createFolder("😀".repeat(20), UUID.randomUUID());
+        error(requestFolder("가".repeat(21), UUID.randomUUID()), 400, "INVALID_REQUEST");
+        error(requestFolder("😀".repeat(21), UUID.randomUUID()), 400, "INVALID_REQUEST");
+        error(mvc.perform(patch(FOLDERS + "/" + id).contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(Map.of("name", "가".repeat(21))))), 400, "INVALID_REQUEST");
+    }
+
+    @Test void folderNamesRejectEnglishCaseDuplicatesForSameOwnerAndAllowCaseOnlyRename() throws Exception {
+        UUID key = UUID.randomUUID();
+        String id = createFolder("AI 공부", key);
+        assertThat(createFolder("AI 공부", key)).isEqualTo(id);
+        error(requestFolder("  ai 공부  ", UUID.randomUUID()), 409, "FOLDER_NAME_DUPLICATED");
+        createFolder("AI-공부", UUID.randomUUID());
+        createFolder("AI  공부", UUID.randomUUID());
+        jdbc.update("insert into folders(id,owner_id,name,created_at) values (?,'other-user','ai 공부',now())", UUID.randomUUID());
+        mvc.perform(patch(FOLDERS + "/" + id).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"ai 공부\"}")).andExpect(status().isOk())
+                .andExpect(jsonPath("data.name").value("ai 공부"));
+        String other = createFolder("별도 폴더", UUID.randomUUID());
+        error(mvc.perform(patch(FOLDERS + "/" + other).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"AI 공부\"}")), 409, "FOLDER_NAME_DUPLICATED");
+        mvc.perform(get(FOLDERS + "/" + other)).andExpect(jsonPath("data.name").value("별도 폴더"));
+    }
+
+    @Test void concurrentFolderCreationReturnsOneSuccessAndOneDuplicateError() throws Exception {
+        var start = new java.util.concurrent.CountDownLatch(1);
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = pool.submit(() -> { start.await(); return requestFolder("RAG 공부", UUID.randomUUID()).andReturn(); });
+            var second = pool.submit(() -> { start.await(); return requestFolder("rag 공부", UUID.randomUUID()).andReturn(); });
+            start.countDown();
+            var responses = List.of(first.get(20, java.util.concurrent.TimeUnit.SECONDS), second.get(20, java.util.concurrent.TimeUnit.SECONDS));
+            assertThat(responses).extracting(r -> r.getResponse().getStatus()).containsExactlyInAnyOrder(201, 409);
+            var failure = responses.stream().filter(r -> r.getResponse().getStatus() == 409).findFirst().orElseThrow();
+            assertThat(mapper.readTree(failure.getResponse().getContentAsString()).path("code").asString()).isEqualTo("FOLDER_NAME_DUPLICATED");
+        }
+        assertThat(jdbc.queryForObject("select count(*) from folders", Integer.class)).isEqualTo(1);
+    }
+
+    @Test void databaseRejectsDuplicateFolderNamesAndTooLongNamesWithoutApi() {
+        createFolderDirectly("demo-user", "AI 공부");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> createFolderDirectly("demo-user", "ai 공부"))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> createFolderDirectly("demo-user", "가".repeat(21)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    private void createFolderDirectly(String owner, String name) {
+        jdbc.update("insert into folders(id,owner_id,name,created_at) values (?,?,?,now())", UUID.randomUUID(), owner, name);
+    }
+
     @Test void searchesLinkedRecordsAndCountsKeywordsWithoutChangingGlobalLatestOrDeletingOriginals() throws Exception {
         String secondVideo = "9bZkp7q19f0";
         tx.executeWithoutResult(status -> em.persist(new Video(secondVideo)));
@@ -462,10 +518,14 @@ class AnalysisResultApiTest {
         error(addFolderRecords(path, older.recordId(), foreign.recordId()), 404, "RESOURCE_NOT_FOUND");
         mvc.perform(get(path)).andExpect(status().isOk()).andExpect(jsonPath("data.recordCount").value(0));
         addFolderRecords(path, older.recordId(), second.recordId(), older.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.folderId").value(folder))
+                .andExpect(jsonPath("data.recordCount").value(2))
                 .andExpect(jsonPath("data.addedRecordIds.length()").value(2))
                 .andExpect(jsonPath("data.addedRecordIds[0]").value(older.recordId().toString()))
                 .andExpect(jsonPath("data.alreadyIncludedRecordIds").isEmpty());
         addFolderRecords(path, older.recordId(), second.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.folderId").value(folder))
+                .andExpect(jsonPath("data.recordCount").value(2))
                 .andExpect(jsonPath("data.addedRecordIds").isEmpty())
                 .andExpect(jsonPath("data.alreadyIncludedRecordIds.length()").value(2));
         addFolderRecords(FOLDERS + "/" + otherFolder, older.recordId()).andExpect(status().isOk());
@@ -493,7 +553,8 @@ class AnalysisResultApiTest {
                 .andExpect(jsonPath("data.items[0].folderMembership.included").value(true));
         error(mvc.perform(get(RECORDS).param("targetFolderId", otherFolder).param("cursor", cursor)), 400, "INVALID_CURSOR");
 
-        addFolderRecords(path, newer.recordId()).andExpect(status().isOk());
+        addFolderRecords(path, newer.recordId()).andExpect(status().isOk())
+                .andExpect(jsonPath("data.recordCount").value(3));
         mvc.perform(get(RECORDS).param("folderId", folder))
                 .andExpect(status().isOk()).andExpect(jsonPath("data.matchedCount").value(3));
         mvc.perform(delete(path + "/records/" + older.recordId())).andExpect(status().isOk());

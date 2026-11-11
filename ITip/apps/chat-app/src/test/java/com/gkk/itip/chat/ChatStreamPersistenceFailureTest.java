@@ -21,7 +21,7 @@ class ChatStreamPersistenceFailureTest {
     @Test void storageOutageClosesStreamWithoutInventingPersistedTerminalState() {
         var generator=mock(ChatAnswerGenerator.class);var store=mock(ChatGenerationStore.class);
         var ticket=new GenerationTicket("demo-user",UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),
-                UUID.randomUUID(),UUID.randomUUID(),List.of(new RecordRef(UUID.randomUUID(),UUID.randomUUID())),List.of());
+                UUID.randomUUID(),UUID.randomUUID(),List.of(new RecordRef(UUID.randomUUID(),UUID.randomUUID())),List.of(),null);
         when(store.refresh(ticket)).thenReturn(ticket);
         var prepared=new ChatAnswerGenerator.Prepared(new Prompt("fixture"),List.of());
         when(generator.prepare(eq("질문"),anyList(),anyList())).thenReturn(prepared);

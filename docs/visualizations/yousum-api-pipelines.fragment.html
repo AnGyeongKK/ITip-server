@@ -283,13 +283,13 @@
           implementedStep('Chat→앱','ChatStreamBridge.write()','meta 접수 정보 전달 · 이후 임베딩/검색 시작'),
           implementedStep('Chat→모델','QuestionEmbeddingClient.embed()','질문만 임베딩 · 10초 · 최대4개 · 실제 공급자 Bean 필요'),
           implementedStep('Chat·DB','ChatGenerationStore.refresh()','임베딩 후 현재 범위·안전한 history 재확인','짧은 읽기 TX'),
-          implementedStep('Chat·DB','ChatContextQuery.search()','소유·기록·완료·모델/차원 제한 → 코사인 거리 topK · 원문 최대24000자','SQL 조회'),
+          implementedStep('Chat·DB','ChatContextQuery.search()','소유·기록·완료·모델/차원 제한 → 선택 구간 우선·같은 영상 맥락 거리순 topK','SQL 조회'),
           implementedStep('Chat','ChatAnswerGenerator.prepare()','고정 system + JSON 입력 · 오래된 대화/후순위 원문 제외 · 실제 후보 보존'),
           implementedStep('Chat→GPT','ChatAnswerGenerator.stream()','Spring AI 실제 SDK · strict schema · idle30초/전체120초 · 재시도0'),
           implementedStep('Chat','AnswerJsonStream.accept()','answer만 점진 decode · JSON 구문/인용 메타데이터는 본문에서 제외'),
           implementedStep('Chat→앱','ChatStreamBridge.write()','SSE 조립·텍스트 누적 · checkpoint 후 delta 순차 flush','부분 TX'),
           implementedStep('Chat','AnswerJsonStream.finish()','실제 공급자 STOP · 완전한 JSON · 전송 context/section 인용 검증'),
-          implementedStep('Chat·DB','ChatGenerationStore.complete()','방 → 메시지 잠금 · 현재 토큰·lease 확인','쓰기 TX'),
+          implementedStep('Chat·DB','ChatGenerationStore.complete()','방 → 메시지 잠금 · 토큰·lease·현재 기록/구간 가용성 확인','쓰기 TX'),
           implementedStep('Chat·DB','ChatCitationQuery.validate()','실제 전달한 인용 · 현재/최초 범위 · chunk/section · 기록 FOR SHARE','완료 TX'),
           implementedStep('Chat·DB','ChatGenerationStore.complete()','본문·검증 출처·COMPLETED 저장 후 커밋','완료 TX'),
           implementedStep('Chat·DB','MessageQueryService.get()','저장된 최종 본문·출처·개수 재조회','조회 TX'),
@@ -297,6 +297,19 @@
         ]
       }
     });
+    Object.assign(flows, {
+      'ARCHIVE-06': {server:'api',implemented:true,local:true,commits:['d058fcd'],input:'name + UUID Idempotency-Key',output:'201 · folderId / name / createdAt',edges:['appApi','apiDb'],boundary:'앞뒤 공백 제거·20 Unicode 코드 포인트. 내부 표기 보존. 사용자별 영문 대소문자 중복은 409.',steps:[implementedStep('API','FolderController.create()','요청·UUID 키 검증'),implementedStep('API·DB','FolderService.create()','사용자 잠금 → 멱등 키 → 이름 검증·중복 검사','쓰기 TX'),implementedStep('API·DB','FolderRepository.create()','길이 CHECK·사용자별 unique index → 저장','쓰기 TX')]},
+      'ARCHIVE-08': {server:'api',implemented:true,local:true,commits:['d058fcd'],input:'folderId / name',output:'200 · folderId / name / recordCount',edges:['appApi','apiDb'],boundary:'자기 폴더를 중복 검사에서 제외. 대소문자만 변경 가능. 중복 오류 시 기존 이름 유지.',steps:[implementedStep('API','FolderController.rename()','경로·이름 검증'),implementedStep('API·DB','FolderService.rename()','사용자 잠금 → 소유권 → 20자·중복 검사 → 갱신','쓰기 TX')]},
+      'ARCHIVE-10': {server:'api',implemented:true,local:true,commits:['1b384bb'],input:'folderId / recordIds',output:'200 · folderId / addedRecordIds / alreadyIncludedRecordIds / recordCount',edges:['appApi','apiDb'],boundary:'전체 기록 소유권 확인. 중복 연결 제외·다른 폴더 유지. recordCount는 처리 후 전체 수.',steps:[implementedStep('API','FolderController.addRecords()','UUID 목록 검증'),implementedStep('API·DB','FolderService.addRecords()','사용자 잠금 → 폴더·전체 기록 소유권 → 중복 제외 연결','쓰기 TX'),implementedStep('API·DB','FolderService.get()','추가 후 실제 폴더 전체 기록 수 조회 → 응답','같은 TX')]}
+    });
+    flows['CHAT-01'].commits = ['9550ff5'];
+    flows['CHAT-01'].input = 'ALL/FILTERED 또는 RECORD · recordId / focusSectionId? + UUID Idempotency-Key';
+    flows['CHAT-01'].boundary = 'RECORD는 본인 완료 기록 하나·같은 결과 구간만 허용. 영상/구간을 바꾸면 새 방. 기존 ALL/FILTERED·멱등 키 유지.';
+    flows['CHAT-01'].steps[2] = implementedStep('Chat·DB','ChatScopeQuery.resolve()/resolveRecord()','저장 조건 재평가 또는 개인 기록·구간 소속 검증','쓰기 TX');
+    flows['CHAT-04'].commits = ['3757689'];
+    flows['CHAT-06'].boundary = 'RECORD의 기록·구간 삭제 시 UNAVAILABLE. 과거 대화·출처 표시는 유지. 생성 중 상태는 CHAT-05로 조회.';
+    flows['ANALYSIS-06'].boundary = '관련 영상 추천은 MVP 이후 보류. 모바일에서 진입·호출을 중지하며 서버는 추천 API를 새로 구현하지 않음.';
+    flows['ANALYSIS-06'].output = 'MVP 보류 · 구현 없음';
     for (const [id, flow] of Object.entries(flows)) if (!flow.implemented) flow.planned = true;
     const labels = {app:'Android',api:'Spring API',worker:'Spring Worker',chat:'Spring Chat',db:'PostgreSQL',gcs:'Cloud Storage',provider:'분석·임베딩 모델',gpt:'GPT API'};
     const fallback = {app:'요청·결과',api:'일반 API · 로컬',worker:'DB Poller · 로컬',chat:'채팅 API · 로컬',db:'pgvector · 로컬 Docker',gcs:'실제 GCS',provider:'연동 대상 협의',gpt:'Spring Chat 직접 호출'};

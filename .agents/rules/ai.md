@@ -12,6 +12,7 @@
 
 ## 채팅 RAG 책임
 
+- 영상·구간 채팅은 [모바일 합의 반영 계약](../../docs/mobile-backend-contract.md)의 RECORD/recordId/focusSectionId를 따른다. 소유 완료 기록 하나로 제한하고 구간 소속을 확인한다. 선택 구간 우선 검색도 다른 영상으로 확장하지 않는다. 임베딩 후·완료 저장 전 범위를 재확인하며 기존 대화는 보존한다.
 - [직접 생성 계약](../../docs/chat-generation-contract.md)과 [AI 파트 결정](https://www.notion.so/41346c2fafdf8017b61af4e271aa67a6)의 상단 현재 설계를 따른다. Python HTTP2.0은 이전 설계다. 실행용 Python 서버를 새로 연결하지 않는다.
 - Worker는 자막 원문 chunk·sectionId·시간·임베딩을 저장한다. Chat은 질문 임베딩 → pgvector 검색 → 프롬프트 구성 → Spring AI GPT 직접 호출 → 인용·종료 검증·저장을 담당한다. AI 파트는 프롬프트 파일·모델 옵션·출력 Schema·평가 사례를 제공한다.
 - 사용자·기록 존재·완료·허용 recordId·모델/차원은 거리 정렬과 topK 이전 SQL 조건이다. 임베딩 뒤 현재 범위를 다시 확인하며 요약·AI 제안을 원문으로 대체하지 않는다.

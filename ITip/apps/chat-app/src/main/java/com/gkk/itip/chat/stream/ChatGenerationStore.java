@@ -51,7 +51,8 @@ public class ChatGenerationStore {
         expire(roomId);
         if (messages.existsByConversationIdAndStatusIn(roomId,MessageStatus.ACTIVE)) throw new BusinessException(CHAT_GENERATION_IN_PROGRESS);
         validateRetry(roomId,request);
-        var selection = scopes.resolve(owner,scopes.readScope(room.getScopeJson()));
+        var scope = scopes.readScope(room.getScopeJson());
+        var selection = scopes.resolve(owner,scope);
         if (selection.status().equals("UNAVAILABLE")) throw new BusinessException(SCOPE_UNAVAILABLE);
         if (selection.records().isEmpty()) throw new BusinessException(EMPTY_CHAT_SCOPE);
         var now = clock.instant().truncatedTo(ChronoUnit.MICROS);
@@ -60,7 +61,8 @@ public class ChatGenerationStore {
         UUID token = UUID.randomUUID();
         var answer = messages.saveAndFlush(ChatMessage.answer(question,selection.records().size(),request.retryOfMessageId(),token,now.plus(ChatLimits.GENERATION_LEASE)));
         requests.save(new IdempotencyRequest(owner,SEND,key,hash,answer.getId(),now));
-        return new GenerationTicket(owner,roomId,question.getId(),answer.getId(),key,token,selection.records(),history.select(owner,roomId,selection.records()));
+        return new GenerationTicket(owner,roomId,question.getId(),answer.getId(),key,token,selection.records(),
+            history.select(owner,roomId,selection.records()),scope.focusSectionId());
     }
     private void validateRetry(UUID room, SendMessageRequest request) {
         if (request.retryOfMessageId() == null) return;
@@ -90,6 +92,7 @@ public class ChatGenerationStore {
         if(text.isBlank() || reason==null || (reason==FinishReason.INSUFFICIENT_EVIDENCE && !input.isEmpty())
                 || (reason!=FinishReason.INSUFFICIENT_EVIDENCE && input.isEmpty())) throw new ChatProtocolException();
         var current=scopes.resolve(ticket.ownerId(),scopes.readScope(room.getScopeJson()));
+        if(current.status().equals("UNAVAILABLE")) throw new ChatProtocolException();
         var verified=citations.validate(ticket,input,current.records(),candidates);
         int used=(int)verified.stream().map(ChatMessageSource::getRecordId).distinct().count();
         sources.saveAll(verified);
@@ -104,7 +107,7 @@ public class ChatGenerationStore {
         if(current.status().equals("UNAVAILABLE")) throw new ChatProtocolException();
         var records=current.records().stream().filter(ticket.records()::contains).toList();
         return new GenerationTicket(ticket.ownerId(),ticket.conversationId(),ticket.userMessageId(),ticket.assistantMessageId(),
-            ticket.clientRequestId(),ticket.token(),records,history.select(ticket.ownerId(),ticket.conversationId(),records));
+            ticket.clientRequestId(),ticket.token(),records,history.select(ticket.ownerId(),ticket.conversationId(),records),ticket.focusSectionId());
     }
     private ChatMessage current(GenerationTicket ticket) {
         var message = messages.lock(ticket.assistantMessageId()).orElse(null);
