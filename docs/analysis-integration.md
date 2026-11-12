@@ -1,0 +1,68 @@
+# 영상 분석 연동 경계
+
+분석 작업 처리(#4)의 연결 문서다. 실행 명령은 [local-run.md](local-run.md), 외부 API 형식은 [API 규칙](../.agents/rules/api.md)을 함께 본다.
+
+```text
+영상 가져오기 담당 → Video 메타데이터 저장
+분석 배치 생성 → 기기에서 한국어 자막 수집
+업로드 담당 → CaptionUpload 발급·GCS 서명 URL 전달
+기기 → GCS PUT → uploadId로 분석 접수
+API → DB 작업 등록 → Worker 선점
+Worker → 자막 검증 → AI 분석 → 검색용 임베딩 → 결과·개인 기록 확정
+앱 → 작업/배치 상태 조회 → analysisId·recordId로 결과 이동
+```
+
+## 담당 기능 사이의 약속
+
+| 연결 지점 | 전달할 값·처리 |
+| --- | --- |
+| 영상 가져오기 → 분석 | 정규화한 YouTube videoId와 확인된 영상 길이(ms)를 저장한다. 제목·채널·썸네일 등 모르는 값은 null로 둔다. |
+| 업로드 발급 → 분석 접수 | 서버가 생성한 uploadId에 소유자·batchItemId·videoId·bucket·objectKey·선언한 크기·Content-Type을 연결한다. 앱은 임의 GCS 경로를 분석 요청에 넣지 않는다. |
+| API → Worker | PostgreSQL 작업 행을 등록한다. API가 Worker Service를 직접 실행하거나 응답 후 숨은 스레드로 분석하지 않는다. |
+| Worker → 결과·보관 | 요약·키워드·주제 상세·마인드맵·검색 조각이 준비된 뒤 analysisId·recordId를 함께 확정한다. 도중 저장된 분석은 공개 완료 결과가 아니다. |
+| 분석 → 채팅 | 원문 기반 검색 조각, 실제 sectionId·시간, 임베딩 모델·차원을 저장한다. Spring Chat이 질문 임베딩·사용자 범위 pgvector 검색을 수행하고 Chat이 검색 원문으로 프롬프트를 구성해 Spring AI로 GPT를 직접 호출한다. |
+
+## 영상 가져오기에서 메타데이터 등록
+
+- `GET /api/v1/youtube-resources?url=...`: 단일 영상이 미등록이거나 길이가 없으면 YouTube Data API에서 조회한 뒤 `videos`에 ID·길이(ms)·제목·채널·썸네일을 저장한다. 길이가 있는 캐시는 재사용한다. 재생목록 링크 판별만으로는 영상 행을 만들지 않는다.
+- `GET /api/v1/youtube-playlists/{playlistId}/items`: 조회한 페이지에서 접근 가능하고 길이가 확인된 영상들을 응답 전에 저장한다. 미확인 길이는 `INELIGIBLE/VIDEO_UNAVAILABLE`로 반환하고 신규 행을 만들지 않는다.
+- YouTube HTTP 호출은 DB 트랜잭션 밖에서 수행한다. `VideoMetadataStore.saveAll()`이 짧은 트랜잭션의 UPSERT로 중복·동시 등록을 처리한다. 응답에서 생략된 선택 필드는 기존 값을 지우지 않는다.
+- GET에서 저장하는 것은 공유 영상 메타데이터 캐시다. 사용자 분석 배치·작업·보관 기록은 생성하지 않는다. 앱은 반환된 `videoId`로 기존 `POST /api/v1/analysis-batches`를 호출한다.
+- 신규 단일 영상 조회에도 서버의 `YOUTUBE_API_KEY`가 필요하다. 조회 실패·길이 미확인 시 오류를 반환하고 빈 영상 행을 등록하지 않는다. 자막 수집은 계속 Android 담당이며 서버에서 yt-dlp를 실행하지 않는다.
+
+`YoutubeImportAnalysisIntegrationTest`는 미등록 영상 가져오기 → 실제 PostgreSQL 메타데이터 저장 → HTTP 201 분석 배치 생성을 확인한다. 실제 YouTube·GCS·AI 응답을 사용한 전체 영상 분석 시연은 별도로 검증한다.
+
+GCS 업로드 URL 만료와 객체 보관 기간은 다르다. 이미 업로드한 객체는 URL 만료 시각만으로 삭제·재업로드 대상으로 판단하지 않는다. 접수 때 확인한 generation을 고정해 Worker가 같은 버전을 읽는다.
+
+## 채팅 검색에 전달할 범위
+
+`analysis_results.chat_ready`만으로 개인 기록의 유효성을 판단하지 않는다. 보관 기록을 삭제해도 원문·분석 결과가 남을 수 있으므로, 검색할 때 현재 `analysis_records`와 연결한다.
+
+```sql
+SELECT c.id, c.analysis_id, r.id AS record_id,
+       c.section_ids, c.source_segment_ids, c.text, c.start_ms, c.end_ms
+FROM analysis_chunks c
+JOIN analysis_records r
+  ON r.analysis_id = c.analysis_id AND r.owner_id = c.owner_id
+JOIN analysis_results a ON a.id = c.analysis_id
+WHERE r.owner_id = :ownerId
+  AND r.id = ANY(:allowedRecordIds)
+  AND a.chat_ready = TRUE;
+```
+
+위 SQL은 권한 범위만 보여주는 예시다. 실제 구현은 Chat의 `ChatContextQuery.search()`이며 기존 `analysis_chunks`를 사용한다. Spring AI 기본 `vector_store`를 새로 생성하지 않는다. 같은 임베딩 모델·버전·차원의 벡터끼리 비교하고 폴더·키워드 조건에서 허용한 recordId만 검색한다. 저장된 sectionId·시간을 출처로 사용하며 AI가 DB ID나 시간을 만들지 않는다.
+
+Worker와 Chat은 libs/ai의 같은 임베딩 공급자 설정을 사용한다. 질문 임베딩은 Chat의 Spring AI `EmbeddingModel`, 프롬프트·GPT 생성·검증은 Spring Chat의 책임이다. 공급자·모델·버전·차원과 질문/문서 입력 규칙을 맞추고 모델 변경 시 기존 chunk 재색인을 검토한다.
+
+## 시연용 범위
+
+- 로그인·한도·결제·FCM·Cloud Tasks는 제외한다. 한도 필드는 가짜 수치로 채우지 않는다.
+- 사용자 ID는 서버의 시연 설정에서 결정한다. 앱이 보낸 임의 userId 헤더로 소유권을 변경하지 않는다.
+- 실제 GCS 인증과 분석 모델 설정은 각자 로컬 환경에서 준비한다. 환경변수 파일·인증 JSON·키를 저장소 또는 PR에 첨부하지 않는다.
+- 업로드 URL API와 영상 가져오기 API는 담당 기능에서 구현한다. 이 PR의 통합 테스트는 해당 담당자가 저장할 영상·업로드 행을 준비하여 분석 경계를 검증한다.
+
+## 아직 외부 실연동으로 확인할 것
+
+- 실제 기기의 자막 JSON → GCS PUT → 서버 generation 조회·다운로드.
+- AI 문서가 선택한 분석 모델의 실제 연결, 별도 임베딩 모델 선정과 긴 영상의 품질·처리 시간·비용. [AI 문서와 현재 코드의 차이](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 먼저 확인한다.
+- AI 파트의 실제 입력·출력 샘플과 화면 필드 대응. 테스트용 응답은 실제 분석 품질 검증을 대신하지 않는다.

@@ -1,0 +1,44 @@
+{
+  "api": "Chat Completions",
+  "provider": "OpenAI",
+  "sdk": {
+    "name": "openai-python",
+    "version": "2.54.0"
+  },
+  "analysis": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "low",
+    "max_completion_tokens": 16000,
+    "inputTokenBudget": 30000,
+    "timeoutSeconds": 120,
+    "sdkMaxRetries": 0,
+    "schema": "analysis.spring-v1.json"
+  },
+  "chat": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "low",
+    "max_completion_tokens": 2048,
+    "inputTokenBudget": 8000,
+    "encoding": "o200k_base",
+    "springEncoding": "O200K_BASE",
+    "contextCapacity": null,
+    "contextCapacityStatus": "must be confirmed against model/provider before enabling Spring",
+    "timeoutSeconds": 120,
+    "sdkMaxRetries": 0,
+    "schema": "chat.spring-v1.json"
+  },
+  "embeddings": {
+    "status": "PROPOSAL_NOT_VALIDATED",
+    "proposedModel": "text-embedding-3-large",
+    "proposedDimensions": 1024,
+    "documentInput": "caption chunk text only, no prefixes or metadata",
+    "questionInput": "question text only, no prefixes",
+    "requiresAgreement": [
+      "model/version/dimensions",
+      "Korean retrieval quality",
+      "chunk size/overlap",
+      "topK/threshold"
+    ],
+    "springExecuted": false
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "version": "spring-handoff-v1.1-repository",
+  "date": "2026-11-10",
+  "contractCommit": "ced9ac382c73f54658e00e24ecf6b7513758bbec",
+  "repositoryBaseCommit": "9f8a288a8dd66fb5c8b0ff0544ee0b21390db637",
+  "offlineTests": {
+    "passed": 44,
+    "total": 44,
+    "command": "python -m unittest discover -s handoff/tests -v"
+  },
+  "savedResponseChecks": [
+    {
+      "file": "chat.supported.actual.json",
+      "passed": true,
+      "seconds": 2.768
+    },
+    {
+      "file": "chat.insufficient.actual.json",
+      "passed": true,
+      "seconds": 1.264
+    },
+    {
+      "file": "chat.history-only.actual.json",
+      "passed": true,
+      "seconds": 1.433
+    },
+    {
+      "file": "chat.follow-up.actual.json",
+      "passed": true,
+      "seconds": 2.325
+    },
+    {
+      "file": "chat.injection.actual.json",
+      "passed": true,
+      "seconds": 1.4
+    },
+    {
+      "file": "chat.compare.actual.json",
+      "passed": true,
+      "seconds": 2.86
+    },
+    {
+      "file": "analysis.actual.json",
+      "passed": true,
+      "seconds": 19.423
+    },
+    {
+      "file": "analysis.recommended.actual.json",
+      "passed": true,
+      "seconds": 16.608
+    },
+    {
+      "file": "analysis.final-schema-r2.actual.json",
+      "expectedRejection": true,
+      "reason": "unknown/duplicate sectionKey"
+    },
+    {
+      "file": "review.analysis.actual.json",
+      "passed": true,
+      "seconds": 15.973
+    },
+    {
+      "file": "review.chat.supported.actual.json",
+      "passed": true,
+      "seconds": 2.342
+    },
+    {
+      "file": "review.chat.insufficient.actual.json",
+      "passed": true,
+      "seconds": 3.061
+    }
+  ],
+  "providerCallsDuringPublication": 0,
+  "springExecutionVerified": false,
+  "streamRequestCorrection": {
+    "historicalRecordsUnchanged": true,
+    "historicalChatRecords": 8,
+    "omittedArguments": {
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "verified": "mock SDK receives the exact saved request; --stream --request-only includes all options",
+    "liveProviderRetested": false
+  },
+  "sourceChecksums": {
+    "preprocessing/normalize.py": "caffa7129870d90f7d45c4d5507dc78ba333136a56df2495b446dc1dc060da1a",
+    "validation/contracts.py": "bf6f0cb0b5ab18282ba3a42520ce96e14d82d36a5843165b437e04cfa01c4da2",
+    "validation/verify_examples.py": "8a4f030ce9e6ef9ed90749506c00b902e712ee4d645aa39a760204d02fa15a19",
+    "invocation/answer_stream.py": "f5f2daa4037b11a93d5ce2370e5d432189b4891fc617d7107e35fd34e824728e",
+    "invocation/run.py": "71ce9aa6a41b7e91fbb44104a50a26f3dec9e294f30297b41968dbe6c5511fe8",
+    "tests/test_contracts.py": "79c91d54c51fb11425f89cfa67323a8c58d9b2744b8e427da13d1a3cda8a6b31",
+    "tests/test_review.py": "a3792eaa2fd56e2b7d3b4b31267f343b9e5213b534ae78b560d5539838084483"
+  }
+}

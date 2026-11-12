@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "content": {"type": "string"},
+    "sourceIds": {"type": "array", "items": {"type": "string"}},
+    "finishReason": {"type": "string", "enum": ["STOP", "INSUFFICIENT_EVIDENCE"]}
+  },
+  "required": ["content", "sourceIds", "finishReason"],
+  "additionalProperties": false
+}

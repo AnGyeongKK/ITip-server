@@ -1,0 +1,14 @@
+{
+  "question": "아까 말한 할인율은?",
+  "contexts": [],
+  "history": [
+    {
+      "role": "USER",
+      "content": "할인율이 얼마야?"
+    },
+    {
+      "role": "ASSISTANT",
+      "content": "35%라고 해요."
+    }
+  ]
+}

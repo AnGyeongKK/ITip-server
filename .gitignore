@@ -41,3 +41,6 @@ credentials.json
 
 # macOS metadata.
 .DS_Store
+
+# Local agent caches.
+.serena/

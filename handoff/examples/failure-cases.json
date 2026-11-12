@@ -1,0 +1,28 @@
+{
+  "provenance": "synthetic failure fixtures; not actual provider responses",
+  "invalidCitation": {
+    "answer": "확인했어요.",
+    "citations": [
+      {
+        "contextId": "C1",
+        "sectionId": "77777777-7777-4777-8777-777777777777"
+      }
+    ],
+    "evidenceStatus": "SUPPORTED"
+  },
+  "truncatedProvider": {
+    "finish_reason": "length",
+    "partialRaw": "{\"answer\":\"미완료 본문"
+  },
+  "missingProviderFinish": {
+    "finish_reason": null
+  },
+  "refusal": {
+    "refusal": true
+  },
+  "normalInsufficient": {
+    "answer": "선택한 기록에서 확인할 수 없어요.",
+    "citations": [],
+    "evidenceStatus": "INSUFFICIENT_EVIDENCE"
+  }
+}

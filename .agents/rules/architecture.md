@@ -3,7 +3,7 @@
 ## 적용 범위
 
 - 개발 환경·MVP 범위는 [AGENTS.md](../../AGENTS.md)를 따른다.
-- 아래는 목표 구조다. 현재 단일 앱을 멀티모듈로 전환할 때 적용하며, 이 문서만으로 앱·Dockerfile이 생성된 것은 아니다. 필요한 기능을 구현할 때 패키지를 만든다.
+- 아래는 현재 모듈 경계다. 필요한 기능을 구현할 때 패키지를 만들며, Dockerfile 등 실행 파일의 존재를 문서만으로 판단하지 않는다.
 
 ## 폴더 구조·실행 경계
 
@@ -12,16 +12,18 @@ ITip/
 ├── apps/
 │   ├── api-app/       # 일반 API: video·upload·analysis·record·folder·search·home
 │   ├── worker-app/    # 분석 실행: scheduler·analysis·infrastructure
-│   └── chat-app/      # 채팅: conversation·message·stream·infrastructure
+│   └── chat-app/      # 채팅: conversation·retrieval·generation·stream
 └── libs/
     ├── common/        # response·exception·pagination 등 실제 공통 타입
-    └── domain/        # 도메인별 Entity·Repository·상태·공유 업무 규칙
+    ├── domain/        # 도메인별 Entity·Repository·상태·공유 업무 규칙
+    └── ai/            # 두 앱 공통 임베딩 공급자·SDK 연결·HTTP 오류 정책
 ```
 
 - `api-app`은 실행 역할이다. 그 안은 기능 도메인별로 나누고, 도메인 아래에 `controller`, `service`, `dto/request`, `dto/response`를 둔다. 작은 기능에 불필요한 계층·빈 폴더를 미리 만들지 않는다.
 - Java 루트 패키지는 `com.gkk.itip`이다. 각 앱의 실행 클래스를 루트에 두고 `api`, `worker`, `chat`, `domain`, `common`은 그 아래에 배치한다. 멀티모듈 전환 시 기존 패키지와 스캔 범위도 함께 맞춘다.
 - 앱마다 `build.gradle`, `Dockerfile`, `src/main/resources/application.yaml`, `src/test/java`를 둔다. 앱은 각각 `bootJar`로 실행하고 라이브러리는 일반 JAR로 포함한다.
 - 앱은 `common`·`domain`에 의존한다. `domain`은 필요할 때 `common`을 사용하되, 라이브러리가 실행 앱에 의존하거나 앱끼리 Gradle 의존성을 만들지 않는다.
+- Worker·Chat은 `libs/ai`의 같은 임베딩 공급자 설정을 사용한다. Chat의 답변 모델은 `chat/config`·`generation`에 두고 분석 모델·임베딩 모델과 역할을 구분한다. API는 이 라이브러리에 의존하지 않는다.
 - 같은 이름의 `analysis`도 API에서는 접수·조회, Worker에서는 실행·완료를 담당한다. 두 프로세스는 같은 PostgreSQL의 작업 테이블로 연결하며, API가 Worker의 Service를 직접 호출하지 않는다.
 - Flyway SQL은 `libs/domain/src/main/resources/db/migration` 한곳에서 관리한다. 초기에는 API 앱이 마이그레이션을 실행하고 Worker·Chat은 비활성화한다. 마이그레이션 완료 후 나머지 앱을 실행하며 JPA는 `ddl-auto: validate`로 확인한다.
 
@@ -34,7 +36,7 @@ ITip/
 | Entity | 자신이 가진 값과 허용된 상태 변경을 표현. 임의 setter로 여러 곳에서 상태를 변경하지 않음 |
 | Repository | DB 조회·저장. HTTP 응답 생성·GCS·AI 호출을 처리하지 않음 |
 | DTO | 앱 요청·응답과 외부 연동 형식을 구분. Entity를 그대로 응답하지 않으며 간단한 변환은 직접 작성 |
-| 외부 Client | GCS·Python·분석 AI의 통신·응답 변환. 각 앱의 `infrastructure`에 두고 SDK·HTTP 세부 구현을 도메인 모델에 노출하지 않음 |
+| 외부 Client | GCS·AI 공급자의 통신·응답 변환. 앱 전용은 해당 도메인에 두고 실제 두 앱에서 공유하는 SDK 설정은 libs/ai에 둠. domain에 SDK 세부 구현을 노출하지 않음 |
 | 공통 라이브러리 | 여러 곳에서 실제로 공유하는 타입·정책만 포함. 업무 규칙은 `domain`, 범용 타입은 `common`에 배치 |
 
 ## 단순 구현·공통화 기준

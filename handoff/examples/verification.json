@@ -1,0 +1,93 @@
+{
+  "version": "spring-handoff-v1",
+  "contractCommit": "ced9ac382c73f54658e00e24ecf6b7513758bbec",
+  "offlineTests": {
+    "passed": 16,
+    "total": 16
+  },
+  "actualChatCases": [
+    {
+      "file": "chat.compare.actual.json",
+      "evidenceStatus": "SUPPORTED",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 2.86
+    },
+    {
+      "file": "chat.follow-up.actual.json",
+      "evidenceStatus": "SUPPORTED",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 2.325
+    },
+    {
+      "file": "chat.history-only.actual.json",
+      "evidenceStatus": "INSUFFICIENT_EVIDENCE",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 1.433
+    },
+    {
+      "file": "chat.injection.actual.json",
+      "evidenceStatus": "SUPPORTED",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 1.4
+    },
+    {
+      "file": "chat.insufficient.actual.json",
+      "evidenceStatus": "INSUFFICIENT_EVIDENCE",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 1.264
+    },
+    {
+      "file": "chat.supported.actual.json",
+      "evidenceStatus": "SUPPORTED",
+      "providerFinishReason": "stop",
+      "exactBodyMatch": true,
+      "sdkVersion": "2.54.0",
+      "seconds": 2.768
+    }
+  ],
+  "analysis": [
+    {
+      "file": "analysis.actual.json",
+      "validation": {
+        "passed": true,
+        "note": "revalidated by verify_examples.py"
+      },
+      "seconds": 19.423,
+      "schemaName": "analysis_spring-v1"
+    },
+    {
+      "file": "analysis.final-schema-r2.actual.json",
+      "validation": {
+        "passed": false,
+        "code": "AI_INVALID_RESPONSE",
+        "detail": "unknown/duplicate sectionKey"
+      },
+      "seconds": 12.138,
+      "schemaName": "analysis_spring-v1"
+    },
+    {
+      "file": "analysis.recommended.actual.json",
+      "validation": {
+        "passed": true
+      },
+      "seconds": 16.608,
+      "schemaName": "analysis_recommended-v1"
+    }
+  ],
+  "springExecutionVerified": false,
+  "embeddingRetrievalVerified": false,
+  "real60MinuteVideoVerified": false,
+  "publicExampleProvenance": "self-authored fictional captions; actual OpenAI outputs",
+  "unsavedAnalysisFailures": 1,
+  "unsavedFailureNote": "one final-schema invocation failed before diagnostic persistence was added; do not count as successful"
+}

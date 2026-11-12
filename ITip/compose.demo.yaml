@@ -1,0 +1,66 @@
+# 사용: docker compose -f compose.yaml -f compose.demo.yaml up -d
+# bootJar·이미지 빌드는 docs/local-run.md 참고. 비밀값은 로컬 shell에서 전달한다.
+# 공유 이미지는 linux/amd64+linux/arm64. platform 고정 없이 엔진에 맞게 선택한다.
+x-app-environment: &app-environment
+  DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-itip}
+  DB_USER: ${DB_USER:-itip}
+  DB_PASSWORD: ${DB_PASSWORD:?로컬 DB_PASSWORD를 설정하세요}
+  DEMO_USER_ID: ${DEMO_USER_ID:-demo-user}
+
+x-embedding-environment: &embedding-environment
+  AI_EMBEDDING_ENABLED: ${AI_EMBEDDING_ENABLED:-false}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-0}
+  ANALYSIS_EMBEDDING_MODEL_ID: ${ANALYSIS_EMBEDDING_MODEL_ID:-}
+
+services:
+  api:
+    image: ${API_IMAGE:-itip-api:local}
+    environment:
+      <<: *app-environment
+      SERVER_PORT: "8080"
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # 기본 Temurin 이미지의 bash 사용. API 리스너는 Flyway·JPA 초기화 후 열린다.
+      # GCS·AI 연결을 검사하는 healthcheck는 아니다.
+      test: ["CMD", "bash", "-ec", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  worker:
+    image: ${WORKER_IMAGE:-itip-worker:local}
+    environment:
+      <<: [*app-environment, *embedding-environment]
+      WORKER_SCHEDULING_ENABLED: ${WORKER_SCHEDULING_ENABLED:-true}
+    depends_on:
+      api:
+        condition: service_healthy
+    # 내부 DB 작업을 조회하므로 호스트 HTTP 포트가 필요 없다. Metro 8081과 충돌 방지.
+
+  chat:
+    image: ${CHAT_IMAGE:-itip-chat:local}
+    environment:
+      <<: [*app-environment, *embedding-environment]
+      CHAT_PORT: "8082"
+      # 두 모델의 명시적 설정 전에는 질문 접수만 JSON503, 조회는 계속 사용할 수 있다.
+      CHAT_GENERATION_ENABLED: ${CHAT_GENERATION_ENABLED:-false}
+      CHAT_MODEL: ${CHAT_MODEL:-}
+      CHAT_TOKEN_ENCODING: ${CHAT_TOKEN_ENCODING:-}
+      CHAT_CONTEXT_TOKENS: ${CHAT_CONTEXT_TOKENS:-0}
+      CHAT_INPUT_TOKEN_BUDGET: ${CHAT_INPUT_TOKEN_BUDGET:-8000}
+      CHAT_MAX_OUTPUT_TOKENS: ${CHAT_MAX_OUTPUT_TOKENS:-2048}
+      CHAT_RETRIEVAL_TOP_K: ${CHAT_RETRIEVAL_TOP_K:-8}
+    ports:
+      - "127.0.0.1:${CHAT_PORT:-8082}:8082"
+    depends_on:
+      api:
+        condition: service_healthy
