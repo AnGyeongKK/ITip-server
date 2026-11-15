@@ -94,13 +94,19 @@ class JobApiTest {
                 .content("""
                         {"platform":"ANDROID","fcmToken":null,"notificationPermission":"NOT_DETERMINED"}
                         """)).andExpect(status().isOk())
-                .andExpect(jsonPath("data.notificationPermission").value("NOT_DETERMINED"));
+                .andExpect(jsonPath("data.notificationPermission").value("NOT_DETERMINED"))
+                .andExpect(jsonPath("data.registered").value(true));
         String granted = """
                 {"platform":"ANDROID","fcmToken":"test-token","notificationPermission":"GRANTED"}
                 """;
-        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content(granted)).andExpect(status().isOk())
+        var registered = mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content(granted)).andExpect(status().isOk())
                 .andExpect(jsonPath("data.installationId").value(installation.toString()))
-                .andExpect(jsonPath("data.fcmToken").doesNotExist());
+                .andExpect(jsonPath("data.registered").value(true))
+                .andExpect(jsonPath("data.fcmToken").doesNotExist())
+                .andReturn();
+        var savedAt = jdbc.queryForObject("select updated_at from notification_devices where installation_id = ?",
+                (row, index) -> row.getObject("updated_at", OffsetDateTime.class).toInstant(), installation);
+        assertThat(Instant.parse(data(registered).path("updatedAt").asString())).isEqualTo(savedAt);
         assertThat(jdbc.queryForObject("select fcm_token from notification_devices where installation_id = ?",
                 String.class, installation)).isEqualTo("test-token");
         mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content("""

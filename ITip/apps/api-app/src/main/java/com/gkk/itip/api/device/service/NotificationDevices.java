@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import static com.gkk.itip.common.exception.ErrorCode.STATE_CONFLICT;
@@ -28,19 +29,21 @@ public class NotificationDevices {
         String token = registration.notificationPermission() == DeviceRegistration.Permission.GRANTED
                 ? registration.fcmToken() : null;
         try {
-            int updated = jdbc.update("""
+            var updated = jdbc.query("""
                     insert into notification_devices (id, installation_id, owner_id, platform, fcm_token, permission, updated_at)
                     values (?, ?, ?, ?, ?, ?, now())
                     on conflict (installation_id) do update set fcm_token = excluded.fcm_token,
                         permission = excluded.permission, updated_at = excluded.updated_at
                     where notification_devices.owner_id = excluded.owner_id
-                    """, UUID.randomUUID(), installationId, ownerId, registration.platform().name(),
+                    returning updated_at
+                    """, (row, index) -> row.getObject("updated_at", OffsetDateTime.class).toInstant(),
+                    UUID.randomUUID(), installationId, ownerId, registration.platform().name(),
                     token, registration.notificationPermission().name());
-            if (updated == 0) throw new BusinessException(STATE_CONFLICT);
+            if (updated.isEmpty()) throw new BusinessException(STATE_CONFLICT);
+            return new DeviceRegistration.Response(installationId, registration.notificationPermission(), true, updated.getFirst());
         } catch (DuplicateKeyException exception) {
             throw new BusinessException(STATE_CONFLICT);
         }
-        return new DeviceRegistration.Response(installationId, registration.notificationPermission());
     }
 
     @Transactional
