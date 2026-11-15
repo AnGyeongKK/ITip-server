@@ -72,7 +72,7 @@ class AnalysisBatchApiTest {
     @Autowired TransactionTemplate tx;
 
     @BeforeEach void resetDatabase() {
-        jdbc.execute("truncate table videos, analysis_batches, idempotency_requests cascade");
+        jdbc.execute("truncate table videos, analysis_batches, idempotency_requests, notification_devices cascade");
         videos.saveAndFlush(new Video(V1));
         videos.saveAndFlush(new Video(V2));
         videos.saveAndFlush(new Video(V3));
@@ -132,6 +132,12 @@ class AnalysisBatchApiTest {
         assertThat(resultItem.path("action").asString()).isEqualTo("OPEN_RESULT");
         assertThat(resultItem.path("recordId").asString()).isEqualTo(completed.recordId().toString());
         assertThat(itemFor(created, V2).path("jobId").asString()).isEqualTo(active.jobId().toString());
+        assertThat(jdbc.queryForObject("select push_pending from analysis_batches where id = ?", Boolean.class,
+                UUID.fromString(created.path("batchId").asString()))).isTrue();
+
+        JsonNode existingOnly = data(create(UUID.randomUUID(), selection(V1)));
+        assertThat(jdbc.queryForObject("select push_pending from analysis_batches where id = ?", Boolean.class,
+                UUID.fromString(existingOnly.path("batchId").asString()))).isFalse();
     }
 
     @Test void rejectsAnotherPreparationButAllowsAnExpiredPreparation() throws Exception {
@@ -154,6 +160,13 @@ class AnalysisBatchApiTest {
     }
 
     @Test void failsOnlyAwaitingUploadAndKeepsFailureAsAJobErrorPayload() throws Exception {
+        UUID installationId = UUID.randomUUID();
+        mvc.perform(put("/api/v1/users/me/devices/" + installationId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"platform":"ANDROID","fcmToken":"api-test-token","notificationPermission":"GRANTED"}
+                                """))
+                .andExpect(status().isOk());
         JsonNode created = data(create(UUID.randomUUID(), selection(V1)));
         String url = BASE + "/" + created.path("batchId").asString() + "/items/" + created.path("items").get(0).path("itemId").asString();
         mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON).content(failure()))
@@ -163,6 +176,16 @@ class AnalysisBatchApiTest {
                 .andExpect(jsonPath("data.quotaReleased").doesNotExist());
         mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON).content(failure()))
                 .andExpect(status().isConflict());
+        var deliveries = jdbc.queryForList("""
+                select installation_id, completed_count, failed_count, analysis_id
+                from analysis_push_deliveries where batch_id = ?
+                """, UUID.fromString(created.path("batchId").asString()));
+        assertThat(deliveries).singleElement().satisfies(delivery -> {
+            assertThat(delivery.get("installation_id")).isEqualTo(installationId);
+            assertThat(delivery.get("completed_count")).isEqualTo(0);
+            assertThat(delivery.get("failed_count")).isEqualTo(1);
+            assertThat(delivery.get("analysis_id")).isNull();
+        });
         Fixture active = fixture(OWNER, V2, false);
         mvc.perform(patch(BASE + "/" + active.batchId() + "/items/" + active.itemId())
                         .contentType(MediaType.APPLICATION_JSON).content(failure()))

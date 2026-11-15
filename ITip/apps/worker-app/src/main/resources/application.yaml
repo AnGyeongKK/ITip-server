@@ -9,6 +9,9 @@ spring:
     enabled: false
 
 itip:
+  push:
+    enabled: ${FCM_PUSH_ENABLED:false}
+    project-id: ${FCM_PROJECT_ID:}
   worker:
     scheduling-enabled: ${WORKER_SCHEDULING_ENABLED:true}
     poll-delay: ${WORKER_POLL_DELAY:PT2S}

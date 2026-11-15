@@ -39,7 +39,7 @@ class JobQueueTest {
     private static final Instant NOW = Instant.parse("2026-11-08T00:00:00Z");
     private static final Duration LEASE = Duration.ofSeconds(30);
 
-    @BeforeEach void clear() { jdbc.execute("truncate analysis_batches, videos cascade"); }
+    @BeforeEach void clear() { jdbc.execute("truncate analysis_batches, videos, notification_devices cascade"); }
 
     @Test void separateConsumersClaimDifferentJobsAndNoExternalCallKeepsTheTransactionOpen() throws Exception {
         fixture(); fixture();
@@ -68,6 +68,10 @@ class JobQueueTest {
 
     @Test void threeInterruptedAttemptsBecomeFinalFailureWithoutAFourthClaim() {
         UUID id = fixture();
+        jdbc.update("""
+                insert into notification_devices (id, installation_id, owner_id, platform, fcm_token, permission, updated_at)
+                values (?, ?, 'queue-test', 'ANDROID', 'test-token', 'GRANTED', now())
+                """, UUID.randomUUID(), UUID.randomUUID());
         queue.claim(NOW, LEASE).orElseThrow();
         queue.claim(NOW.plusSeconds(30), LEASE).orElseThrow();
         var third = queue.claim(NOW.plusSeconds(60), LEASE).orElseThrow();
@@ -87,6 +91,8 @@ class JobQueueTest {
         assertThat(ended.getRunToken()).isNull();
         assertThat(ended.getNextAttemptAt()).isNull();
         assertThat(ended.getUpdatedAt()).isEqualTo(NOW.plusSeconds(90));
+        assertThat(jdbc.queryForObject("select failed_count from analysis_push_deliveries where batch_id = ?",
+                Integer.class, ended.getBatchId())).isEqualTo(1);
     }
 
     @Test void retryWaitIsNotClaimedEarlyAndKeepsTheSuccessfulStage() {
@@ -104,7 +110,9 @@ class JobQueueTest {
         return tx.execute(status -> {
             String videoId = UUID.randomUUID().toString().substring(0,11);
             em.persist(new Video(videoId));
-            var batch = new AnalysisBatch("queue-test", null, NOW); em.persist(batch);
+            var batch = new AnalysisBatch("queue-test", null, NOW);
+            batch.requestCompletionPush();
+            em.persist(batch);
             var item = AnalysisBatchItem.collectCaptions(batch.getId(), videoId, NOW.plusSeconds(600), NOW); em.persist(item); em.flush();
             var upload = CaptionUpload.issued("queue-test", item.getId(), videoId, "test-bucket", UUID.randomUUID()+".json",
                     "application/json", 100, NOW.plusSeconds(300)); em.persist(upload); em.flush();

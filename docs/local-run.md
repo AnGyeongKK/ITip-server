@@ -147,6 +147,12 @@ docker compose -f compose.yaml -f compose.demo.yaml -f compose.gcs.yaml up -d
 
 이 overlay는 파일 접근 권한을 위해 앱을 현재 호스트 UID/GID로 실행한다. 인증 파일이 없으면 시작 전에 실패한다. 버킷 접근·서명 권한과 Worker의 모델 Bean 설정은 별도로 필요하다. GCS overlay로 실행했다면 이후 `ps`·`logs`·`down`에도 같은 세 파일을 지정한다. `down`은 volume을 유지하며 **데이터 보존을 위해 `down -v`를 사용하지 않는다.**
 
+## Android 완료 알림 확인
+
+기기 API는 Flyway V9 적용 후 사용할 수 있다. Worker는 Firebase Admin SDK로 발송한다. `PUT /api/v1/users/me/devices/{installationId}`에는 Expo의 `getDevicePushTokenAsync()`로 얻은 Android 네이티브 FCM 토큰을 등록한다. 실제 발송은 Worker에 `FCM_PUSH_ENABLED=true`, Android 앱과 동일한 `FCM_PROJECT_ID`, 해당 프로젝트에 메시지를 보낼 권한이 있는 Google Application Default Credentials를 설정해 켠다. Compose의 GCS 인증 파일을 함께 사용하려면 해당 계정에 FCM 발송 권한도 있어야 한다. 데모 사용자 식별로는 격리된 테스트 환경에서 검증한다.
+
+Android 테스트 앱에서 알림 권한을 허용하고 해당 설치를 등록한 뒤 영상 여러 개를 선택한다. 앱을 백그라운드로 보내고 마지막 항목의 처리까지 끝나면 성공·실패 개수를 담은 알림 한 건이 오는지 확인한다. 알림을 눌러 배치 결과가 열리는지 확인하고, 기기 연결을 해제한 뒤 다음 배치가 종료될 때 알림이 발송되지 않는지 확인한다.
+
 ## 테스트
 
 저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.

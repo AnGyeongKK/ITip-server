@@ -46,7 +46,7 @@ gkk/
 - Spring MVC·JPA를 사용한다. Virtual Threads는 초기 비활성, Redis는 보류한다. 실행 앱 간 Gradle 의존은 만들지 않고 공유 코드는 `common`·`domain`에 두고 두 앱이 실제로 공유하는 임베딩 공급자·SDK 설정만 `ai`에 둔다. 일반 API는 `ai`에 의존하지 않는다.
 - 같은 PostgreSQL을 사용하며 중복 작업은 DB에서 제어한다. 로컬 Worker는 `@Scheduled`로 대기 작업을 선점하고, AI 처리 중에는 긴 DB 트랜잭션을 유지하지 않는다.
 - 자막은 Android → GCS presigned URL 업로드 → API 접수 → DB 대기 작업 → Worker 순서다. 서버 yt-dlp 수집은 구현하지 않는다.
-- 데모의 분석 완료는 상태 조회로 표시한다. Cloud Run·Cloud Tasks·Cloud Scheduler·Cloud Logging과 FCM 푸시 연동은 운영 단계에서 추가한다. 운영 Worker 호출에는 IAM·OIDC 검증을 적용한다.
+- 데모의 분석 완료는 상태 조회로 표시한다. FCM 발송은 Worker에서 선택적으로 켠다. Cloud Run·Cloud Tasks·Cloud Scheduler·Cloud Logging은 운영 단계에서 추가한다. 운영 Worker 호출에는 IAM·OIDC 검증을 적용한다.
 - 외부 API 경로·JSON·SSE 형식은 유지한다. 모델 JSON의 answer 문자열만 delta로 보내고 실제 공급자 종료·완전한 결과·출처를 검증해 최종 저장 후 done을 보낸다. 모델의 evidenceStatus와 공급자 종료 사유를 구분한다.
 
 ## 공통 작업 규칙

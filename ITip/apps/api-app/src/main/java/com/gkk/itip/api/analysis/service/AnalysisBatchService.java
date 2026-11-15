@@ -34,6 +34,7 @@ public class AnalysisBatchService {
     private final VideoRepository videos;
     private final IdempotencyRequestRepository requests;
     private final AnalysisOwnerLock ownerLock;
+    private final AnalysisBatchPushOutbox pushOutbox;
     private final JsonMapper mapper;
     private final Clock clock;
     private final Duration preparationTtl;
@@ -41,13 +42,15 @@ public class AnalysisBatchService {
 
     public AnalysisBatchService(AnalysisBatchRepository batches, AnalysisBatchItemRepository items,
             AnalysisJobRepository jobs, AnalysisRecordRepository records, VideoRepository videos,
-            IdempotencyRequestRepository requests, AnalysisOwnerLock ownerLock, JsonMapper mapper, Clock clock,
+            IdempotencyRequestRepository requests, AnalysisOwnerLock ownerLock, AnalysisBatchPushOutbox pushOutbox,
+            JsonMapper mapper, Clock clock,
             @Value("${itip.analysis.preparation-ttl:PT30M}") Duration preparationTtl,
             @Value("${itip.analysis.next-poll-after-ms:3000}") long pollAfterMs) {
         if (preparationTtl.isNegative() || preparationTtl.isZero() || pollAfterMs <= 0)
             throw new IllegalArgumentException("positive preparation TTL and polling interval required");
         this.batches = batches; this.items = items; this.jobs = jobs; this.records = records;
         this.videos = videos; this.requests = requests; this.ownerLock = ownerLock;
+        this.pushOutbox = pushOutbox;
         this.mapper = mapper; this.clock = clock; this.preparationTtl = preparationTtl; this.pollAfterMs = pollAfterMs;
     }
 
@@ -84,6 +87,9 @@ public class AnalysisBatchService {
             else if (job != null) createdItems.add(AnalysisBatchItem.openJob(batch.getId(), videoId, job.getId(), now));
             else createdItems.add(AnalysisBatchItem.collectCaptions(batch.getId(), videoId, now.plus(preparationTtl), now));
         }
+        if (createdItems.stream().anyMatch(item -> item.getAction() != ItemAction.OPEN_RESULT)) {
+            batch.requestCompletionPush();
+        }
         items.saveAllAndFlush(createdItems);
         requests.save(new IdempotencyRequest(ownerId, CREATE_OPERATION, key, hash, batch.getId(), now));
         return createdResponse(snapshot(batch));
@@ -108,7 +114,9 @@ public class AnalysisBatchService {
         if (item.getStatus() != ItemStatus.AWAITING_UPLOAD)
             throw new BusinessException(STATE_CONFLICT, "이미 접수되거나 종료된 항목이에요.");
         var code = request.collectionFailure().code();
-        item.failCollection(code.name(), code.message(), false, clock.instant());
+        var now = clock.instant();
+        item.failCollection(code.name(), code.message(), false, now);
+        pushOutbox.enqueueFinishedBatches(ownerId, now);
         return new CollectionFailureResponse(batchId, itemId, item.getStatus(),
                 new BatchStatusResponse.Failure(code.name(), code.message(), false));
     }

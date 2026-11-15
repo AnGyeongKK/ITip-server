@@ -41,6 +41,8 @@ services:
     environment:
       <<: [*app-environment, *embedding-environment]
       WORKER_SCHEDULING_ENABLED: ${WORKER_SCHEDULING_ENABLED:-true}
+      FCM_PUSH_ENABLED: ${FCM_PUSH_ENABLED:-false}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
     depends_on:
       api:
         condition: service_healthy
