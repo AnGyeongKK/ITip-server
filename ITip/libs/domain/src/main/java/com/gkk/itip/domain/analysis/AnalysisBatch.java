@@ -25,6 +25,12 @@ public class AnalysisBatch {
     private String playlistId;
     @Column(nullable = false)
     private Instant createdAt;
+    @Column(nullable = false)
+    private boolean pushPending;
+
+    public void requestCompletionPush() {
+        pushPending = true;
+    }
 
     public AnalysisBatch(String ownerId, String playlistId, Instant now) {
         this.id = UUID.randomUUID();

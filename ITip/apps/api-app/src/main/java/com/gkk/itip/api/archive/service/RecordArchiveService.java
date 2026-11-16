@@ -71,6 +71,7 @@ public class RecordArchiveService {
         ownerLock.lock(ownerId);
         var record = ownedRecord(ownerId, recordId);
         UUID analysisId = record.getAnalysisId();
+        jdbc.update("delete from analysis_push_deliveries where analysis_id = ? and state = 'PENDING'", analysisId);
         records.delete(record);
         records.flush();
         jdbc.update("delete from analysis_chunks where analysis_id = ? and owner_id = ?", analysisId, ownerId);

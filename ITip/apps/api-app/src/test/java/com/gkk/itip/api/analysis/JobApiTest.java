@@ -75,12 +75,58 @@ class JobApiTest {
     @MockitoBean GcsObjects gcs;
 
     @BeforeEach void resetDatabase() {
-        jdbc.execute("truncate table videos, analysis_batches, idempotency_requests cascade");
+        jdbc.execute("truncate table videos, analysis_batches, idempotency_requests, notification_devices cascade");
         videos.saveAndFlush(new Video(VIDEO)); videos.saveAndFlush(new Video(OTHER_VIDEO));
         when(gcs.metadata(anyString(), anyString(), nullable(Long.class))).thenAnswer(call -> {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             return new GcsObjects.Metadata(123, 10, "application/json");
         });
+    }
+
+    @Test void registersRefreshesAndDisconnectsOnlyTheOwnedNotificationDevice() throws Exception {
+        UUID installation = UUID.randomUUID();
+        String path = "/api/v1/users/me/devices/" + installation;
+        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"platform":"ANDROID","notificationPermission":"GRANTED"}
+                        """)).andExpect(status().isBadRequest());
+        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"platform":"ANDROID","fcmToken":null,"notificationPermission":"NOT_DETERMINED"}
+                        """)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.notificationPermission").value("NOT_DETERMINED"))
+                .andExpect(jsonPath("data.registered").value(true));
+        String granted = """
+                {"platform":"ANDROID","fcmToken":"test-token","notificationPermission":"GRANTED"}
+                """;
+        var registered = mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content(granted)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.installationId").value(installation.toString()))
+                .andExpect(jsonPath("data.registered").value(true))
+                .andExpect(jsonPath("data.fcmToken").doesNotExist())
+                .andReturn();
+        var savedAt = jdbc.queryForObject("select updated_at from notification_devices where installation_id = ?",
+                (row, index) -> row.getObject("updated_at", OffsetDateTime.class).toInstant(), installation);
+        assertThat(Instant.parse(data(registered).path("updatedAt").asString())).isEqualTo(savedAt);
+        assertThat(jdbc.queryForObject("select fcm_token from notification_devices where installation_id = ?",
+                String.class, installation)).isEqualTo("test-token");
+        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content("""
+                        {"platform":"ANDROID","fcmToken":"test-token","notificationPermission":"DENIED"}
+                        """)).andExpect(status().isOk())
+                .andExpect(jsonPath("data.notificationPermission").value("DENIED"));
+        assertThat(jdbc.queryForObject("select fcm_token from notification_devices where installation_id = ?",
+                String.class, installation)).isNull();
+
+        UUID other = UUID.randomUUID();
+        jdbc.update("""
+                insert into notification_devices (id, installation_id, owner_id, platform, fcm_token, permission, updated_at)
+                values (?, ?, 'foreign-owner', 'ANDROID', 'foreign-token', 'GRANTED', now())
+                """, UUID.randomUUID(), other);
+        String otherPath = "/api/v1/users/me/devices/" + other;
+        mvc.perform(put(otherPath).contentType(MediaType.APPLICATION_JSON).content(granted)).andExpect(status().isConflict());
+        mvc.perform(delete(otherPath)).andExpect(status().isOk());
+        mvc.perform(delete(path)).andExpect(status().isOk());
+        mvc.perform(delete(path)).andExpect(status().isOk());
+        assertThat(jdbc.queryForList("select fcm_token from notification_devices", String.class)).containsExactly("foreign-token");
     }
 
     @Test void persistsIssuedCaptionUploadAndConsumesItOnJobSubmission() throws Exception {

@@ -2,6 +2,7 @@ package com.gkk.itip.worker.analysis;
 
 import com.gkk.itip.domain.analysis.AnalysisBatchItemRepository;
 import com.gkk.itip.domain.analysis.AnalysisOwnerLock;
+import com.gkk.itip.domain.analysis.AnalysisBatchPushOutbox;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
@@ -11,9 +12,13 @@ import java.util.List;
 public class ExpiredPreparationService {
     private final AnalysisBatchItemRepository items;
     private final AnalysisOwnerLock ownerLock;
+    private final AnalysisBatchPushOutbox pushOutbox;
 
-    public ExpiredPreparationService(AnalysisBatchItemRepository items, AnalysisOwnerLock ownerLock) {
-        this.items = items; this.ownerLock = ownerLock;
+    public ExpiredPreparationService(AnalysisBatchItemRepository items, AnalysisOwnerLock ownerLock,
+                                     AnalysisBatchPushOutbox pushOutbox) {
+        this.items = items;
+        this.ownerLock = ownerLock;
+        this.pushOutbox = pushOutbox;
     }
 
     @Transactional(readOnly = true)
@@ -26,6 +31,7 @@ public class ExpiredPreparationService {
         for (var item : items.findExpiredPreparations(ownerId, now)) {
             if (item.expireAwaitingUpload(now)) changed++;
         }
+        if (changed > 0) pushOutbox.enqueueFinishedBatches(ownerId, now);
         return changed;
     }
 }

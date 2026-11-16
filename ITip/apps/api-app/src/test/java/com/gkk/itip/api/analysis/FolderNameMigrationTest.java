@@ -39,8 +39,8 @@ class FolderNameMigrationTest {
                     insert.executeUpdate();
                 }
             }
-            var latest = config.target("latest").load();
-            assertThatThrownBy(latest::migrate).hasStackTraceContaining(message);
+            var folderNameMigration = config.target("8").load();
+            assertThatThrownBy(folderNameMigration::migrate).hasStackTraceContaining(message);
             try (var statement = connection.createStatement(); var rows = statement.executeQuery("select name from " + schema + ".folders order by name")) {
                 var names = new java.util.ArrayList<String>();
                 while (rows.next()) names.add(rows.getString(1));
@@ -50,7 +50,7 @@ class FolderNameMigrationTest {
                 rename.setString(1, first);
                 rename.executeUpdate();
             }
-            assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);
+            assertThat(folderNameMigration.migrate().migrationsExecuted).isEqualTo(1);
         }
     }
 }

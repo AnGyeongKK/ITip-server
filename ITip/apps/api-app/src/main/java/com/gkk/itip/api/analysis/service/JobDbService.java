@@ -34,6 +34,7 @@ public class JobDbService {
     private final VideoRepository videos;
     private final IdempotencyRequestRepository requests;
     private final AnalysisOwnerLock ownerLock;
+    private final AnalysisBatchPushOutbox pushOutbox;
     private final JsonMapper mapper;
     private final Clock clock;
     private final long maxCaptionBytes, pollAfterMs;
@@ -41,7 +42,8 @@ public class JobDbService {
 
     public JobDbService(AnalysisBatchRepository batches, AnalysisBatchItemRepository items, AnalysisJobRepository jobs,
             CaptionUploadRepository uploads, AnalysisRecordRepository records, AnalysisResultRepository results, VideoRepository videos,
-            IdempotencyRequestRepository requests, AnalysisOwnerLock ownerLock, JsonMapper mapper, Clock clock,
+            IdempotencyRequestRepository requests, AnalysisOwnerLock ownerLock, AnalysisBatchPushOutbox pushOutbox,
+            JsonMapper mapper, Clock clock,
             @Value("${itip.analysis.max-caption-bytes:1048576}") long maxCaptionBytes,
             @Value("${itip.analysis.next-poll-after-ms:3000}") long pollAfterMs,
             @Value("${itip.analysis.preparation-ttl:PT30M}") Duration preparationTtl) {
@@ -49,6 +51,7 @@ public class JobDbService {
             throw new IllegalArgumentException("positive analysis limits required");
         this.batches = batches; this.items = items; this.jobs = jobs; this.uploads = uploads; this.records = records; this.results = results;
         this.videos = videos; this.requests = requests; this.ownerLock = ownerLock; this.mapper = mapper; this.clock = clock;
+        this.pushOutbox = pushOutbox;
         this.maxCaptionBytes = maxCaptionBytes; this.pollAfterMs = pollAfterMs; this.preparationTtl = preparationTtl;
     }
 
@@ -81,6 +84,7 @@ public class JobDbService {
         }
         context.upload().consume(metadata.generation());
         remember(ownerId, SUBMIT, key, request, job.getId());
+        if (job.getStatus() == JobStatus.COMPLETED) pushOutbox.enqueueFinishedBatches(ownerId, now);
         return submitted(job, request);
     }
 
@@ -139,6 +143,7 @@ public class JobDbService {
         validateMetadata(context.upload(), metadata, true);
         var now = clock.instant();
         var batch = batches.saveAndFlush(new AnalysisBatch(ownerId, null, now));
+        batch.requestCompletionPush();
         var item = items.saveAndFlush(AnalysisBatchItem.collectCaptions(batch.getId(), context.previous().getVideoId(), now.plus(preparationTtl), now));
         var job = AnalysisJob.queued(ownerId, batch.getId(), item.getId(), context.previous().getVideoId(), context.upload().getId(),
                 context.previous().getGeneration(), previousJobId, now);
