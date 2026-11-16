@@ -40,7 +40,9 @@ public class AnalysisPushDispatcher {
             case DISCARDED, CONFIGURATION_ERROR -> queue.finish(delivery, false);
             case UNREGISTERED -> {
                 queue.invalidateToken(delivery, token.get());
-                queue.finish(delivery, false);
+                var refreshed = queue.currentToken(delivery).filter(current -> !current.equals(token.get()));
+                if (refreshed.isPresent()) queue.retry(delivery, clock.instant());
+                else queue.finish(delivery, false);
             }
             case RETRY -> {
                 long base = 60L << (delivery.attempts() - 1);

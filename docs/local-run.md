@@ -151,6 +151,14 @@ docker compose -f compose.yaml -f compose.demo.yaml -f compose.gcs.yaml up -d
 
 기기 API는 Flyway V9 적용 후 사용할 수 있다. Worker는 Firebase Admin SDK로 발송한다. `PUT /api/v1/users/me/devices/{installationId}`에는 Expo의 `getDevicePushTokenAsync()`로 얻은 Android 네이티브 FCM 토큰을 등록한다. 실제 발송은 Worker에 `FCM_PUSH_ENABLED=true`, Android 앱과 동일한 `FCM_PROJECT_ID`, 해당 프로젝트에 메시지를 보낼 권한이 있는 Google Application Default Credentials를 설정해 켠다. Compose의 GCS 인증 파일을 함께 사용하려면 해당 계정에 FCM 발송 권한도 있어야 한다. 데모 사용자 식별로는 격리된 테스트 환경에서 검증한다.
 
+GCS 없이 발송만 확인하려면 로컬 환경에 `FCM_CREDENTIALS_PATH`(인증 파일의 절대 경로), `LOCAL_UID`(`id -u`), `LOCAL_GID`(`id -g`), `FCM_PUSH_ENABLED=true`, `FCM_PROJECT_ID`를 설정한다. 아래 구성은 Worker에만 파일을 읽기 전용으로 마운트한다.
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml -f compose.fcm.yaml up -d
+```
+
+GCS도 함께 사용하는 시연에서는 `compose.fcm.yaml` 대신 `compose.gcs.yaml`을 사용하고, 그 인증 파일의 계정에 Firebase 발송 권한도 부여한다. Worker는 두 서비스에 동일한 Application Default Credentials를 사용한다.
+
 Android 테스트 앱에서 알림 권한을 허용하고 해당 설치를 등록한 뒤 영상 여러 개를 선택한다. 앱을 백그라운드로 보내고 마지막 항목의 처리까지 끝나면 성공·실패 개수를 담은 알림 한 건이 오는지 확인한다. 알림을 눌러 배치 결과가 열리는지 확인하고, 기기 연결을 해제한 뒤 다음 배치가 종료될 때 알림이 발송되지 않는지 확인한다.
 
 ## 테스트

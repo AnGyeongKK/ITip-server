@@ -257,7 +257,7 @@ data: {"assistantMessageId":"902","status":"INCOMPLETE","code":"CHAT_STREAM_FAIL
 - `fcmToken`은 필수·nullable이며 알림 권한은 `GRANTED/DENIED/NOT_DETERMINED`로 구분한다. 권한 거절과 서버 분석 실패를 혼동하지 않는다.
 - FCM `data`의 값은 개수까지 문자열로 전송한다. 알림의 ID로 서버의 최신 상태·결과를 다시 조회한다.
 - 알림 전송 실패·권한 거절로 완료 분석을 실패 처리하거나 분석을 재실행하지 않는다. 알림 수신을 결과 조회의 필수 조건으로 만들지 않는다.
-- 기기 등록·갱신은 `PUT /api/v1/users/me/devices/{installationId}`의 `platform`, `fcmToken`, `notificationPermission`을 받는다. 성공 응답은 200과 `installationId`, `notificationPermission`, `registered: true`, `updatedAt`(UTC ISO 8601)이다. `registered`는 설치 정보 저장 성공을 나타낸다. 다른 설치에 연결된 토큰이나 다른 사용자 소유의 설치를 등록하면 409다. 같은 경로의 DELETE는 연결을 해제하고 반복 호출에도 200을 반환한다.
+- 기기 등록·갱신은 `PUT /api/v1/users/me/devices/{installationId}`의 `platform`, `fcmToken`, `notificationPermission`을 받는다. 성공 응답은 200과 `installationId`, `notificationPermission`, `registered: true`, `updatedAt`(UTC ISO 8601)이다. `registered`는 설치 정보 저장 성공을 나타낸다. 잘못된 입력은 400 `INVALID_REQUEST`다. 다른 설치에 연결된 토큰이나 다른 사용자 소유의 설치를 등록하면 409 `STATE_CONFLICT`다. 같은 경로의 DELETE는 연결을 해제하고 반복 호출에도 200을 반환한다.
 - 한 번 선택한 영상 묶음의 항목이 모두 `COMPLETED` 또는 `FAILED`가 되면, 권한과 토큰이 유효한 설치마다 배치 알림 한 건을 예약한다. 선택 시 전부 기존 결과를 즉시 열 수 있는 배치는 건너뛴다. FCM `data`의 `type=ANALYSIS_BATCH_FINISHED`, `eventId`, `batchId`, `completedCount`, `failedCount`는 모두 문자열이다. 단일 영상이 성공한 경우에만 문자열 `analysisId`를 추가한다. 앱은 `eventId`로 중복을 처리하고, 알림을 누르면 `analysisId`가 있을 때 `GET /api/v1/analyses/{analysisId}`, 그 외에는 `GET /api/v1/analysis-batches/{batchId}`로 최신 상태를 조회한다.
 
 ## 11. 구현 전 확인할 명세 차이

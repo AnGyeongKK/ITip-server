@@ -2,6 +2,8 @@ package com.gkk.itip.worker.analysis;
 
 import com.gkk.itip.domain.analysis.*;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 @Service
 public class JobQueue {
+    private static final Logger log = LoggerFactory.getLogger(JobQueue.class);
     private final EntityManager em;
     private final AnalysisJobRepository jobs;
 
@@ -39,7 +42,11 @@ public class JobQueue {
 
     public Optional<Claim> claim(Instant now, Duration leaseDuration) {
         for (String ownerId : expiredLeases.findOwners(now)) {
-            expiredLeases.expire(ownerId, now);
+            try {
+                expiredLeases.expire(ownerId, now);
+            } catch (RuntimeException exception) {
+                log.warn("EXPIRED_JOB_RECOVERY_FAILED type={}", exception.getClass().getSimpleName());
+            }
         }
         return claimTransaction.execute(status -> claimAvailable(now, leaseDuration));
     }

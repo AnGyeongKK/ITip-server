@@ -34,7 +34,7 @@ class ExpiredJobLeaseService {
 
     @Transactional
     public void expire(String ownerId, Instant now) {
-        ownerLock.lock(ownerId);
+        if (!ownerLock.tryLock(ownerId)) return;
         int changed = em.createNativeQuery("""
                 update analysis_jobs set status = 'FAILED', error_code = 'WORKER_LEASE_EXPIRED',
                     error_message = '분석 실행이 중단됐어요. 다시 시도해 주세요.', retryable = true,
