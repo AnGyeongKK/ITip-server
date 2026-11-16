@@ -1,5 +1,7 @@
 package com.gkk.itip.api.video.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -16,9 +18,10 @@ public sealed interface YoutubeResourceResponse {
                     Long durationMs, String channelImageUrl, Instant publishedAt) {
     }
 
-    record Existing(Status status, UUID analysisId, UUID recordId, UUID jobId) {
+    record Existing(Status status, UUID analysisId, UUID recordId, UUID jobId,
+                    @JsonInclude(JsonInclude.Include.NON_NULL) UUID batchId) {
         public enum Status {
-            NONE, PROCESSING, COMPLETED
+            NONE, AWAITING_UPLOAD, PROCESSING, COMPLETED
         }
     }
 
