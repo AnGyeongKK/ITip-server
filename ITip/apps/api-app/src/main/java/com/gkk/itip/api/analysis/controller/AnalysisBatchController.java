@@ -7,6 +7,9 @@ import com.gkk.itip.api.analysis.service.AnalysisBatchService;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
@@ -24,6 +27,15 @@ public class AnalysisBatchController {
                                                                    @Valid @RequestBody CreateBatchRequest request) {
         var response = batches.create(user.ownerId(), key, request);
         return ResponseEntity.created(URI.create("/api/v1/analysis-batches/" + response.batchId())).body(ApiResponse.success(response));
+    }
+
+    @ExceptionHandler(AnalysisBatchService.PreparationConflict.class)
+    public ResponseEntity<ApiResponse<Void>> handlePreparationConflict(AnalysisBatchService.PreparationConflict exception) {
+        var response = ResponseEntity.status(HttpStatus.CONFLICT).contentType(MediaType.APPLICATION_JSON);
+        if (exception.batchId() != null) {
+            response.header(HttpHeaders.LOCATION, "/api/v1/analysis-batches/" + exception.batchId());
+        }
+        return response.body(ApiResponse.fail(exception.getErrorCode(), exception.getMessage()));
     }
 
     @GetMapping("/{batchId}")

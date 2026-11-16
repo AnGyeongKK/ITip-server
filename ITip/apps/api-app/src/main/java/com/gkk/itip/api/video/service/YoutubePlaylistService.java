@@ -18,12 +18,12 @@ public class YoutubePlaylistService {
 
     private static final int MAX_LIMIT = 50;
     private final YoutubeDataClient youtube;
-    private final YoutubeResourceService resources;
+    private final ExistingVideoAnalyses existingAnalyses;
     private final VideoMetadataStore metadata;
 
-    public YoutubePlaylistService(YoutubeDataClient youtube, YoutubeResourceService resources, VideoMetadataStore metadata) {
+    public YoutubePlaylistService(YoutubeDataClient youtube, ExistingVideoAnalyses existingAnalyses, VideoMetadataStore metadata) {
         this.youtube = youtube;
-        this.resources = resources;
+        this.existingAnalyses = existingAnalyses;
         this.metadata = metadata;
     }
 
@@ -38,7 +38,7 @@ public class YoutubePlaylistService {
         var page = youtube.loadPlaylist(playlistId, cursor, limit);
         metadata.savePlaylist(playlistId, page.title(), page.items());
         var ids = page.items().stream().map(PlaylistVideo::videoId).collect(Collectors.toSet());
-        var existing = resources.existingAnalyses(ownerId, ids);
+        var existing = existingAnalyses.find(ownerId, ids);
         var items = page.items().stream().map(video -> toItem(video, existing)).toList();
         return new YoutubePlaylistResponse(playlistId, page.title(), items, page.nextCursor(), page.nextCursor() != null,
                 page.thumbnailUrl(), page.channelName(), page.totalItemCount(), null);
@@ -53,6 +53,6 @@ public class YoutubePlaylistService {
         }
         return new Item(video.videoId(), video.title(), video.channelName(), video.thumbnailUrl(), video.durationMs(),
                 reason == null ? Eligibility.UNKNOWN : Eligibility.INELIGIBLE, reason,
-                existing.getOrDefault(video.videoId(), YoutubeResourceService.NO_ANALYSIS));
+                existing.getOrDefault(video.videoId(), ExistingVideoAnalyses.NONE));
     }
 }

@@ -7,19 +7,24 @@ import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient.PlaylistPage;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient.PlaylistVideo;
 import com.gkk.itip.api.video.service.YoutubePlaylistService;
-import com.gkk.itip.api.video.service.YoutubeResourceService;
+import com.gkk.itip.api.video.service.ExistingVideoAnalyses;
 import com.gkk.itip.api.video.service.VideoMetadataStore;
 import com.gkk.itip.common.config.DemoUserProvider;
 import com.gkk.itip.common.web.ApiExceptionHandler;
 import com.gkk.itip.domain.analysis.AnalysisJobRepository;
 import com.gkk.itip.domain.analysis.AnalysisRecordRepository;
-import com.gkk.itip.domain.video.VideoRepository;
+import com.gkk.itip.domain.analysis.AnalysisBatchItem;
+import com.gkk.itip.domain.analysis.AnalysisBatchItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 import java.util.Set;
 
 import static com.gkk.itip.api.video.exception.YoutubeLookupException.Failure.PLAYLIST_NOT_ACCESSIBLE;
@@ -39,13 +44,15 @@ class YoutubePlaylistApiTest {
     private final YoutubeDataClient youtube = mock(YoutubeDataClient.class);
     private final AnalysisRecordRepository records = mock(AnalysisRecordRepository.class);
     private final AnalysisJobRepository jobs = mock(AnalysisJobRepository.class);
+    private static final Instant NOW = Instant.parse("2026-11-16T00:00:00Z");
+    private final AnalysisBatchItemRepository items = mock(AnalysisBatchItemRepository.class);
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
         var metadata = mock(VideoMetadataStore.class);
-        var resources = new YoutubeResourceService(mock(VideoRepository.class), records, jobs, youtube, metadata);
-        var service = new YoutubePlaylistService(youtube, resources, metadata);
+        var existing = new ExistingVideoAnalyses(records, jobs, items, Clock.fixed(NOW, ZoneOffset.UTC));
+        var service = new YoutubePlaylistService(youtube, existing, metadata);
         mvc = MockMvcBuilders.standaloneSetup(new YoutubePlaylistController(service, new DemoUserProvider(OWNER)))
                 .setControllerAdvice(new ApiExceptionHandler(), new YoutubeExceptionHandler())
                 .build();
@@ -74,6 +81,23 @@ class YoutubePlaylistApiTest {
                 .andExpect(jsonPath("$.data.items[2].reasonCode").value("VIDEO_UNAVAILABLE"));
 
         verify(records).findLatestByOwnerAndVideoIds(OWNER, Set.of("dQw4w9WgXcQ", "aaaaaaaaaaa", "bbbbbbbbbbb"));
+    }
+
+    @Test
+    void returnsTheExistingPreparationForTheMatchingPlaylistItem() throws Exception {
+        String videoId = "dQw4w9WgXcQ";
+        UUID batchId = UUID.randomUUID();
+        when(youtube.loadPlaylist("PL_EXAMPLE", null, 20)).thenReturn(
+                new PlaylistPage("Playlist", null, null, 1, List.of(
+                        new PlaylistVideo(videoId, "Video", null, null, 1000L, true)), null));
+        when(items.findUnexpiredPreparations(OWNER, Set.of(videoId), NOW)).thenReturn(
+                List.of(AnalysisBatchItem.collectCaptions(batchId, videoId, NOW.plusSeconds(60), NOW)));
+
+        mvc.perform(get(PATH))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].existing.status").value("AWAITING_UPLOAD"))
+                .andExpect(jsonPath("$.data.items[0].existing.batchId").value(batchId.toString()))
+                .andExpect(jsonPath("$.data.items[0].existing.jobId").isEmpty());
     }
 
     @Test

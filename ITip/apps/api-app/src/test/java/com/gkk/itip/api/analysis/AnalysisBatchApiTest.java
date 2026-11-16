@@ -140,14 +140,61 @@ class AnalysisBatchApiTest {
                 UUID.fromString(existingOnly.path("batchId").asString()))).isFalse();
     }
 
-    @Test void rejectsAnotherPreparationButAllowsAnExpiredPreparation() throws Exception {
-        assertThat(create(UUID.randomUUID(), selection(V1)).getResponse().getStatus()).isEqualTo(201);
-        assertThat(create(UUID.randomUUID(), selection(V1)).getResponse().getStatus()).isEqualTo(409);
-        tx.executeWithoutResult(status -> {
-            var batch = new AnalysisBatch(OWNER, null, NOW.minusSeconds(3600)); em.persist(batch);
-            em.persist(AnalysisBatchItem.collectCaptions(batch.getId(), V2, NOW.minusSeconds(1), NOW.minusSeconds(3600)));
-        });
+    @Test void returnsTheExistingBatchOnConflictAndOnlyExposesOwnedUnexpiredPreparation() throws Exception {
+        jdbc.update("update videos set duration_ms = 1000");
+        String batchId = data(create(UUID.randomUUID(), selection(V1))).path("batchId").asString();
+        var conflict = create(UUID.randomUUID(), selection(V1, V3)).getResponse();
+        assertThat(conflict.getStatus()).isEqualTo(409);
+        assertThat(conflict.getHeader("Location")).isEqualTo(BASE + "/" + batchId);
+        var error = mapper.readTree(conflict.getContentAsString());
+        assertThat(error.path("code").asString()).isEqualTo("STATE_CONFLICT");
+        assertThat(error.has("data")).isFalse();
+
+        createPreparation(OWNER, V2, NOW);
+        createPreparation("another-user", V3, NOW.plusSeconds(60));
+        var links = "/api/v1/youtube-resources";
+        mvc.perform(get(links).param("url", "https://youtu.be/" + V1))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.existing.status").value("AWAITING_UPLOAD"))
+                .andExpect(jsonPath("data.existing.batchId").value(batchId))
+                .andExpect(jsonPath("data.existing.jobId").isEmpty());
+        for (String videoId : new String[]{V2, V3}) {
+            mvc.perform(get(links).param("url", "https://youtu.be/" + videoId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("data.existing.status").value("NONE"))
+                    .andExpect(jsonPath("data.existing.batchId").doesNotHaveJsonPath());
+        }
+        mvc.perform(get(BASE + "/" + batchId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("data.items[0].status").value("AWAITING_UPLOAD"));
         assertThat(create(UUID.randomUUID(), selection(V2)).getResponse().getStatus()).isEqualTo(201);
+
+        var multiple = create(UUID.randomUUID(), selection(V1, V2)).getResponse();
+        assertThat(multiple.getStatus()).isEqualTo(409);
+        assertThat(multiple.getHeader("Location")).isNull();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_batches where owner_id = ?", Integer.class, OWNER)).isEqualTo(3);
+    }
+
+    private void createPreparation(String ownerId, String videoId, Instant deadline) {
+        tx.executeWithoutResult(status -> {
+            var createdAt = NOW.minusSeconds(1800);
+            var batch = new AnalysisBatch(ownerId, null, createdAt);
+            em.persist(batch);
+            em.persist(AnalysisBatchItem.collectCaptions(batch.getId(), videoId, deadline, createdAt));
+        });
+    }
+
+    @Test void aLateFailureReportDoesNotReplaceTheExpiredPreparation() throws Exception {
+        createPreparation(OWNER, V1, NOW);
+        var item = jdbc.queryForMap("select id, batch_id from analysis_batch_items where video_id = ?", V1);
+        var url = BASE + "/" + item.get("batch_id") + "/items/" + item.get("id");
+
+        mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON).content(failure()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("code").value("STATE_CONFLICT"));
+        assertThat(jdbc.queryForObject("select status from analysis_batch_items where id = ?", String.class, item.get("id")))
+                .isEqualTo("AWAITING_UPLOAD");
+        assertThat(jdbc.queryForObject("select count(*) from analysis_push_deliveries", Integer.class)).isZero();
     }
 
     @Test void onlyReadsConfiguredOwnerAndIgnoresSpoofedUserHeader() throws Exception {
@@ -175,6 +222,9 @@ class AnalysisBatchApiTest {
                 .andExpect(jsonPath("data.error.retryable").value(false))
                 .andExpect(jsonPath("data.quotaReleased").doesNotExist());
         mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON).content(failure()))
+                .andExpect(status().isOk()).andExpect(jsonPath("data.error.code").value("KOREAN_CAPTION_NOT_FOUND"));
+        mvc.perform(patch(url).contentType(MediaType.APPLICATION_JSON)
+                        .content(failure().replace("KOREAN_CAPTION_NOT_FOUND", "UPLOAD_FAILED")))
                 .andExpect(status().isConflict());
         var deliveries = jdbc.queryForList("""
                 select installation_id, completed_count, failed_count, analysis_id

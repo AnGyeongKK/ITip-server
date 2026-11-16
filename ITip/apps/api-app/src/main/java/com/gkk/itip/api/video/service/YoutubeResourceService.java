@@ -1,25 +1,16 @@
 package com.gkk.itip.api.video.service;
 
 import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse;
-import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse.Existing;
 import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse.Metadata;
 import com.gkk.itip.common.exception.BusinessException;
 import com.gkk.itip.common.exception.ErrorCode;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
 import com.gkk.itip.api.video.exception.YoutubeLookupException;
-import com.gkk.itip.domain.analysis.AnalysisJobRepository;
-import com.gkk.itip.domain.analysis.AnalysisRecordRepository;
-import com.gkk.itip.domain.analysis.JobStatus;
 import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.domain.video.VideoRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
@@ -27,23 +18,18 @@ import java.util.Set;
 public class YoutubeResourceService {
 
     static final long MAX_DURATION_MS = Duration.ofHours(1).toMillis();
-    static final Existing NO_ANALYSIS = new Existing(Existing.Status.NONE, null, null, null);
-    private static final Set<JobStatus> ACTIVE_JOBS =
-            Set.of(JobStatus.QUEUED, JobStatus.PROCESSING, JobStatus.RETRY_WAIT);
     private static final YoutubeResourceResponse.CaptionRequirement CAPTION_REQUIREMENT =
             new YoutubeResourceResponse.CaptionRequirement("ko", MAX_DURATION_MS);
 
     private final VideoRepository videos;
-    private final AnalysisRecordRepository records;
-    private final AnalysisJobRepository jobs;
+    private final ExistingVideoAnalyses existingAnalyses;
     private final YoutubeDataClient youtube;
     private final VideoMetadataStore metadata;
 
-    public YoutubeResourceService(VideoRepository videos, AnalysisRecordRepository records, AnalysisJobRepository jobs,
+    public YoutubeResourceService(VideoRepository videos, ExistingVideoAnalyses existingAnalyses,
                                   YoutubeDataClient youtube, VideoMetadataStore metadata) {
         this.videos = videos;
-        this.records = records;
-        this.jobs = jobs;
+        this.existingAnalyses = existingAnalyses;
         this.youtube = youtube;
         this.metadata = metadata;
     }
@@ -73,39 +59,8 @@ public class YoutubeResourceService {
         Metadata metadata = video.map(YoutubeResourceService::metadataOf).orElseThrow(
                 () -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         return new YoutubeResourceResponse.Video(resource.type().name(), resource.id(), resource.canonicalUrl(),
-                metadata, existingAnalysis(ownerId, resource.id()), CAPTION_REQUIREMENT);
-    }
-
-    private Existing existingAnalysis(String ownerId, String videoId) {
-        var record = records.findFirstByOwnerIdAndVideoIdOrderByAnalyzedAtDescIdDesc(ownerId, videoId);
-        if (record.isPresent()) {
-            var completed = record.get();
-            return new Existing(Existing.Status.COMPLETED, completed.getAnalysisId(), completed.getId(), null);
-        }
-        return jobs.findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(ownerId, videoId, ACTIVE_JOBS)
-                .map(job -> new Existing(Existing.Status.PROCESSING, null, null, job.getId()))
-                .orElse(NO_ANALYSIS);
-    }
-
-    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public Map<String, Existing> existingAnalyses(String ownerId, Set<String> videoIds) {
-        if (videoIds.isEmpty()) {
-            return Map.of();
-        }
-
-        Map<String, Existing> found = new HashMap<>();
-        for (var record : records.findLatestByOwnerAndVideoIds(ownerId, videoIds)) {
-            found.put(record.getVideoId(),
-                    new Existing(Existing.Status.COMPLETED, record.getAnalysisId(), record.getId(), null));
-        }
-        Set<String> remaining = new HashSet<>(videoIds);
-        remaining.removeAll(found.keySet());
-        if (!remaining.isEmpty()) {
-            for (var job : jobs.findAllByOwnerIdAndVideoIdInAndStatusIn(ownerId, remaining, ACTIVE_JOBS)) {
-                found.put(job.getVideoId(), new Existing(Existing.Status.PROCESSING, null, null, job.getId()));
-            }
-        }
-        return found;
+                metadata, existingAnalyses.find(ownerId, Set.of(resource.id()))
+                        .getOrDefault(resource.id(), ExistingVideoAnalyses.NONE), CAPTION_REQUIREMENT);
     }
 
     private static Metadata metadataOf(Video video) {

@@ -2,6 +2,8 @@ package com.gkk.itip.api.video;
 
 import com.gkk.itip.api.video.controller.YoutubeResourceController;
 import com.gkk.itip.api.video.service.YoutubeResourceService;
+import com.gkk.itip.api.video.service.ExistingVideoAnalyses;
+import com.gkk.itip.domain.analysis.AnalysisBatchItemRepository;
 import com.gkk.itip.api.video.service.VideoMetadataStore;
 import com.gkk.itip.api.video.infrastructure.YoutubeDataClient;
 import com.gkk.itip.api.video.exception.YoutubeExceptionHandler;
@@ -20,7 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -50,7 +54,8 @@ class YoutubeResourceApiTest {
 
     @BeforeEach
     void setUp() {
-        var controller = new YoutubeResourceController(new YoutubeResourceService(videos, records, jobs, youtube, metadata),
+        var controller = new YoutubeResourceController(new YoutubeResourceService(videos,
+                new ExistingVideoAnalyses(records, jobs, mock(AnalysisBatchItemRepository.class), Clock.systemUTC()), youtube, metadata),
                 new DemoUserProvider(OWNER));
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ApiExceptionHandler(), new YoutubeExceptionHandler())
@@ -77,8 +82,8 @@ class YoutubeResourceApiTest {
         var result = AnalysisResult.draft(UUID.randomUUID(), OWNER, VIDEO_ID, UUID.randomUUID(), "{}", now);
         result.markReady(now);
         var record = AnalysisRecord.fromCompleted(result);
-        when(records.findFirstByOwnerIdAndVideoIdOrderByAnalyzedAtDescIdDesc(OWNER, VIDEO_ID))
-                .thenReturn(Optional.of(record));
+        when(records.findLatestByOwnerAndVideoIds(OWNER, Set.of(VIDEO_ID)))
+                .thenReturn(List.of(record));
         givenCachedVideo(VIDEO_ID);
 
         mvc.perform(get(PATH).param("url", VIDEO_URL + "&list=PL_EXAMPLE"))
@@ -103,8 +108,8 @@ class YoutubeResourceApiTest {
         givenCachedVideo("aaaaaaaaaaa");
         var job = AnalysisJob.queued(OWNER, UUID.randomUUID(), UUID.randomUUID(), VIDEO_ID,
                 UUID.randomUUID(), 1, null, Instant.parse("2026-11-01T00:00:00Z"));
-        when(jobs.findFirstByOwnerIdAndVideoIdAndStatusInOrderByCreatedAtDescIdDesc(OWNER, VIDEO_ID, ACTIVE_JOBS))
-                .thenReturn(Optional.of(job));
+        when(jobs.findAllByOwnerIdAndVideoIdInAndStatusIn(OWNER, Set.of(VIDEO_ID), ACTIVE_JOBS))
+                .thenReturn(List.of(job));
 
         mvc.perform(get(PATH).param("url", "https://youtu.be/" + VIDEO_ID + "?t=60"))
                 .andExpect(status().isOk())

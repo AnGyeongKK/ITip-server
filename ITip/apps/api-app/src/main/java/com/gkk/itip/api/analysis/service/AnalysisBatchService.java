@@ -71,11 +71,13 @@ public class AnalysisBatchService {
         var activeJobs = jobs.findAllByOwnerIdAndVideoIdInAndStatusIn(ownerId, selected, ACTIVE_JOBS).stream()
                 .collect(Collectors.toMap(AnalysisJob::getVideoId, Function.identity()));
         var now = clock.instant();
-        var preparing = items.findUnexpiredPreparations(ownerId, selected, now).stream()
-                .map(AnalysisBatchItem::getVideoId).collect(Collectors.toSet());
-        for (String videoId : selected) {
-            if (!existingRecords.containsKey(videoId) && !activeJobs.containsKey(videoId) && preparing.contains(videoId))
-                throw new BusinessException(STATE_CONFLICT, "이미 자막을 준비하고 있어요. 기존 분석 배치로 돌아가 주세요.");
+        var preparingBatchIds = items.findUnexpiredPreparations(ownerId, selected, now).stream()
+                .filter(item -> !existingRecords.containsKey(item.getVideoId()) && !activeJobs.containsKey(item.getVideoId()))
+                .map(AnalysisBatchItem::getBatchId)
+                .collect(Collectors.toSet());
+        if (!preparingBatchIds.isEmpty()) {
+            UUID batchId = preparingBatchIds.size() == 1 ? preparingBatchIds.iterator().next() : null;
+            throw new PreparationConflict(batchId);
         }
 
         var batch = batches.saveAndFlush(new AnalysisBatch(ownerId, request.playlistId(), now));
@@ -111,14 +113,19 @@ public class AnalysisBatchService {
         ownerLock.lock(ownerId);
         ownedBatch(ownerId, batchId);
         var item = items.findByIdAndBatchId(itemId, batchId).orElseThrow(() -> new BusinessException(RESOURCE_NOT_FOUND));
-        if (item.getStatus() != ItemStatus.AWAITING_UPLOAD)
-            throw new BusinessException(STATE_CONFLICT, "이미 접수되거나 종료된 항목이에요.");
         var code = request.collectionFailure().code();
-        var now = clock.instant();
-        item.failCollection(code.name(), code.message(), false, now);
-        pushOutbox.enqueueFinishedBatches(ownerId, now);
+        if (item.getStatus() == ItemStatus.AWAITING_UPLOAD) {
+            var now = clock.instant();
+            if (!now.isBefore(item.getUploadDeadlineAt())) {
+                throw new BusinessException(STATE_CONFLICT, "자막 업로드 시간이 지났어요.");
+            }
+            item.failCollection(code.name(), code.message(), false, now);
+            pushOutbox.enqueueFinishedBatches(ownerId, now);
+        } else if (item.getStatus() != ItemStatus.FAILED || item.getJobId() != null || !code.name().equals(item.getErrorCode())) {
+            throw new BusinessException(STATE_CONFLICT, "이미 접수되거나 종료된 항목이에요.");
+        }
         return new CollectionFailureResponse(batchId, itemId, item.getStatus(),
-                new BatchStatusResponse.Failure(code.name(), code.message(), false));
+                new BatchStatusResponse.Failure(item.getErrorCode(), item.getErrorMessage(), false));
     }
 
     private AnalysisBatch ownedBatch(String ownerId, UUID id) {
@@ -190,6 +197,17 @@ public class AnalysisBatchService {
         if (counts.completed() + counts.failed() == counts.total()) return "PARTIALLY_FAILED";
         if (counts.queued() + counts.processing() + counts.retryWait() > 0) return "PROCESSING";
         return "PREPARING";
+    }
+
+    public static final class PreparationConflict extends BusinessException {
+        private final UUID batchId;
+
+        private PreparationConflict(UUID batchId) {
+            super(STATE_CONFLICT, "이미 자막을 준비하고 있어요. 기존 분석 배치로 돌아가 주세요.");
+            this.batchId = batchId;
+        }
+
+        public UUID batchId() { return batchId; }
     }
 
     private record Snapshot(AnalysisBatch batch, List<AnalysisBatchItem> items, List<BatchStatusResponse.Item> views,
