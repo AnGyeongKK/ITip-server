@@ -14,7 +14,7 @@ UUID complete(JobQueue.Claim claim, UUID analysisId, Instant now);
 ```
 
 - `Draft`는 `analysisId`, 복원한 `ResultDocument`, `indexed`를 반환한다.
-- `Source`는 `bucket`, `objectKey`, 고정한 `generation`, nullable `durationMs`, `declaredSizeBytes`를 반환한다. 길이가 null이면 실행 담당 코드가 메타데이터 부족을 처리해야 한다. URL 만료만으로 소비한 업로드를 거절하지 않는다.
+- `Source`는 `bucket`, `objectKey`, 고정한 `generation`, nullable `durationMs`, `declaredSizeBytes`, nullable `title`을 반환한다. 길이가 null이면 실행 담당 코드가 메타데이터 부족을 처리해야 한다. 제목은 분석 데이터로만 사용한다. URL 만료만으로 소비한 업로드를 거절하지 않는다.
 - `complete()`는 생성한 개인 기록의 `recordId`를 반환한다.
 - `now`는 각 DB 호출 시점에 전달한다. 외부 요청 전에 얻은 시각을 외부 요청 완료 후 저장에 재사용하지 않는다. lease 갱신도 저장 호출 밖에서 수행한다.
 

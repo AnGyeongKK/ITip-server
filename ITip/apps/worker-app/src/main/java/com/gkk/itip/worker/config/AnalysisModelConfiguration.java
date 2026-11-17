@@ -16,16 +16,16 @@ import java.time.Duration;
 @EnableConfigurationProperties(AnalysisGenerationProperties.class)
 public class AnalysisModelConfiguration {
     @Bean(destroyMethod = "close")
-    @ConditionalOnProperty(prefix = "itip.analysis.generation", name = "enabled", havingValue = "true")
-    OpenAIClient analysisOpenAiClient(@Value("${itip.analysis.generation.api-key:}") String key,
-            @Value("${itip.analysis.generation.base-url:https://api.openai.com/v1}") String baseUrl) {
+    @ConditionalOnProperty(prefix = "itip.worker.analysis-model", name = "enabled", havingValue = "true")
+    OpenAIClient analysisOpenAiClient(@Value("${itip.worker.analysis-model.api-key:}") String key,
+            @Value("${itip.worker.analysis-model.base-url:https://api.openai.com/v1}") String baseUrl) {
         return OpenAiClients.create(key, baseUrl, Duration.ofSeconds(120), Duration.ofSeconds(120));
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "itip.analysis.generation", name = "enabled", havingValue = "true")
+    @ConditionalOnProperty(prefix = "itip.worker.analysis-model", name = "enabled", havingValue = "true")
     OpenAiChatModel analysisChatModel(@Qualifier("analysisOpenAiClient") OpenAIClient client, AnalysisGenerationProperties properties) {
         return OpenAiChatModel.builder().openAiClient(client).openAiClientAsync(client.async())
-                .options(OpenAiChatOptions.builder().model(properties.model()).reasoningEffort("low").maxRetries(0).store(false).build()).build();
+                .options(OpenAiChatOptions.builder().model(properties.model()).reasoningEffort("low").maxCompletionTokens(properties.detailOutputTokens()).maxRetries(0).store(false).build()).build();
     }
 }

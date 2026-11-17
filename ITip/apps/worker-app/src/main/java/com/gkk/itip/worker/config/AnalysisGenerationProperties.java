@@ -4,7 +4,7 @@ import com.knuddels.jtokkit.api.EncodingType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
-@ConfigurationProperties("itip.analysis.generation")
+@ConfigurationProperties("itip.worker.analysis-model")
 public record AnalysisGenerationProperties(
         @DefaultValue("false") boolean enabled, @DefaultValue("") String model,
         @DefaultValue("") String tokenEncoding, @DefaultValue("0") int contextTokens,

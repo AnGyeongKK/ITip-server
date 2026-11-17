@@ -31,8 +31,8 @@
 | `DB_POOL_MAX` | 프로세스별 최대 DB 연결 수. 기본 5 |
 | `WORKER_PORT` | Worker HTTP 포트. 기본 8081 |
 | `CHAT_PORT` | Chat HTTP 포트. 기본 8082 |
-| `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED`, `ANALYSIS_OPENAI_ENABLED` | 기본false. 임베딩/답변/분할 분석 모델 활성화 |
-| `ANALYSIS_OPENAI_MODEL`, `ANALYSIS_TOKEN_ENCODING`, `ANALYSIS_CONTEXT_TOKENS` | 분석은 `gpt-6-luna`, `O200K_BASE`, 해당 모델의 context 용량을 명시. [전체 예산 설정](analysis-split-generation.md#설정) |
+| `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED`, `ANALYSIS_AI_ENABLED` | 기본false. 임베딩/답변/분할 분석 모델 활성화. 분석의 선택 별칭 `ANALYSIS_OPENAI_ENABLED`가 우선 |
+| `ANALYSIS_MODEL`, `ANALYSIS_TOKEN_ENCODING`, `ANALYSIS_CONTEXT_TOKENS` | 분석은 `gpt-6-luna`, `O200K_BASE`, 해당 모델의 context 용량을 명시. 모델의 선택 별칭 `ANALYSIS_OPENAI_MODEL`이 우선. [전체 예산·기존 설정 전환](analysis-split-generation.md#설정) |
 | `ANALYSIS_DETAIL_OUTPUT_TOKENS`, `ANALYSIS_TOTAL_OUTPUT_TOKENS` | 상세 기본4,096, 영상 합산 출력·추론 기본16,000 |
 | `OPENAI_API_KEY` | 각자 환경에서 주입. Worker·Chat만 사용, 값 공유/추적 금지 |
 | `OPENAI_BASE_URL` | 기본 https://api.openai.com/v1 |
@@ -132,7 +132,7 @@ DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·C
 | `API_IMAGE`, `WORKER_IMAGE`, `CHAT_IMAGE` | 기본 `itip-api:local`, `itip-worker:local`, `itip-chat:local`. 원격 배포 시 버전 태그 지정 후 같은 Compose 명령의 `pull` 실행 |
 | `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
 | `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
-| `OPENAI_API_KEY`, `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED`, `ANALYSIS_OPENAI_ENABLED` 및 모델 변수 | Worker·Chat으로 전달. 일반 API에는 키를 전달하지 않음. [전체 모델 설정](chat-generation-contract.md#공급자실행-설정) 참고 |
+| `OPENAI_API_KEY`, `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED`, `ANALYSIS_AI_ENABLED` 및 모델 변수 | Worker·Chat으로 전달. 분석의 `ANALYSIS_OPENAI_*` 별칭도 전달. 일반 API에는 키를 전달하지 않음. [분석 설정](analysis-split-generation.md#설정)·[채팅 설정](chat-generation-contract.md#공급자실행-설정) 참고 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat에 전달하는 임베딩 응답의 fallback 식별자. 실제 모델 Bean 설정과 별개 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20 |
 

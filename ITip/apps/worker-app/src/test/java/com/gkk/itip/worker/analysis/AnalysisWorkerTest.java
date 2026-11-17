@@ -13,13 +13,17 @@ import com.gkk.itip.worker.analysis.caption.CaptionParser;
 import com.gkk.itip.worker.analysis.output.AnalysisOutputValidator;
 import com.gkk.itip.worker.config.AnalysisWorkerProperties;
 import com.gkk.itip.worker.config.WorkerExecutionConfiguration;
+import com.gkk.itip.worker.config.AnalysisModelConfiguration;
+import com.sun.net.httpserver.HttpServer;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.*;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.*;
@@ -49,6 +53,7 @@ import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.net.InetSocketAddress;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -60,8 +65,8 @@ import static org.mockito.Mockito.*;
 
 /** 모델 JSON은 외부 응답을 대신하는 고정 예시이며 실제 분석 품질의 근거가 아니다. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
-        "spring.flyway.enabled=true", "itip.analysis.generation.model=gpt-6-luna",
-        "itip.analysis.generation.token-encoding=O200K_BASE", "itip.analysis.generation.context-tokens=1050000",
+        "spring.flyway.enabled=true", "itip.worker.analysis-model.model=gpt-6-luna",
+        "itip.worker.analysis-model.token-encoding=O200K_BASE", "itip.worker.analysis-model.context-tokens=1050000",
         "itip.worker.scheduling-enabled=false", "itip.worker.heartbeat-delay=PT0.05S"})
 @Testcontainers
 class AnalysisWorkerTest {
@@ -72,6 +77,11 @@ class AnalysisWorkerTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
+    @Test void suppressesTheLibraryLoggerThatCanLogRawCaptions() {
+        var logger = LoggerFactory.getLogger("org.springframework.ai.openai.OpenAiChatModel");
+        assertThat(logger.isWarnEnabled()).isFalse();
+    }
+
     @Autowired ApplicationContext context;
     @Autowired AnalysisWorker worker;
     @Autowired TransactionTemplate tx;
@@ -151,6 +161,62 @@ class AnalysisWorkerTest {
         assertThat(MDC.get("jobId")).isNull();
         verify(chat, times(3)).call(any(Prompt.class));
         verify(embedding).call(any(EmbeddingRequest.class));
+    }
+
+    @Test void configuredOpenAiModelCompletesAndStoresANewJob() throws Exception {
+        var received = new AtomicReference<String>();
+        var modelCalls = new java.util.concurrent.atomic.AtomicInteger();
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/v1/chat/completions", exchange -> {
+            received.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            modelCalls.incrementAndGet();
+            var wire=context.getBean(JsonMapper.class).readTree(received.get());
+            var wireMessages=wire.get("messages");
+            var stageInput=context.getBean(JsonMapper.class).readTree(wireMessages.get(wireMessages.size()-1).get("content").asString());
+            String json = context.getBean(JsonMapper.class).writeValueAsString(Map.of(
+                    "id", "fixture", "object", "chat.completion", "created", 1, "model", "fixture-analysis",
+                    "choices", List.of(Map.of("index", 0, "message", Map.of("role", "assistant", "content", context.getBean(JsonMapper.class).writeValueAsString(SplitAnalysisFixtures.payload(stageInput))),
+                            "finish_reason", "stop")), "usage", Map.of("prompt_tokens",100,"completion_tokens",100,"total_tokens",200)));
+            byte[] body = json.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            try (var output = exchange.getResponseBody()) { output.write(body); }
+        });
+        server.start();
+        try {
+            new ApplicationContextRunner().withUserConfiguration(AnalysisModelConfiguration.class)
+                    .withPropertyValues("itip.worker.analysis-model.enabled=true",
+                            "itip.worker.analysis-model.api-key=fixture-only-not-a-secret",
+                            "itip.worker.analysis-model.model=fixture-analysis",
+                            "itip.worker.analysis-model.token-encoding=O200K_BASE",
+                            "itip.worker.analysis-model.context-tokens=1050000",
+                            "itip.worker.analysis-model.base-url=http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
+                    .run(application -> {
+                        assertThat(application).hasNotFailed();
+                        var beans = new StaticListableBeanFactory();
+                        beans.addBean("analysis", application.getBean(ChatModel.class));
+                        beans.addBean("embedding", embedding);
+                        SplitAnalysisGenerator generation;
+                        try { generation = new SplitAnalysisGenerator(beans.getBeanProvider(ChatModel.class), context.getBean(JsonMapper.class),
+                                context.getBean(com.gkk.itip.worker.analysis.ai.AnalysisSchemas.class), context.getBean(com.gkk.itip.worker.analysis.caption.AnalysisCaptionGroups.class),
+                                application.getBean(com.gkk.itip.worker.config.AnalysisGenerationProperties.class)); }
+                        catch (java.io.IOException exception) { throw new IllegalStateException(exception); }
+                        var ai = new SpringAiAnalysisClient(beans.getBeanProvider(ChatModel.class),
+                                beans.getBeanProvider(EmbeddingModel.class), generation, "", 32);
+                        UUID id = fixture(3000L, CAPTION.length);
+                        assertThat(processor(ai, 1048576).runNext()).isTrue();
+                        var job = jobs.findById(id).orElseThrow();
+                        assertThat(job.getStatus()).isEqualTo(JobStatus.COMPLETED);
+                        assertThat(results.findById(job.getAnalysisId()).orElseThrow().isChatReady()).isTrue();
+                        assertThat(records.count()).isEqualTo(1);
+                        assertThat(sections.findAllByAnalysisIdOrderByStartMsAscIdAsc(job.getAnalysisId())).hasSize(1);
+                        assertThat(jdbc.queryForObject("select count(*) from analysis_chunks", Integer.class)).isEqualTo(1);
+                        assertThat(received.get()).contains("fixture-analysis", "g000001");
+                        assertThat(modelCalls.get()).isEqualTo(3);
+                    });
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test void rejectsBadCaptionBeforeCallingEitherModelAndReportsClaimedEvenOnFailure() {
@@ -556,7 +622,8 @@ class AnalysisWorkerTest {
     }
 
     private static ChatResponse reply(String text) {
-        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text),
+                ChatGenerationMetadata.builder().finishReason("STOP").build())));
     }
 
     private static void assertOutsideTransaction() {

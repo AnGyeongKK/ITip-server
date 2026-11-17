@@ -22,8 +22,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.SocketTimeoutException;
+import java.util.List;
 
 class YoutubeDataClientTest {
+
+    @Test void missingKeyDoesNotCallYoutubeForVideoOrPlaylist() {
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        var client = new YoutubeDataClient(" ", builder);
+        assertThatThrownBy(() -> client.loadVideo("dQw4w9WgXcQ"))
+                .isInstanceOfSatisfying(YoutubeLookupException.class,
+                        e -> assertThat(e.code()).isEqualTo("YOUTUBE_LOOKUP_UNAVAILABLE"));
+        assertThatThrownBy(() -> client.loadPlaylist("PL_EXAMPLE", null, 20))
+                .isInstanceOfSatisfying(YoutubeLookupException.class,
+                        e -> assertThat(e.code()).isEqualTo("YOUTUBE_LOOKUP_UNAVAILABLE"));
+        server.verify();
+    }
+
+    @Test void quotaAndServerErrorsDoNotExposeUpstreamBody() {
+        var builder = RestClient.builder();
+        var server = MockRestServiceServer.bindTo(builder).build();
+        var client = new YoutubeDataClient("test-key", builder);
+        for (var status : List.of(HttpStatus.FORBIDDEN, HttpStatus.SERVICE_UNAVAILABLE)) {
+            server.expect(requestTo(startsWith("https://www.googleapis.com/youtube/v3/videos?")))
+                    .andRespond(withStatus(status).contentType(MediaType.APPLICATION_JSON)
+                            .body("{\"error\":{\"message\":\"private detail\",\"errors\":[{\"reason\":\"quotaExceeded\"}]}}"));
+        }
+        for (int i = 0; i < 2; i++) {
+            assertThatThrownBy(() -> client.loadVideo("dQw4w9WgXcQ"))
+                    .isInstanceOfSatisfying(YoutubeLookupException.class, e -> {
+                        assertThat(e.code()).isEqualTo("YOUTUBE_LOOKUP_UNAVAILABLE");
+                        assertThat(e.getMessage()).doesNotContain("private detail");
+                    });
+        }
+        server.verify();
+    }
 
     @Test void loadsSingleVideoMetadataAndTreatsMissingVideosAsEmpty() {
         var builder = RestClient.builder();

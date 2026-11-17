@@ -14,12 +14,15 @@ logging:
     "org.springframework.ai.openai.OpenAiChatModel": "OFF"
 
 itip:
-  analysis:
-    generation:
-      enabled: ${ANALYSIS_OPENAI_ENABLED:false}
+  push:
+    enabled: ${FCM_PUSH_ENABLED:false}
+    project-id: ${FCM_PROJECT_ID:}
+  worker:
+    analysis-model:
+      enabled: ${ANALYSIS_OPENAI_ENABLED:${ANALYSIS_AI_ENABLED:false}}
       api-key: ${OPENAI_API_KEY:}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
-      model: ${ANALYSIS_OPENAI_MODEL:}
+      model: ${ANALYSIS_OPENAI_MODEL:${ANALYSIS_MODEL:}}
       token-encoding: ${ANALYSIS_TOKEN_ENCODING:}
       context-tokens: ${ANALYSIS_CONTEXT_TOKENS:0}
       input-token-budget: ${ANALYSIS_INPUT_TOKEN_BUDGET:30000}
@@ -28,10 +31,6 @@ itip:
       detail-output-tokens: ${ANALYSIS_DETAIL_OUTPUT_TOKENS:4096}
       summary-output-tokens: ${ANALYSIS_SUMMARY_OUTPUT_TOKENS:3072}
       detail-concurrency: ${ANALYSIS_DETAIL_CONCURRENCY:3}
-  push:
-    enabled: ${FCM_PUSH_ENABLED:false}
-    project-id: ${FCM_PROJECT_ID:}
-  worker:
     scheduling-enabled: ${WORKER_SCHEDULING_ENABLED:true}
     poll-delay: ${WORKER_POLL_DELAY:PT2S}
     lease-duration: ${WORKER_LEASE_DURATION:PT2M}

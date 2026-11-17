@@ -50,9 +50,11 @@ CaptionParser + 실제 Video.durationMs/title
 
 | 변수 | 값·역할 |
 | --- | --- |
-| `ANALYSIS_OPENAI_ENABLED` | 기본false. 분석 공급자 활성화 |
+| `ANALYSIS_AI_ENABLED` | 기본false. 기존 Worker의 분석 공급자 활성화 이름 유지 |
+| `ANALYSIS_OPENAI_ENABLED` | 선택 별칭. 지정하면 `ANALYSIS_AI_ENABLED`보다 우선 |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | Worker 전용 주입. 기본 endpoint는 `https://api.openai.com/v1` |
-| `ANALYSIS_OPENAI_MODEL` | `gpt-6-luna`를 명시. 임의 fallback 모델 없음 |
+| `ANALYSIS_MODEL` | 기존 이름 유지. `gpt-6-luna`를 명시하며 임의 fallback 모델 없음 |
+| `ANALYSIS_OPENAI_MODEL` | 선택 별칭. 지정하면 `ANALYSIS_MODEL`보다 우선 |
 | `ANALYSIS_TOKEN_ENCODING` | `O200K_BASE`를 명시. 토큰 추정용 |
 | `ANALYSIS_CONTEXT_TOKENS` | 모델 context 용량을 명시. 확인한 Luna 용량은1,050,000이며 모델 변경 시 재확인 |
 | `ANALYSIS_INPUT_TOKEN_BUDGET` | 기본30,000 추정토큰/호출. 전체 입력을 줄이지 않고 초과 시 중단 |
@@ -61,6 +63,8 @@ CaptionParser + 실제 Video.durationMs/title
 | `ANALYSIS_DETAIL_OUTPUT_TOKENS` | 기본4,096. 기존 실험2,048에서 상향 |
 | `ANALYSIS_SUMMARY_OUTPUT_TOKENS` | 기본3,072 |
 | `ANALYSIS_DETAIL_CONCURRENCY` | 기본3, 허용1~3. 상세 배치의 병렬 호출 수 |
+
+PR #43의 Spring 설정 경로 `itip.worker.analysis-model`을 유지한다. 기존 활성화·모델 변수만 설정한 환경에는 `ANALYSIS_TOKEN_ENCODING`과 `ANALYSIS_CONTEXT_TOKENS`를 추가해야 한다. 이전 단일 호출의 `ANALYSIS_MAX_OUTPUT_TOKENS`는 사용하지 않으며, 분할 단계별 cap과 영상 합산 예산으로 교체한다. Chat의 별도 모델 설정과 임베딩 설정은 유지한다.
 
 요청은 Spring AI2.0.2의 `OpenAiChatModel`, Chat Completions strict JSON Schema, `reasoning_effort=low`를 쓴다. 입력 예산+가장 큰 단계 출력 cap+여유256은 명시한 context 용량 이내여야 한다. 입력 추정은 System+UserMessage+Schema+여유128의 O200K_BASE 추정이며 공급자 실제 토큰 수와 완전히 같다는 의미는 아니다.
 

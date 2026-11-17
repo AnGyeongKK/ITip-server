@@ -160,6 +160,24 @@ class SplitAnalysisGeneratorTest {
         assertThat(summary.get("evidence").findValuesAsString("groupId")).containsExactly("g000001","g000002");
         assertThat(summary.get("evidence").findValuesAsString("text")).contains("성공률은 ７３％입니다.");
     }
+    @ParameterizedTest @ValueSource(strings={"", "LENGTH", "TOOL_CALLS"})
+    void rejectsNonStopEvenWithValidStageJson(String finish) throws Exception {
+        when(model.call(any(Prompt.class))).thenReturn(reply("{\"earlierSections\":[],\"lastSectionTitle\":\"주제\"}",finish,100));
+        var generator=generator();assertInvalid(() -> generator.generate(captions,24000,null));verify(model).call(any(Prompt.class));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"CONTENT_FILTER", "STOP"})
+    void refusesProviderRejectionBeforeAnyDetail(String finish) throws Exception {
+        var message=org.springframework.ai.chat.messages.AssistantMessage.builder().content("{}")
+            .properties(Map.of("refusal","fixture refusal")).build();
+        when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(new org.springframework.ai.chat.model.Generation(message,
+            org.springframework.ai.chat.metadata.ChatGenerationMetadata.builder().finishReason(finish).build()))));
+        var generator=generator();
+        assertThatThrownBy(() -> generator.generate(captions,24000,null)).isInstanceOfSatisfying(AnalysisAiException.class,e -> {
+            assertThat(e.code()).isEqualTo("AI_REQUEST_REJECTED");assertThat(e.retryable()).isFalse();
+        });verify(model).call(any(Prompt.class));
+    }
+
     private void assertInvalid(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
         assertThatThrownBy(action).isInstanceOfSatisfying(AnalysisAiException.class,e -> {assertThat(e.code()).isEqualTo("AI_INVALID_RESPONSE");assertThat(e.retryable()).isFalse();});
     }
