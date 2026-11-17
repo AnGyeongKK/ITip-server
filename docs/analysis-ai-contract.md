@@ -24,11 +24,11 @@ AI 문서의 마인드맵 예시는 `sections[].sectionKey/title/subtopics`와 `
 | 공개 조회 | `AnalysisResultController.get()`·`getSection()` 제공 | GET은 저장된 데이터만 조회. 관련 영상 추천은 별도 후속 범위 |
 | 자막 입력 | `generate()`가 원본 `CaptionDocument` 전체를 JSON으로 전달 | AI 실험은 10~20초 묶음의 ID·텍스트 중심. 집계 ID ↔ 원본 segmentId·시간 대응과 전체 입력 계약 합의 필요 |
 | 구간 수 | sections·mindmap 참조가 비어 있으면 거절. 1개는 허용 | AI 실험은 0개 또는 2개 이상 조건. 0개의 의미·작업 상태·앱 표시 합의 전 현재 검증 유지 |
-| 분석 모델 | 분석용 `ChatModel` Bean은 별도 설정 필요 | AI 문서 선택은 `gpt-6-luna`, effort `low`. 이 선택을 서버 설정·연동에서 확인할 단계가 남음 |
+| 분석 모델 | Worker 전용 OpenAI `ChatModel` 설정 구현, 기본 비활성 | 모델과 출력 토큰 한도를 명시해야 한다. AI 문서의 모델·effort 적용 및 실제 품질 검증은 별도 확인 |
 | 임베딩 | libs/ai의 실제 OpenAI Bean 설정 구현, 기본 비활성 | 분석용 텍스트 생성 모델과 별도로 선택. Spring Chat의 질문 임베딩과 같은 모델·버전·차원 및 입력 규칙 사용 |
 | 분석 호출 방식 | 현재 어댑터는 Spring AI 모델 Bean을 직접 호출 | 분석 endpoint·Schema·프롬프트는 AI 파트와 별도 확인. 채팅 직접 호출 전환에서 이 입력/출력과 구간 매핑은 변경하지 않음. GET에 외부 호출 없음 |
 
-위 차이는 자동 적용할 정책이 아니다. 특히 sections 0개를 임의의 빈 성공 결과로 바꾸거나 집계 ID를 원본 ID처럼 취급하지 않는다. 모델·프롬프트·Schema의 실제 연결과 한국어·최대 60분 영상의 검증은 아직 완료되지 않았다.
+위 차이는 자동 적용할 정책이 아니다. 특히 sections 0개를 임의의 빈 성공 결과로 바꾸거나 집계 ID를 원본 ID처럼 취급하지 않는다. 실제 공급자의 모델 가용성과 한국어·최대 60분 영상의 품질은 아직 검증하지 않았다.
 
 ## 결과·구간 조회 구현 (#5)
 
@@ -92,7 +92,7 @@ GCS 자막 → CaptionParser → s000001, s000002 …
 
 ## Spring AI 모델 어댑터
 
-`SpringAiAnalysisClient`는 외부 공급자별 모듈이 제공하는 Spring AI `ChatModel`·`EmbeddingModel` Bean을 받는다. 현재 의존성은 `spring-ai-model:2.0.2`와 공통 예외 타입이 있는 `spring-ai-retry:2.0.2`뿐이다. 공급자 starter, 실제 모델 Bean, API 키, 기본 공급자 주소·모델은 포함하지 않는다. AI 문서의 분석 모델 선택과 별도로 실제 프롬프트·Schema 이식, 공급자 연결·품질 검증이 남아 있다. Worker의 스케줄·processor·DB 저장 연결도 이 어댑터의 책임이 아니다.
+`SpringAiAnalysisClient`는 Worker 전용 Spring AI `ChatModel`과 공통 `EmbeddingModel`을 사용한다. `ANALYSIS_AI_ENABLED=true`일 때 `OPENAI_API_KEY`, `ANALYSIS_MODEL`, 양수 `ANALYSIS_MAX_OUTPUT_TOKENS`를 설정한다. `OPENAI_BASE_URL` 기본값은 `https://api.openai.com/v1`이다. 모델 이름과 출력 한도는 선택한 공급자 모델의 지원 범위에 맞춰야 한다. Chat 답변 모델과 설정은 독립적이며, 임베딩 모델은 Worker와 Chat이 일치해야 한다. 분석 모델의 연결·읽기 timeout은 각각 2분이고 SDK 자동 재시도는 끈다. 실제 API 인증·모델 가용성·품질은 별도 확인한다.
 
 | 메서드 | 입출력과 확인 범위 |
 | --- | --- |

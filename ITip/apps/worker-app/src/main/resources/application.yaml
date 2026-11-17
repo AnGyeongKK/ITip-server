@@ -13,6 +13,12 @@ itip:
     enabled: ${FCM_PUSH_ENABLED:false}
     project-id: ${FCM_PROJECT_ID:}
   worker:
+    analysis-model:
+      enabled: ${ANALYSIS_AI_ENABLED:false}
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      model: ${ANALYSIS_MODEL:}
+      max-output-tokens: ${ANALYSIS_MAX_OUTPUT_TOKENS:0}
     scheduling-enabled: ${WORKER_SCHEDULING_ENABLED:true}
     poll-delay: ${WORKER_POLL_DELAY:PT2S}
     lease-duration: ${WORKER_LEASE_DURATION:PT2M}

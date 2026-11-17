@@ -34,6 +34,8 @@
 | `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` | 기본false. 임베딩/답변 모델 활성화 |
 | `OPENAI_API_KEY` | 각자 환경에서 주입. Worker·Chat만 사용, 값 공유/추적 금지 |
 | `OPENAI_BASE_URL` | 기본 https://api.openai.com/v1 |
+| `ANALYSIS_AI_ENABLED` | Worker의 영상 분석 모델 활성화. 기본 `false` |
+| `ANALYSIS_MODEL`, `ANALYSIS_MAX_OUTPUT_TOKENS` | 분석 모델 활성화 시 필수인 모델명과 양수 출력 토큰 한도. Chat 답변 모델과 별개 |
 | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` | Worker·Chat의 같은 모델/버전·차원. 임의 기본 모델 없음 |
 | `CHAT_MODEL`, `CHAT_TOKEN_ENCODING`, `CHAT_CONTEXT_TOKENS` | 답변 모델·해당 tokenizer·전체 context 용량을 명시 |
 | `CHAT_INPUT_TOKEN_BUDGET`, `CHAT_MAX_OUTPUT_TOKENS` | 기본8000·2048. 입력 budget+출력 cap+여유256이 context 이내여야 함 |
@@ -60,7 +62,7 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 스키마는 API의 Flyway가 생성·변경하고 세 앱은 `ddl-auto=validate`로 검사한다. Worker·Chat은 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
-영상 분석 완료에는 GCS 인증과 분석용 ChatModel·임베딩용 EmbeddingModel이 필요하다. 임베딩은 libs/ai의 실제 공급자 설정을 활성화해 연결한다. 분석용 ChatModel은 AI 파트와 별도로 연결해야 하며 채팅 답변 모델을 Worker에 재사용하지 않는다. [분석 AI와 현재 코드](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한다. 필수 모델이 없는 분석 작업은 AI_NOT_CONFIGURED로 실패한다. [채팅 직접 생성 설정](chat-generation-contract.md#공급자실행-설정)은 이 분석 모델 설정과 별개다.
+영상 분석 완료에는 GCS 인증과 분석용 ChatModel·임베딩용 EmbeddingModel이 필요하다. Worker 분석 모델은 `ANALYSIS_AI_ENABLED`와 위 모델 변수로 활성화하며 채팅 답변 모델과 별개다. 임베딩은 libs/ai의 공급자 설정으로 활성화한다. 필수 모델이 없는 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)과 [채팅 설정](chat-generation-contract.md#공급자실행-설정)을 확인한다.
 
 자막·AI 출력 JSON, 환경변수, 단계별 재시도와 함수 흐름은 [분석 Worker 안내](analysis-worker.md)를 따른다. Worker는 기본 2초마다 작업을 조회한다. `WORKER_SCHEDULING_ENABLED=false`는 수동 점검용이며 시연에서는 기본값 `true`로 실행한다.
 
@@ -130,6 +132,7 @@ DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·C
 | `API_IMAGE`, `WORKER_IMAGE`, `CHAT_IMAGE` | 기본 `itip-api:local`, `itip-worker:local`, `itip-chat:local`. 원격 배포 시 버전 태그 지정 후 같은 Compose 명령의 `pull` 실행 |
 | `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
 | `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
+| `ANALYSIS_AI_ENABLED`, `ANALYSIS_MODEL`, `ANALYSIS_MAX_OUTPUT_TOKENS` | Worker의 분석 모델 활성화·모델명·출력 한도 |
 | `OPENAI_API_KEY`, `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` 및 모델 변수 | Worker·Chat으로 전달. 일반 API에는 키를 전달하지 않음. [전체 모델 설정](chat-generation-contract.md#공급자실행-설정) 참고 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat에 전달하는 임베딩 응답의 fallback 식별자. 실제 모델 Bean 설정과 별개 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20 |
