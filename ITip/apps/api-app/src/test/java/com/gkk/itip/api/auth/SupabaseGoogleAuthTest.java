@@ -36,8 +36,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -137,6 +139,30 @@ class SupabaseGoogleAuthTest {
         mvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, owner)).andExpect(status().isOk());
         mvc.perform(get(location).header(HttpHeaders.AUTHORIZATION, other))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void nextAccountCanRegisterDeviceAfterPreviousOwnerDisconnectsIt() throws Exception {
+        String owner = bearer(claims(UUID.randomUUID().toString()).build(), JWSAlgorithm.ES256);
+        String nextOwner = bearer(claims(UUID.randomUUID().toString()).build(), JWSAlgorithm.ES256);
+        String device = ME + "/devices/" + UUID.randomUUID();
+        String registration = """
+                {"platform":"ANDROID","fcmToken":"synthetic-test-token","notificationPermission":"GRANTED"}
+                """;
+
+        mvc.perform(put(device).header(HttpHeaders.AUTHORIZATION, owner)
+                        .contentType(MediaType.APPLICATION_JSON).content(registration))
+                .andExpect(status().isOk());
+        mvc.perform(delete(device).header(HttpHeaders.AUTHORIZATION, nextOwner))
+                .andExpect(status().isOk());
+        mvc.perform(put(device).header(HttpHeaders.AUTHORIZATION, nextOwner)
+                        .contentType(MediaType.APPLICATION_JSON).content(registration))
+                .andExpect(status().isConflict());
+        mvc.perform(delete(device).header(HttpHeaders.AUTHORIZATION, owner))
+                .andExpect(status().isOk());
+        mvc.perform(put(device).header(HttpHeaders.AUTHORIZATION, nextOwner)
+                        .contentType(MediaType.APPLICATION_JSON).content(registration))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.registered").value(true));
     }
 
     private static JWTClaimsSet.Builder claims(String subject) {

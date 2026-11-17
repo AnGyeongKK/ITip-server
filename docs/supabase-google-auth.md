@@ -31,6 +31,8 @@ Spring은 `/auth/v1/.well-known/jwks.json`의 공개 키를 사용한다. Google
 ## 모바일 연동
 
 - Supabase SDK가 Google 로그인, 세션 갱신, 로그아웃을 담당한다. API·Chat의 JSON 요청과 POST SSE 요청 모두 `Authorization: Bearer <access_token>`을 보낸다. SSE 연결에 별도 HTTP 코드를 쓰면 그 요청에도 헤더를 설정한다.
+- 알림을 등록한 기기는 로그아웃 전에 기존 세션으로 `DELETE /api/v1/users/me/devices/{installationId}`를 호출한다. 성공 후 앱의 등록 상태를 지우고 Supabase에서 로그아웃한다. 연결 해제에 실패하면 재시도할 수 있게 표시한다. 다음 계정은 로그인 후 같은 기기를 다시 등록한다. 데모에서 로그인 모드로 바꿀 때도 데모 모드에서 먼저 해제한다.
+- 진행 중인 분석의 `batchId`와 앱이 보관하는 기록·채팅 캐시는 사용자 UUID별로 분리한다.
 - `GET /api/v1/users/me`가 `200`과 `data.userId`에 로그인한 UUID를 반환하면 서버 연동이 된 것이다.
 - 토큰 누락·검증 실패는 SSE 연결을 열기 전에도 동일한 `401` JSON을 반환한다. 앱은 토큰을 갱신하고, 갱신 실패 시 로그인 화면을 연다.
 
