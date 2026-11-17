@@ -4,6 +4,7 @@ dependencies {
     implementation 'com.google.cloud:google-cloud-storage:2.75.0'
     implementation 'org.springframework:spring-context'
     implementation 'org.springframework:spring-webmvc'
+    compileOnly 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
     compileOnly 'jakarta.servlet:jakarta.servlet-api'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'

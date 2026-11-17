@@ -5,7 +5,11 @@ x-app-environment: &app-environment
   DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-itip}
   DB_USER: ${DB_USER:-itip}
   DB_PASSWORD: ${DB_PASSWORD:?로컬 DB_PASSWORD를 설정하세요}
+
+x-user-auth-environment: &user-auth-environment
   DEMO_USER_ID: ${DEMO_USER_ID:-demo-user}
+  ITIP_AUTH_MODE: ${ITIP_AUTH_MODE:-demo}
+  SUPABASE_URL: ${SUPABASE_URL:-}
 
 x-embedding-environment: &embedding-environment
   AI_EMBEDDING_ENABLED: ${AI_EMBEDDING_ENABLED:-false}
@@ -19,7 +23,7 @@ services:
   api:
     image: ${API_IMAGE:-itip-api:local}
     environment:
-      <<: *app-environment
+      <<: [*app-environment, *user-auth-environment]
       SERVER_PORT: "8080"
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
     ports:
@@ -54,7 +58,7 @@ services:
   chat:
     image: ${CHAT_IMAGE:-itip-chat:local}
     environment:
-      <<: [*app-environment, *embedding-environment]
+      <<: [*app-environment, *embedding-environment, *user-auth-environment]
       CHAT_PORT: "8082"
       # 두 모델의 명시적 설정 전에는 질문 접수만 JSON503, 조회는 계속 사용할 수 있다.
       CHAT_GENERATION_ENABLED: ${CHAT_GENERATION_ENABLED:-false}

@@ -2,7 +2,7 @@ package com.gkk.itip.api.device.controller;
 
 import com.gkk.itip.api.device.dto.DeviceRegistration;
 import com.gkk.itip.api.device.service.NotificationDevices;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,9 +18,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/users/me/devices/{installationId}")
 public class NotificationDeviceController {
     private final NotificationDevices devices;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public NotificationDeviceController(NotificationDevices devices, DemoUserProvider user) {
+    public NotificationDeviceController(NotificationDevices devices, CurrentUser user) {
         this.devices = devices;
         this.user = user;
     }

@@ -4,7 +4,7 @@ import com.gkk.itip.api.analysis.dto.request.RetryJobRequest;
 import com.gkk.itip.api.analysis.dto.request.SubmitJobRequest;
 import com.gkk.itip.api.analysis.dto.response.*;
 import com.gkk.itip.api.analysis.service.JobService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import com.gkk.itip.domain.analysis.JobStatus;
 import jakarta.validation.Valid;
@@ -17,8 +17,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/analysis-jobs")
 public class JobController {
     private final JobService jobs;
-    private final DemoUserProvider user;
-    public JobController(JobService jobs, DemoUserProvider user) { this.jobs = jobs; this.user = user; }
+    private final CurrentUser user;
+    public JobController(JobService jobs, CurrentUser user) { this.jobs = jobs; this.user = user; }
 
     @PostMapping
     public ResponseEntity<ApiResponse<JobSubmittedResponse>> submit(@RequestHeader("Idempotency-Key") UUID key,

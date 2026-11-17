@@ -4,7 +4,7 @@ import com.gkk.itip.api.archive.dto.response.ArchiveHomeResponse;
 import com.gkk.itip.api.archive.dto.response.PlaylistGroupResponse;
 import com.gkk.itip.api.archive.service.ArchiveHomeQuery;
 import com.gkk.itip.api.archive.service.PlaylistGroupQuery;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,9 +17,9 @@ import java.util.UUID;
 public class ArchiveOverviewController {
     private final PlaylistGroupQuery groups;
     private final ArchiveHomeQuery home;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public ArchiveOverviewController(PlaylistGroupQuery groups, ArchiveHomeQuery home, DemoUserProvider user) {
+    public ArchiveOverviewController(PlaylistGroupQuery groups, ArchiveHomeQuery home, CurrentUser user) {
         this.groups = groups;
         this.home = home;
         this.user = user;

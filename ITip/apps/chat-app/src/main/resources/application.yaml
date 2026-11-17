@@ -10,6 +10,9 @@ server:
   port: ${CHAT_PORT:8082}
 
 itip:
+  auth:
+    mode: ${ITIP_AUTH_MODE:supabase}
+    supabase-url: ${SUPABASE_URL:}
   chat:
     embedding-model-id: ${ANALYSIS_EMBEDDING_MODEL_ID:}
     retrieval-top-k: ${CHAT_RETRIEVAL_TOP_K:8}

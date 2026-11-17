@@ -3,7 +3,7 @@ package com.gkk.itip.api.search.controller;
 import com.gkk.itip.api.search.dto.response.RecordKeywordsResponse;
 import com.gkk.itip.api.search.dto.response.RecordSearchResponse;
 import com.gkk.itip.api.search.service.RecordSearchService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,9 +14,9 @@ import java.util.List;
 @RestController
 public class RecordSearchController {
     private final RecordSearchService search;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public RecordSearchController(RecordSearchService search, DemoUserProvider user) {
+    public RecordSearchController(RecordSearchService search, CurrentUser user) {
         this.search = search;
         this.user = user;
     }

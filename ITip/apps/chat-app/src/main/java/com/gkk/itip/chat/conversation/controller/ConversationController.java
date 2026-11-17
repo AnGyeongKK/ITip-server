@@ -5,7 +5,7 @@ import com.gkk.itip.chat.conversation.dto.CreateConversationRequest;
 import com.gkk.itip.chat.conversation.dto.ConversationView;
 import com.gkk.itip.chat.conversation.service.ConversationService;
 import com.gkk.itip.chat.conversation.service.ConversationQueryService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -19,8 +19,8 @@ import java.util.UUID;
 public class ConversationController {
     private final ConversationService rooms;
     private final ConversationQueryService queries;
-    private final DemoUserProvider user;
-    public ConversationController(ConversationService rooms, ConversationQueryService queries, DemoUserProvider user) {
+    private final CurrentUser user;
+    public ConversationController(ConversationService rooms, ConversationQueryService queries, CurrentUser user) {
         this.rooms = rooms; this.queries = queries; this.user = user;
     }
     @PostMapping

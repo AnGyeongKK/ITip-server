@@ -7,6 +7,9 @@ spring:
     enabled: true
 
 itip:
+  auth:
+    mode: ${ITIP_AUTH_MODE:supabase}
+    supabase-url: ${SUPABASE_URL:}
   demo:
     owner-id: ${DEMO_USER_ID:demo-user}
   upload:
