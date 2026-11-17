@@ -8,6 +8,11 @@ spring:
   flyway:
     enabled: false
 
+logging:
+  level:
+    # 빈 choices 응답에서 SDK 모델이 전체 prompt를 WARN으로 기록하는 경로를 차단한다.
+    "org.springframework.ai.openai.OpenAiChatModel": "OFF"
+
 itip:
   analysis:
     generation:

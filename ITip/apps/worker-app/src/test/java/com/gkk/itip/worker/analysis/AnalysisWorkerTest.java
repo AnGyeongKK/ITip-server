@@ -355,6 +355,33 @@ class AnalysisWorkerTest {
         } finally { logger.detachAppender(appender); appender.stop(); }
     }
 
+    @Test void actualSdkEmptyChoicesCannotLogTheOriginalPrompt() throws Exception {
+        var logger=(ch.qos.logback.classic.Logger)org.slf4j.LoggerFactory.getLogger("org.springframework.ai.openai.OpenAiChatModel");
+        assertThat(logger.getEffectiveLevel()).isEqualTo(ch.qos.logback.classic.Level.OFF);
+        var appender=new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();appender.start();logger.addAppender(appender);
+        var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/v1/chat/completions",exchange -> {
+            calls.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
+            byte[] body="{\"id\":\"chatcmpl-empty\",\"object\":\"chat.completion\",\"created\":1,\"model\":\"gpt-6-luna\",\"choices\":[]}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type","application/json");exchange.sendResponseHeaders(200,body.length);exchange.getResponseBody().write(body);exchange.close();
+        });server.start();
+        var client=com.gkk.itip.ai.OpenAiClients.create("fixture-not-a-real-key","http://127.0.0.1:"+server.getAddress().getPort()+"/v1",Duration.ofSeconds(10),Duration.ofSeconds(10));
+        try {
+            var actual=org.springframework.ai.openai.OpenAiChatModel.builder().openAiClient(client).openAiClientAsync(client.async())
+                .options(org.springframework.ai.openai.OpenAiChatOptions.builder().maxRetries(0).build()).build();
+            var beans=new StaticListableBeanFactory();beans.addBean("actual",actual);
+            var generator=new SplitAnalysisGenerator(beans.getBeanProvider(ChatModel.class),context.getBean(JsonMapper.class),
+                context.getBean(com.gkk.itip.worker.analysis.ai.AnalysisSchemas.class),context.getBean(com.gkk.itip.worker.analysis.caption.AnalysisCaptionGroups.class),
+                context.getBean(com.gkk.itip.worker.config.AnalysisGenerationProperties.class));
+            var captions=context.getBean(CaptionParser.class).parse(CAPTION,VIDEO,3000,1048576);
+            assertThatThrownBy(() -> generator.generate(captions,3000,PRIVATE_TEXT)).isInstanceOf(com.gkk.itip.worker.analysis.ai.AnalysisAiException.class);
+            assertThat(calls.get()).isEqualTo(1);
+            assertThat(appender.list).isEmpty();
+        } finally {client.close();server.stop(0);logger.detachAppender(appender);appender.stop();}
+    }
+
     @Test void eachDatabaseWriteUsesTheClockAfterItsExternalWait() {
         UUID id = fixture(3000L, CAPTION.length);
         when(gcs.read(anyString(), anyString(), anyLong(), anyLong())).thenAnswer(call -> {
