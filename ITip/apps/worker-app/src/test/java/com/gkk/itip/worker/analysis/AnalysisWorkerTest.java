@@ -18,8 +18,10 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.*;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.*;
@@ -71,6 +73,11 @@ class AnalysisWorkerTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
+    @Test void suppressesTheLibraryLoggerThatCanLogRawCaptions() {
+        var logger = LoggerFactory.getLogger("org.springframework.ai.openai.OpenAiChatModel");
+        assertThat(logger.isWarnEnabled()).isFalse();
+    }
+
     @Autowired ApplicationContext context;
     @Autowired AnalysisWorker worker;
     @Autowired TransactionTemplate tx;
@@ -572,7 +579,8 @@ class AnalysisWorkerTest {
     }
 
     private static ChatResponse reply(String text) {
-        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text),
+                ChatGenerationMetadata.builder().finishReason("STOP").build())));
     }
 
     private static void assertOutsideTransaction() {

@@ -8,6 +8,11 @@ spring:
   flyway:
     enabled: false
 
+logging:
+  level:
+    # Spring AI logs the full prompt when the provider returns no choices.
+    "org.springframework.ai.openai.OpenAiChatModel": "OFF"
+
 itip:
   push:
     enabled: ${FCM_PUSH_ENABLED:false}

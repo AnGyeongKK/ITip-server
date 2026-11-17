@@ -92,7 +92,7 @@ GCS 자막 → CaptionParser → s000001, s000002 …
 
 ## Spring AI 모델 어댑터
 
-`SpringAiAnalysisClient`는 Worker 전용 Spring AI `ChatModel`과 공통 `EmbeddingModel`을 사용한다. `ANALYSIS_AI_ENABLED=true`일 때 `OPENAI_API_KEY`, `ANALYSIS_MODEL`, 양수 `ANALYSIS_MAX_OUTPUT_TOKENS`를 설정한다. `OPENAI_BASE_URL` 기본값은 `https://api.openai.com/v1`이다. 모델 이름과 출력 한도는 선택한 공급자 모델의 지원 범위에 맞춰야 한다. Chat 답변 모델과 설정은 독립적이며, 임베딩 모델은 Worker와 Chat이 일치해야 한다. 분석 모델의 연결·읽기 timeout은 각각 2분이고 SDK 자동 재시도는 끈다. 실제 API 인증·모델 가용성·품질은 별도 확인한다.
+`SpringAiAnalysisClient`는 Worker 전용 Spring AI `ChatModel`과 공통 `EmbeddingModel`을 사용한다. `ANALYSIS_AI_ENABLED=true`일 때 `OPENAI_API_KEY`, `ANALYSIS_MODEL`, 양수 `ANALYSIS_MAX_OUTPUT_TOKENS`를 설정한다. `OPENAI_BASE_URL` 기본값은 `https://api.openai.com/v1`이다. 모델 이름과 출력 한도는 선택한 공급자 모델의 지원 범위에 맞춰야 한다. Chat 답변 모델과 설정은 독립적이며, 임베딩 모델은 Worker와 Chat이 일치해야 한다. 분석 모델은 연결 3초, 쓰기 8초, 읽기와 전체 요청 각각 2분으로 제한하고 SDK 자동 재시도는 끈다. 공급자가 정상 종료(`STOP`)한 응답만 변환하며, 종료 사유가 없거나 거절이 포함되면 `AI_INVALID_RESPONSE`로 처리한다. 실제 API 인증·모델 가용성·품질은 별도 확인한다.
 
 | 메서드 | 입출력과 확인 범위 |
 | --- | --- |

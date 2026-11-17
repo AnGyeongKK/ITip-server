@@ -52,7 +52,7 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 | `itip.worker.chunk-code-points` / `WORKER_CHUNK_CODE_POINTS` | `1200`, 양수 Unicode 문자 수 |
 | `itip.analysis.max-caption-bytes` / `ANALYSIS_MAX_CAPTION_BYTES` | API와 공유하는 `1048576`, 양수이며 `Integer.MAX_VALUE` 미만 |
 
-실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 실패하며 완료 결과를 만들지 않는다. Worker 분석 모델은 연결·읽기 timeout을 각각 2분으로 설정하고 SDK 재시도는 사용하지 않는다.
+실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 실패하며 완료 결과를 만들지 않는다. Worker 분석 모델은 연결 3초, 쓰기 8초, 읽기와 전체 요청 각각 2분으로 제한하고 SDK 재시도는 사용하지 않는다.
 
 ## 실행 실패와 재시도
 

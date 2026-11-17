@@ -88,9 +88,14 @@ public class SpringAiAnalysisClient {
         } catch (RuntimeException exception) {
             throw providerFailure(exception);
         }
-        if (response == null || response.getResult() == null || response.getResult().getOutput() == null)
+        var generation = response == null ? null : response.getResult();
+        if (generation == null || generation.getOutput() == null
+                || !"STOP".equals(generation.getMetadata().getFinishReason()))
             throw invalidResponse();
-        String text = response.getResult().getOutput().getText();
+        var message = generation.getOutput();
+        if (message.getMetadata().get("refusal") instanceof String refusal && !refusal.isBlank())
+            throw invalidResponse();
+        String text = message.getText();
         if (text == null || text.isBlank()) throw invalidResponse();
         try {
             var output = outputConverter.convert(text);
