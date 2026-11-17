@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 @Component
 public class SplitAnalysisGenerator {
     private static final Logger log = LoggerFactory.getLogger(SplitAnalysisGenerator.class);
-    private static final Pattern DIGIT = Pattern.compile("\\d");
+    private static final Pattern DIGIT = Pattern.compile("\\d", Pattern.UNICODE_CHARACTER_CLASS);
     private final ObjectProvider<ChatModel> models;
     private final JsonMapper mapper;
     private final AnalysisSchemas schemas;

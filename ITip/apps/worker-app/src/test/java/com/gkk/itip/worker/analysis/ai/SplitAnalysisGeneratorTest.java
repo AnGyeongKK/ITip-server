@@ -143,6 +143,23 @@ class SplitAnalysisGeneratorTest {
         assertThat(output.sections().getFirst().sourceSegmentIds()).hasSize(10);
         assertThatCode(() -> new AnalysisOutputValidator().validate(output,document)).doesNotThrowAnyException();
     }
+
+    @Test void retainsUncitedUnicodeNumericOriginalsForTheSummary() throws Exception {
+        var inputs=new CopyOnWriteArrayList<tools.jackson.databind.JsonNode>();
+        when(model.call(any(Prompt.class))).thenAnswer(c -> {
+            Prompt prompt=c.getArgument(0);var data=input(prompt);inputs.add(data);
+            if(!data.has("section") && !data.has("evidence"))return reply("{\"earlierSections\":[],\"lastSectionTitle\":\"전체 주제\"}","STOP",100);
+            return reply(prompt);
+        });
+        var document=new CaptionDocument("fixture-video","ko",List.of(
+            new CaptionDocument.Segment("s1",0,12000,"첫 근거입니다."),
+            new CaptionDocument.Segment("s2",12000,24000,"성공률은 ７３％입니다."),
+            new CaptionDocument.Segment("s3",24000,36000,"마지막 설명입니다.")));
+        generator().generate(document,36000,null);
+        var summary=inputs.stream().filter(i -> i.has("evidence")).findFirst().orElseThrow();
+        assertThat(summary.get("evidence").findValuesAsString("groupId")).containsExactly("g000001","g000002");
+        assertThat(summary.get("evidence").findValuesAsString("text")).contains("성공률은 ７３％입니다.");
+    }
     private void assertInvalid(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
         assertThatThrownBy(action).isInstanceOfSatisfying(AnalysisAiException.class,e -> {assertThat(e.code()).isEqualTo("AI_INVALID_RESPONSE");assertThat(e.retryable()).isFalse();});
     }
