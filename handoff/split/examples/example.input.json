@@ -1,0 +1,10 @@
+{
+  "videoId": "self-authored-example",
+  "language": "ko",
+  "durationMs": 60000,
+  "groups": [
+    {"groupId": "EX1", "text": "한 팀에서 반복 작업 시간이 40분에서 10분으로 줄었습니다."},
+    {"groupId": "EX2", "text": "이 수치는 한 팀의 측정이며 다른 팀에서도 같은 결과를 보장하지 않습니다."},
+    {"groupId": "EX3", "text": "배포 전에 테스트를 실행하세요."}
+  ]
+}

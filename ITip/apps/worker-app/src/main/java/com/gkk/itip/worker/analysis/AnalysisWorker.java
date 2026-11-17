@@ -95,14 +95,15 @@ public class AnalysisWorker {
             if (existing.isPresent()) {
                 draft = existing.get();
             } else {
-                captions = readCaptions(claim);
+                var input = readCaptions(claim);
+                captions = input.document();
                 ai.checkConfigured();
                 queue.advance(claim.jobId(), claim.runToken(), AnalysisStage.SUMMARIZING, clock.instant());
-                var document = validator.validate(ai.generate(captions), captions);
+                var document = validator.validate(ai.generate(captions, input.durationMs(), input.title()), captions);
                 draft = store.saveDraft(claim, document, clock.instant());
             }
             if (!draft.indexed()) {
-                if (captions == null) captions = readCaptions(claim);
+                if (captions == null) captions = readCaptions(claim).document();
                 var chunks = chunker.split(draft.analysisId(), captions, draft.document().sections(), properties.chunkCodePoints());
                 var embeddings = ai.embed(chunks);
                 store.saveIndex(claim, draft.analysisId(), chunks, embeddings.model(), embeddings.vectors(), clock.instant());
@@ -123,13 +124,13 @@ public class AnalysisWorker {
         }
     }
 
-    private CaptionDocument readCaptions(JobQueue.Claim claim) {
+    private CaptionInput readCaptions(JobQueue.Claim claim) {
         var source = store.source(claim, clock.instant());
         if (source.durationMs() == null) throw new InvalidCaptionException("VIDEO_METADATA_REQUIRED");
         byte[] bytes = objects.read(source.bucket(), source.objectKey(), source.generation(), maxCaptionBytes);
         if (bytes == null || bytes.length != source.declaredSizeBytes())
             throw new InvalidCaptionException("CAPTION_SIZE_MISMATCH");
-        return parser.parse(bytes, claim.videoId(), source.durationMs(), maxCaptionBytes);
+        return new CaptionInput(parser.parse(bytes, claim.videoId(), source.durationMs(), maxCaptionBytes), source.durationMs(), source.title());
     }
 
     private void renew(JobQueue.Claim claim) {
@@ -166,6 +167,8 @@ public class AnalysisWorker {
             return new Failure("WORKER_DATA_INVALID", "분석 데이터를 확인할 수 없어요.", false);
         return new Failure("WORKER_ERROR", "분석 실행을 완료하지 못했어요.", false);
     }
+
+    private record CaptionInput(CaptionDocument document, long durationMs, String title) {}
 
     private record Failure(String code, String message, boolean retryable) {}
 }

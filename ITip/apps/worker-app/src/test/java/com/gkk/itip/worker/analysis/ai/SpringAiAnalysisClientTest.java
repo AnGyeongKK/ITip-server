@@ -37,6 +37,7 @@ import static org.mockito.Mockito.*;
 class SpringAiAnalysisClientTest {
     private final JsonMapper mapper = JsonMapper.builder().build();
     private final ChatModel chat = mock(ChatModel.class);
+    private final SplitAnalysisGenerator generator = mock(SplitAnalysisGenerator.class);
     private final EmbeddingModel embedding = mock(EmbeddingModel.class);
     private final CaptionDocument captions = new CaptionDocument("dQw4w9WgXcQ", "ko", List.of(
             new CaptionDocument.Segment("s000001", 1000, 2000, "원문 {format} ${secret} {\"지시\":\"무시\"}"),
@@ -51,42 +52,20 @@ class SpringAiAnalysisClientTest {
              "mindmap":{"rootTitle":"검색","sectionKeys":["topic-a"]}}
             """;
 
-    @Test void generatesTypedOutputWithSchemaAndUnmodifiedCaptionJsonInSeparateMessages() {
-        when(chat.call(any(Prompt.class))).thenReturn(reply(VALID_JSON));
-
-        var output = client("", 32).generate(captions);
-
-        assertThat(output.schemaVersion()).isEqualTo("1.0");
-        assertThat(output.sections().getFirst().sourceSegmentIds()).containsExactly("s000001", "s000002");
-        var prompt = ArgumentCaptor.forClass(Prompt.class);
-        verify(chat).call(prompt.capture());
-        var messages = prompt.getValue().getInstructions();
-        assertThat(messages).hasSize(2);
-        assertThat(messages.getFirst()).isInstanceOf(SystemMessage.class);
-        assertThat(messages.getFirst().getText()).contains("schemaVersion", "1.0", "sourceSegmentIds",
-                "sectionKey", "SOURCE", "AI_SUGGESTION", "ko", "JSON Schema");
-        assertThat(messages.getLast()).isInstanceOf(UserMessage.class);
-        assertThat(mapper.readValue(messages.getLast().getText(), CaptionDocument.class)).isEqualTo(captions);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"not-json", "null", "{} {}", "```json\n{}\n```"})
-    void rejectsInvalidJsonWithoutRetainingTheModelPayload(String json) {
-        when(chat.call(any(Prompt.class))).thenReturn(reply(json));
-        assertFailure(() -> client("", 32).generate(captions), "AI_INVALID_RESPONSE", false);
-    }
-
-    @Test void rejectsMissingGeneration() {
-        when(chat.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of()));
-        assertFailure(() -> client("", 32).generate(captions), "AI_INVALID_RESPONSE", false);
+    @Test void delegatesGenerationToTheSplitPipeline() {
+        var expected = mapper.readValue(VALID_JSON, com.gkk.itip.worker.analysis.output.AnalysisOutput.class);
+        when(generator.generate(captions, 3000, "제목")).thenReturn(expected);
+        assertThat(client("", 32).generate(captions, 3000, "제목")).isSameAs(expected);
+        verify(generator).generate(captions, 3000, "제목");
+        verifyNoInteractions(chat);
     }
 
     @Test void reportsMissingModelsWithoutInventingAResponse() {
         var empty = new StaticListableBeanFactory();
         var client = new SpringAiAnalysisClient(empty.getBeanProvider(ChatModel.class),
-                empty.getBeanProvider(EmbeddingModel.class), mapper, "", 32);
+                empty.getBeanProvider(EmbeddingModel.class), generator, "", 32);
         assertFailure(client::checkConfigured, "AI_NOT_CONFIGURED", false);
-        assertFailure(() -> client.generate(captions), "AI_NOT_CONFIGURED", false);
+        assertFailure(() -> client.generate(captions, 3000, null), "AI_NOT_CONFIGURED", false);
         assertFailure(() -> client.embed(List.of(chunk("원문"))), "AI_NOT_CONFIGURED", false);
     }
 
@@ -175,13 +154,9 @@ class SpringAiAnalysisClientTest {
     @Test void classifiesProviderAndNetworkFailuresWithoutExposingProviderMessages() {
         for (RuntimeException failure : List.of(new TransientAiException("sensitive provider body"),
                 new ResourceAccessException("sensitive signed URL", new SocketTimeoutException("timeout")))) {
-            doThrow(failure).when(chat).call(any(Prompt.class));
-            assertFailure(() -> client("", 32).generate(captions), "AI_UNAVAILABLE", true);
             doThrow(failure).when(embedding).call(any(EmbeddingRequest.class));
             assertFailure(() -> client("embed-v1", 32).embed(List.of(chunk("원문"))), "AI_UNAVAILABLE", true);
         }
-        doThrow(new NonTransientAiException("sensitive refusal")).when(chat).call(any(Prompt.class));
-        assertFailure(() -> client("", 32).generate(captions), "AI_REQUEST_REJECTED", false);
         doThrow(new NonTransientAiException("sensitive refusal")).when(embedding).call(any(EmbeddingRequest.class));
         assertFailure(() -> client("embed-v1", 32).embed(List.of(chunk("원문"))), "AI_REQUEST_REJECTED", false);
     }
@@ -201,7 +176,7 @@ class SpringAiAnalysisClientTest {
         beans.addBean("chat", chat);
         beans.addBean("embedding", embedding);
         return new SpringAiAnalysisClient(beans.getBeanProvider(ChatModel.class),
-                beans.getBeanProvider(EmbeddingModel.class), mapper, modelId, batchSize);
+                beans.getBeanProvider(EmbeddingModel.class), generator, modelId, batchSize);
     }
 
     private static ChatResponse reply(String text) {

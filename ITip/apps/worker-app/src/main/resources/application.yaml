@@ -9,6 +9,20 @@ spring:
     enabled: false
 
 itip:
+  analysis:
+    generation:
+      enabled: ${ANALYSIS_OPENAI_ENABLED:false}
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      model: ${ANALYSIS_OPENAI_MODEL:}
+      token-encoding: ${ANALYSIS_TOKEN_ENCODING:}
+      context-tokens: ${ANALYSIS_CONTEXT_TOKENS:0}
+      input-token-budget: ${ANALYSIS_INPUT_TOKEN_BUDGET:30000}
+      total-output-tokens: ${ANALYSIS_TOTAL_OUTPUT_TOKENS:16000}
+      plan-output-tokens: ${ANALYSIS_PLAN_OUTPUT_TOKENS:1024}
+      detail-output-tokens: ${ANALYSIS_DETAIL_OUTPUT_TOKENS:4096}
+      summary-output-tokens: ${ANALYSIS_SUMMARY_OUTPUT_TOKENS:3072}
+      detail-concurrency: ${ANALYSIS_DETAIL_CONCURRENCY:3}
   push:
     enabled: ${FCM_PUSH_ENABLED:false}
     project-id: ${FCM_PROJECT_ID:}

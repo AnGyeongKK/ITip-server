@@ -37,7 +37,7 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 
 호출 순서는 준비 기한 만료 사용자 조회 → 사용자별 `expire()`의 독립 트랜잭션 → 작업 한 개 선점 → draft 조회 → 필요한 GCS·모델 호출 → 결과 저장 → 원문 조각·임베딩 저장 → 완료다. 준비 만료 조회 또는 특정 사용자의 만료 처리가 실패해도 다른 사용자와 접수한 작업을 계속 처리한다. GCS·모델 대기 동안 DB 트랜잭션은 없고, 각 DB 호출은 호출 직전의 `Clock.instant()`를 받는다.
 
-- draft가 없으면 고정 generation 원문을 읽고 실제 영상 길이·업로드 선언 크기·JSON·원문 범위를 확인한다. 길이가 없으면 `VIDEO_METADATA_REQUIRED`로 실패하며 추정하지 않는다. 검증 후 `SUMMARIZING`에서 모델을 호출하고 서버 UUID를 포함한 draft를 저장한다.
+- draft가 없으면 고정 generation 원문을 읽고 실제 영상 길이·업로드 선언 크기·JSON·원문 범위를 확인한다. 길이가 없으면 `VIDEO_METADATA_REQUIRED`로 실패하며 추정하지 않는다. 검증 후 `SUMMARIZING`에서 [분할 분석](analysis-split-generation.md)의 계획·상세·요약을 호출한다. 전체 결과가 검증된 뒤에만 서버 UUID를 포함한 draft를 저장한다.
 - draft가 있으면 원래 서버 UUID와 JSON을 재사용하고 생성을 반복하지 않는다. 인덱스가 없을 때만 고정 generation 원문을 다시 읽고 저장된 화면 구간에 맞춰 임베딩한다. 인덱스까지 있으면 GCS·모델을 다시 호출하지 않고 완료한다. 이미 성공한 단계를 `VALIDATING`으로 되돌리지 않는다.
 - 작업마다 heartbeat를 등록하고 첫 실행 및 이후 간격마다 `JobQueue.renew()`로 lease를 연장한다. 완료·실패·lease 상실 시 예약을 취소한다. 폴링과 heartbeat는 플랫폼 스레드 두 개를 가진 단일 `ThreadPoolTaskScheduler`를 공유하며, 취소한 예약은 즉시 제거한다. Virtual Threads는 비활성화한다.
 - heartbeat 갱신 실패는 새 실행을 실패 처리하지 않는다. 각 저장 시점의 run token·lease 확인이 최종 권한을 판단한다. `LostJobLeaseException` 후에는 결과 저장·실패 전환을 추가 호출하지 않는다. processor와 heartbeat는 `MDC.jobId`를 넣고 종료 시 제거한다.
@@ -52,7 +52,7 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 | `itip.worker.chunk-code-points` / `WORKER_CHUNK_CODE_POINTS` | `1200`, 양수 Unicode 문자 수 |
 | `itip.analysis.max-caption-bytes` / `ANALYSIS_MAX_CAPTION_BYTES` | API와 공유하는 `1048576`, 양수이며 `Integer.MAX_VALUE` 미만 |
 
-실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)의 설정이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 명확히 실패하며 완료 결과를 만들지 않는다. 공급자 선정·API 키·네트워크 설정은 이 실행 기능에 포함하지 않는다. 실제 모델 Bean 제공자가 HTTP connect/read/전체 timeout과 SDK 시도 횟수 1을 설정·검증해야 한다.
+실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)의 설정이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 명확히 실패하며 완료 결과를 만들지 않는다. 공급자 선정·API 키·네트워크 설정은 이 실행 기능에 포함하지 않는다. 분석 모델 Bean과 호출별 timeout·SDK 재시도0 설정은 분할 분석 문서를 따른다. 전체 GCS·모바일 실연동은 별도 검증 대상이다.
 
 ## 실행 실패와 재시도
 

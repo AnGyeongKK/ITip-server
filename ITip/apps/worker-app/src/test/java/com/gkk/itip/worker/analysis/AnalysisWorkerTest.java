@@ -6,6 +6,8 @@ import com.gkk.itip.domain.analysis.*;
 import com.gkk.itip.domain.upload.CaptionUpload;
 import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.worker.analysis.ai.SpringAiAnalysisClient;
+import com.gkk.itip.worker.analysis.ai.SplitAnalysisFixtures;
+import com.gkk.itip.worker.analysis.ai.SplitAnalysisGenerator;
 import com.gkk.itip.worker.analysis.caption.CaptionChunker;
 import com.gkk.itip.worker.analysis.caption.CaptionParser;
 import com.gkk.itip.worker.analysis.output.AnalysisOutputValidator;
@@ -58,7 +60,9 @@ import static org.mockito.Mockito.*;
 
 /** 모델 JSON은 외부 응답을 대신하는 고정 예시이며 실제 분석 품질의 근거가 아니다. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
-        "spring.flyway.enabled=true", "itip.worker.scheduling-enabled=false", "itip.worker.heartbeat-delay=PT0.05S"})
+        "spring.flyway.enabled=true", "itip.analysis.generation.model=gpt-6-luna",
+        "itip.analysis.generation.token-encoding=O200K_BASE", "itip.analysis.generation.context-tokens=1050000",
+        "itip.worker.scheduling-enabled=false", "itip.worker.heartbeat-delay=PT0.05S"})
 @Testcontainers
 class AnalysisWorkerTest {
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -113,7 +117,7 @@ class AnalysisWorkerTest {
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             assertOutsideTransaction();
             assertThat(MDC.get("jobId")).isNotBlank();
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         when(embedding.call(any(EmbeddingRequest.class))).thenAnswer(call -> {
             assertOutsideTransaction();
@@ -145,7 +149,7 @@ class AnalysisWorkerTest {
         assertThat(jdbc.queryForObject("select section_ids[1] from analysis_chunks", UUID.class)).isEqualTo(saved.getFirst().getId());
         assertThat(runNext()).isFalse();
         assertThat(MDC.get("jobId")).isNull();
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(embedding).call(any(EmbeddingRequest.class));
     }
 
@@ -212,7 +216,7 @@ class AnalysisWorkerTest {
         assertThat(results.findById(analysisId).orElseThrow().getResultJson()).isEqualTo(original);
         assertThat(sections.findAllByAnalysisIdOrderByStartMsAscIdAsc(analysisId).getFirst().getId()).isEqualTo(sectionId);
         assertThat(records.count()).isEqualTo(1);
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(gcs, times(2)).read("test-bucket", "caption.json", 7, 1048576);
     }
 
@@ -230,7 +234,7 @@ class AnalysisWorkerTest {
         assertThat(jobs.findById(id).orElseThrow().getStatus()).isEqualTo(JobStatus.COMPLETED);
         assertThat(records.count()).isEqualTo(1);
         verify(gcs).read("test-bucket", "caption.json", 7, 1048576);
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(embedding).call(any(EmbeddingRequest.class));
     }
 
@@ -239,8 +243,8 @@ class AnalysisWorkerTest {
         AtomicReference<JobQueue.Claim> newer = new AtomicReference<>();
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             clock.set(NOW.plusSeconds(121));
-            newer.set(queue.claim(clock.instant(), Duration.ofMinutes(2)).orElseThrow());
-            return reply(OUTPUT);
+            if (newer.get() == null) newer.set(queue.claim(clock.instant(), Duration.ofMinutes(2)).orElseThrow());
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         runNext();
         var job = jobs.findById(id).orElseThrow();
@@ -273,7 +277,7 @@ class AnalysisWorkerTest {
             clock.set(NOW.plusSeconds(60));
             assertThat(renewed.await(5, TimeUnit.SECONDS)).isTrue();
             assertThat(jobs.findById(id).orElseThrow().getLeaseUntil()).isEqualTo(NOW.plusSeconds(180));
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         assertThat(runNext()).isTrue();
         assertThat(callbackSeen.await(5, TimeUnit.SECONDS)).isTrue();
@@ -313,7 +317,7 @@ class AnalysisWorkerTest {
 
     @Test void invalidModelReferencesNeverCreateADraftOrIndex() {
         UUID id = fixture(3000L, CAPTION.length);
-        when(chat.call(any(Prompt.class))).thenReturn(reply(OUTPUT.replace("s000002", "s999999")));
+        when(chat.call(any(Prompt.class))).thenAnswer(call -> SplitAnalysisFixtures.replyWithInvalidDetail(call.getArgument(0, Prompt.class)));
         runNext();
         assertFailure(id, "AI_INVALID_RESPONSE", false, JobStatus.FAILED);
         assertThat(results.count()).isZero();
@@ -357,7 +361,7 @@ class AnalysisWorkerTest {
             clock.set(NOW.plusSeconds(1)); return CAPTION;
         });
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
-            clock.set(NOW.plusSeconds(2)); return reply(OUTPUT);
+            clock.set(NOW.plusSeconds(2)); return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         when(embedding.call(any(EmbeddingRequest.class))).thenAnswer(call -> {
             clock.set(NOW.plusSeconds(3));
@@ -435,7 +439,7 @@ class AnalysisWorkerTest {
         UUID id = fixture(3000L, CAPTION.length);
         var empty = new StaticListableBeanFactory();
         var ai = new SpringAiAnalysisClient(empty.getBeanProvider(ChatModel.class), empty.getBeanProvider(EmbeddingModel.class),
-                context.getBean(JsonMapper.class), "", 32);
+                context.getBean(SplitAnalysisGenerator.class), "", 32);
         assertThat(processor(ai, 1048576).runNext()).isTrue();
         assertFailure(id, "AI_NOT_CONFIGURED", false, JobStatus.FAILED);
         assertThat(results.count()).isZero();
@@ -484,7 +488,7 @@ class AnalysisWorkerTest {
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             assertThat(failed.await(5, TimeUnit.SECONDS)).isTrue();
             assertThat(succeeded.await(5, TimeUnit.SECONDS)).isTrue();
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         runNext();
         assertThat(jobs.findById(id).orElseThrow().getStatus()).isEqualTo(JobStatus.COMPLETED);
