@@ -41,6 +41,11 @@ services:
     environment:
       <<: [*app-environment, *embedding-environment]
       WORKER_SCHEDULING_ENABLED: ${WORKER_SCHEDULING_ENABLED:-true}
+      ANALYSIS_AI_ENABLED: ${ANALYSIS_AI_ENABLED:-false}
+      ANALYSIS_MODEL: ${ANALYSIS_MODEL:-}
+      ANALYSIS_MAX_OUTPUT_TOKENS: ${ANALYSIS_MAX_OUTPUT_TOKENS:-0}
+      FCM_PUSH_ENABLED: ${FCM_PUSH_ENABLED:-false}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
     depends_on:
       api:
         condition: service_healthy

@@ -52,7 +52,7 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 | `itip.worker.chunk-code-points` / `WORKER_CHUNK_CODE_POINTS` | `1200`, 양수 Unicode 문자 수 |
 | `itip.analysis.max-caption-bytes` / `ANALYSIS_MAX_CAPTION_BYTES` | API와 공유하는 `1048576`, 양수이며 `Integer.MAX_VALUE` 미만 |
 
-실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)의 설정이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 명확히 실패하며 완료 결과를 만들지 않는다. 공급자 선정·API 키·네트워크 설정은 이 실행 기능에 포함하지 않는다. 실제 모델 Bean 제공자가 HTTP connect/read/전체 timeout과 SDK 시도 횟수 1을 설정·검증해야 한다.
+실행은 마이그레이션을 끝낸 로컬 PostgreSQL과 연결 환경변수를 준비한 뒤 `ITip/`에서 `./gradlew :apps:worker-app:bootRun`으로 한다. 실제 GCS 원문·모델을 사용하려면 [로컬 실행](local-run.md) 및 [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)이 필요하다. 모델 Bean이 없으면 `AI_NOT_CONFIGURED`로 실패하며 완료 결과를 만들지 않는다. Worker 분석 모델은 연결 3초, 쓰기 8초, 읽기와 전체 요청 각각 2분으로 제한하고 SDK 재시도는 사용하지 않는다.
 
 ## 실행 실패와 재시도
 
@@ -86,4 +86,4 @@ lease가 만료되거나 다른 token으로 재선점되면 읽기·저장·완�
 
 실제 PostgreSQL의 draft 재사용·벡터/배열 값·잘못된 임베딩·batch rollback·완료 rollback·중복 완료·만료 token·수동 재시도를 확인한다. 실제 GCS·AI 모델·임베딩 품질은 별도 검증 대상이다. 공개 결과·채팅 검색의 연결 범위는 [analysis-integration.md](analysis-integration.md), 화면 결과 형식은 [analysis-ai-contract.md](analysis-ai-contract.md)를 따른다.
 
-`./gradlew :apps:worker-app:test --tests '*AnalysisWorkerTest'`는 실제 PostgreSQL·Spring 컨텍스트·실제 parser/validator/AI 어댑터를 연결하고 GCS·Spring AI `ChatModel`·`EmbeddingModel` 통신만 대체한다. 정상 완료의 결과·구간·vector·기록, 외부 대기의 트랜잭션 부재, 오류·재시도 상한, draft ID·JSON 재사용, 인덱스 이후 완료 재시도, 오래된 token의 저장 차단, 모델 대기 중 실제 heartbeat commit·종료 후 예약 취소, runtime 이후 실제 주기 호출 지속, 준비 만료와 접수 작업의 분리를 확인한다. 완료 저장의 일시 잠금 실패는 DB 경계에서 한 번 주입하며 실제 DB 장애를 재현한 검증은 아니다. 고정 모델 JSON은 테스트용 외부 응답 예시다. 실제 GCS 인증·공급자 인증·HTTP timeout·요약/임베딩 품질·Python 서버는 검증하지 않는다.
+`./gradlew :apps:worker-app:test --tests '*AnalysisWorkerTest'`는 실제 PostgreSQL·Spring 컨텍스트·parser/validator/AI 어댑터를 연결한다. 모델 HTTP 응답과 GCS·임베딩은 테스트 대역이다. 정상 완료의 결과·구간·vector·기록, 외부 대기의 트랜잭션 부재, 오류·재시도 상한과 작업 선점을 확인한다. `AnalysisModelConfigurationTest`는 로컬 HTTP 대역으로 모델명·출력 한도와 SDK 재시도 여부를 확인한다. 실제 GCS·공급자 인증, timeout 발생과 AI 품질은 검증하지 않는다.

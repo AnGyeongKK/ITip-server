@@ -2,8 +2,12 @@ package com.gkk.itip.worker.analysis;
 
 import com.gkk.itip.domain.analysis.*;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -12,23 +16,42 @@ import java.util.UUID;
 
 @Service
 public class JobQueue {
+    private static final Logger log = LoggerFactory.getLogger(JobQueue.class);
     private final EntityManager em;
     private final AnalysisJobRepository jobs;
 
-    public JobQueue(EntityManager em, AnalysisJobRepository jobs) { this.em = em; this.jobs = jobs; }
+    private final AnalysisOwnerLock ownerLock;
+    private final AnalysisBatchPushOutbox pushOutbox;
+    private final ExpiredJobLeaseService expiredLeases;
+    private final TransactionTemplate claimTransaction;
+
+    public JobQueue(EntityManager em, AnalysisJobRepository jobs, AnalysisOwnerLock ownerLock,
+                    AnalysisBatchPushOutbox pushOutbox, ExpiredJobLeaseService expiredLeases,
+                    PlatformTransactionManager transactionManager) {
+        this.em = em;
+        this.jobs = jobs;
+        this.ownerLock = ownerLock;
+        this.pushOutbox = pushOutbox;
+        this.expiredLeases = expiredLeases;
+        this.claimTransaction = new TransactionTemplate(transactionManager);
+    }
 
     public record Claim(UUID jobId, String ownerId, UUID batchId, UUID batchItemId,
                         String videoId, UUID uploadId, long generation, UUID runToken,
                         AnalysisStage stage, int attempt, UUID analysisId) {}
 
-    @Transactional
     public Optional<Claim> claim(Instant now, Duration leaseDuration) {
-        em.createNativeQuery("""
-                update analysis_jobs set status = 'FAILED', error_code = 'WORKER_LEASE_EXPIRED',
-                    error_message = '분석 실행이 중단됐어요. 다시 시도해 주세요.', retryable = true,
-                    run_token = null, lease_until = null, next_attempt_at = null, updated_at = :now
-                where status = 'PROCESSING' and attempt >= max_attempts and lease_until <= :now
-                """).setParameter("now", now).executeUpdate();
+        for (String ownerId : expiredLeases.findOwners(now)) {
+            try {
+                expiredLeases.expire(ownerId, now);
+            } catch (RuntimeException exception) {
+                log.warn("EXPIRED_JOB_RECOVERY_FAILED type={}", exception.getClass().getSimpleName());
+            }
+        }
+        return claimTransaction.execute(status -> claimAvailable(now, leaseDuration));
+    }
+
+    private Optional<Claim> claimAvailable(Instant now, Duration leaseDuration) {
         var ids = em.createNativeQuery("""
                 select id from analysis_jobs where attempt < max_attempts and (
                     (status in ('QUEUED','RETRY_WAIT') and next_attempt_at <= :now)
@@ -59,9 +82,13 @@ public class JobQueue {
 
     @Transactional
     public boolean fail(UUID jobId, UUID token, String code, String message, boolean retryable, Instant now, Duration retryDelay) {
+        String ownerId = em.createQuery("select j.ownerId from AnalysisJob j where j.id = :id", String.class)
+                .setParameter("id", jobId).getSingleResult();
+        ownerLock.lock(ownerId);
         var job = jobs.findByIdForUpdate(jobId).orElseThrow();
         if (!job.isLeaseOwned(token, now)) return false;
         job.fail(token, code, message, retryable, now, retryDelay);
+        if (job.getStatus() == JobStatus.FAILED) pushOutbox.enqueueFinishedBatches(ownerId, now);
         return true;
     }
 }

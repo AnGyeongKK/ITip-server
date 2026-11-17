@@ -1,0 +1,13 @@
+# Optional FCM-only demo. Use with compose.yaml and compose.demo.yaml.
+services:
+  worker:
+    user: "${LOCAL_UID:?Set LOCAL_UID with id -u}:${LOCAL_GID:?Set LOCAL_GID with id -g}"
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/fcm.json
+    volumes:
+      - type: bind
+        source: ${FCM_CREDENTIALS_PATH:?Set FCM_CREDENTIALS_PATH to the local credentials file}
+        target: /run/secrets/fcm.json
+        read_only: true
+        bind:
+          create_host_path: false

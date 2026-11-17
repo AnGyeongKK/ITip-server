@@ -1,6 +1,7 @@
 package com.gkk.itip.worker.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -14,10 +15,10 @@ import java.time.Clock;
 public class WorkerExecutionConfiguration {
     @Bean Clock workerClock() { return Clock.systemUTC(); }
 
-    @Bean ThreadPoolTaskScheduler taskScheduler(Clock clock) {
+    @Bean ThreadPoolTaskScheduler taskScheduler(Clock clock, @Value("${itip.push.enabled:false}") boolean pushEnabled) {
         var scheduler = new ThreadPoolTaskScheduler();
         scheduler.setClock(clock);
-        scheduler.setPoolSize(2);
+        scheduler.setPoolSize(pushEnabled ? 3 : 2);
         scheduler.setThreadNamePrefix("analysis-worker-");
         scheduler.setVirtualThreads(false);
         scheduler.setRemoveOnCancelPolicy(true);

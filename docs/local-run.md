@@ -34,6 +34,8 @@
 | `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` | 기본false. 임베딩/답변 모델 활성화 |
 | `OPENAI_API_KEY` | 각자 환경에서 주입. Worker·Chat만 사용, 값 공유/추적 금지 |
 | `OPENAI_BASE_URL` | 기본 https://api.openai.com/v1 |
+| `ANALYSIS_AI_ENABLED` | Worker의 영상 분석 모델 활성화. 기본 `false` |
+| `ANALYSIS_MODEL`, `ANALYSIS_MAX_OUTPUT_TOKENS` | 분석 모델 활성화 시 필수인 모델명과 양수 출력 토큰 한도. Chat 답변 모델과 별개 |
 | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` | Worker·Chat의 같은 모델/버전·차원. 임의 기본 모델 없음 |
 | `CHAT_MODEL`, `CHAT_TOKEN_ENCODING`, `CHAT_CONTEXT_TOKENS` | 답변 모델·해당 tokenizer·전체 context 용량을 명시 |
 | `CHAT_INPUT_TOKEN_BUDGET`, `CHAT_MAX_OUTPUT_TOKENS` | 기본8000·2048. 입력 budget+출력 cap+여유256이 context 이내여야 함 |
@@ -60,7 +62,7 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 
 스키마는 API의 Flyway가 생성·변경하고 세 앱은 `ddl-auto=validate`로 검사한다. Worker·Chat은 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
 
-영상 분석 완료에는 GCS 인증과 분석용 ChatModel·임베딩용 EmbeddingModel이 필요하다. 임베딩은 libs/ai의 실제 공급자 설정을 활성화해 연결한다. 분석용 ChatModel은 AI 파트와 별도로 연결해야 하며 채팅 답변 모델을 Worker에 재사용하지 않는다. [분석 AI와 현재 코드](analysis-ai-contract.md#현재-반영-상태와-합의할-차이)를 확인한다. 필수 모델이 없는 분석 작업은 AI_NOT_CONFIGURED로 실패한다. [채팅 직접 생성 설정](chat-generation-contract.md#공급자실행-설정)은 이 분석 모델 설정과 별개다.
+영상 분석 완료에는 GCS 인증과 분석용 ChatModel·임베딩용 EmbeddingModel이 필요하다. Worker 분석 모델은 `ANALYSIS_AI_ENABLED`와 위 모델 변수로 활성화하며 채팅 답변 모델과 별개다. 임베딩은 libs/ai의 공급자 설정으로 활성화한다. 필수 모델이 없는 분석 작업은 `AI_NOT_CONFIGURED`로 실패한다. [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)과 [채팅 설정](chat-generation-contract.md#공급자실행-설정)을 확인한다.
 
 자막·AI 출력 JSON, 환경변수, 단계별 재시도와 함수 흐름은 [분석 Worker 안내](analysis-worker.md)를 따른다. Worker는 기본 2초마다 작업을 조회한다. `WORKER_SCHEDULING_ENABLED=false`는 수동 점검용이며 시연에서는 기본값 `true`로 실행한다.
 
@@ -130,6 +132,7 @@ DB healthcheck → API Flyway·JPA 초기화 후 TCP 포트 준비 → Worker·C
 | `API_IMAGE`, `WORKER_IMAGE`, `CHAT_IMAGE` | 기본 `itip-api:local`, `itip-worker:local`, `itip-chat:local`. 원격 배포 시 버전 태그 지정 후 같은 Compose 명령의 `pull` 실행 |
 | `API_PORT`, `CHAT_PORT` | 호스트 포트 8080·8082. 앱의 내부 포트는 고정. 변경하면 Android reverse·앱 주소도 확인 |
 | `YOUTUBE_API_KEY` | API 컨테이너에만 전달. 신규 영상·공개 재생목록의 실제 메타데이터 조회에 필요 |
+| `ANALYSIS_AI_ENABLED`, `ANALYSIS_MODEL`, `ANALYSIS_MAX_OUTPUT_TOKENS` | Worker의 분석 모델 활성화·모델명·출력 한도 |
 | `OPENAI_API_KEY`, `AI_EMBEDDING_ENABLED`, `CHAT_GENERATION_ENABLED` 및 모델 변수 | Worker·Chat으로 전달. 일반 API에는 키를 전달하지 않음. [전체 모델 설정](chat-generation-contract.md#공급자실행-설정) 참고 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat에 전달하는 임베딩 응답의 fallback 식별자. 실제 모델 Bean 설정과 별개 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20 |
@@ -146,6 +149,20 @@ docker compose -f compose.yaml -f compose.demo.yaml -f compose.gcs.yaml up -d
 ```
 
 이 overlay는 파일 접근 권한을 위해 앱을 현재 호스트 UID/GID로 실행한다. 인증 파일이 없으면 시작 전에 실패한다. 버킷 접근·서명 권한과 Worker의 모델 Bean 설정은 별도로 필요하다. GCS overlay로 실행했다면 이후 `ps`·`logs`·`down`에도 같은 세 파일을 지정한다. `down`은 volume을 유지하며 **데이터 보존을 위해 `down -v`를 사용하지 않는다.**
+
+## Android 완료 알림 확인
+
+기기 API는 Flyway V9 적용 후 사용할 수 있다. Worker는 Firebase Admin SDK로 발송한다. `PUT /api/v1/users/me/devices/{installationId}`에는 Expo의 `getDevicePushTokenAsync()`로 얻은 Android 네이티브 FCM 토큰을 등록한다. 실제 발송은 Worker에 `FCM_PUSH_ENABLED=true`, Android 앱과 동일한 `FCM_PROJECT_ID`, 해당 프로젝트에 메시지를 보낼 권한이 있는 Google Application Default Credentials를 설정해 켠다. Compose의 GCS 인증 파일을 함께 사용하려면 해당 계정에 FCM 발송 권한도 있어야 한다. 데모 사용자 식별로는 격리된 테스트 환경에서 검증한다.
+
+GCS 없이 발송만 확인하려면 로컬 환경에 `FCM_CREDENTIALS_PATH`(인증 파일의 절대 경로), `LOCAL_UID`(`id -u`), `LOCAL_GID`(`id -g`), `FCM_PUSH_ENABLED=true`, `FCM_PROJECT_ID`를 설정한다. 아래 구성은 Worker에만 파일을 읽기 전용으로 마운트한다.
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml -f compose.fcm.yaml up -d
+```
+
+GCS도 함께 사용하는 시연에서는 `compose.fcm.yaml` 대신 `compose.gcs.yaml`을 사용하고, 그 인증 파일의 계정에 Firebase 발송 권한도 부여한다. Worker는 두 서비스에 동일한 Application Default Credentials를 사용한다.
+
+Android 테스트 앱에서 알림 권한을 허용하고 해당 설치를 등록한 뒤 영상 여러 개를 선택한다. 앱을 백그라운드로 보내고 마지막 항목의 처리까지 끝나면 성공·실패 개수를 담은 알림 한 건이 오는지 확인한다. 알림을 눌러 배치 결과가 열리는지 확인하고, 기기 연결을 해제한 뒤 다음 배치가 종료될 때 알림이 발송되지 않는지 확인한다.
 
 ## 테스트
 

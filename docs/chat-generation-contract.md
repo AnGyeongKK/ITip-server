@@ -13,7 +13,7 @@ Chat: 접수 TX → 질문 임베딩 → 현재 범위/history 재확인 → pgv
 
 - Spring Chat은 기본8082, Spring MVC·JPA다. AI 대기와 전체 SSE를 DB 트랜잭션으로 묶지 않는다.
 - AI 파트는 프롬프트·모델/옵션·출력 Schema·정상/근거 부족/실패 예시·평가 질문과 정답 근거를 제공한다. Python은 실험에 사용할 수 있으며 실행용 채팅 서버는 필요 없다.
-- 분석용 ChatModel은 Worker의 별도 역할이다. 이번 채팅 변경은 분석 입력/출력·마인드맵 매핑을 바꾸지 않는다. Worker 분석 모델의 실제 설정은 남아 있다.
+- 분석용 ChatModel은 Worker에서 별도로 설정한다. 채팅 답변 모델과 분석 입력/출력·마인드맵 매핑은 독립적이다. [분석 모델 설정](analysis-ai-contract.md#spring-ai-모델-어댑터)을 참고한다.
 
 ## 프롬프트 입력
 

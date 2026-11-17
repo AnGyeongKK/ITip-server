@@ -26,18 +26,21 @@ public class WorkerResultStore {
     private final AnalysisSectionRepository sections;
     private final AnalysisRecordRepository records;
     private final AnalysisOwnerLock ownerLock;
+    private final AnalysisBatchPushOutbox pushOutbox;
     private final EntityManager em;
     private final JdbcTemplate jdbc;
     private final JsonMapper mapper;
 
     public WorkerResultStore(AnalysisJobRepository jobs, AnalysisResultRepository results,
                              AnalysisSectionRepository sections, AnalysisRecordRepository records,
-                             AnalysisOwnerLock ownerLock, EntityManager em, JdbcTemplate jdbc, JsonMapper mapper) {
+                             AnalysisOwnerLock ownerLock, AnalysisBatchPushOutbox pushOutbox,
+                             EntityManager em, JdbcTemplate jdbc, JsonMapper mapper) {
         this.jobs = jobs;
         this.results = results;
         this.sections = sections;
         this.records = records;
         this.ownerLock = ownerLock;
+        this.pushOutbox = pushOutbox;
         this.em = em;
         this.jdbc = jdbc;
         this.mapper = mapper;
@@ -140,6 +143,7 @@ public class WorkerResultStore {
         result.markReady(now);
         var record = records.saveAndFlush(AnalysisRecord.fromCompleted(result));
         job.complete(claim.runToken(), analysisId, record.getId(), now);
+        pushOutbox.enqueueFinishedBatches(claim.ownerId(), now);
         return record.getId();
     }
 

@@ -30,11 +30,23 @@ Idempotency-Key: <앱이 만든 UUID>
 | 내 완료 기록 존재 | `OPEN_RESULT` | analysisId·recordId로 결과 열기 |
 | 내 진행 작업 존재 | `OPEN_JOB` | jobId 또는 새 batchId로 상태 조회 |
 | 신규 영상 | `COLLECT_CAPTIONS` | 기기 수집 → GCS 업로드 → 분석 접수 |
-| 내 다른 배치에서 아직 수집·업로드 준비 중 | HTTP 409 `STATE_CONFLICT` | 앱에 저장한 기존 batchId로 복귀 |
+| 내 다른 배치에서 아직 수집·업로드 준비 중 | HTTP 409 `STATE_CONFLICT` | 단일 충돌 배치는 응답의 Location으로 복귀 |
 
 같은 사용자·API·`Idempotency-Key`의 재전송은 기존 배치를 반환한다. 동일 키에 다른 본문은 409 `IDEMPOTENCY_CONFLICT`다. 비교할 때 입력 목록 순서와 중복까지 포함하며, 생략한 playlistId와 null은 같은 요청으로 본다. 시연 버전은 멱등 키를 자동 삭제하지 않는다.
 
-**현재 복구 범위:** 알고 있는 batchId로만 다시 조회할 수 있다. 앱은 생성 응답의 batchId를 보관해야 한다. 미업로드 상태에는 아직 jobId가 없으며, 진행 중 배치 목록·기존 준비 배치 ID를 찾아주는 API는 이번 범위에 없다. 이 상태의 중복 선택은 새 수집을 만들지 않고 409로 안내한다.
+**기존 미업로드 배치 복귀:** 단일 링크 조회와 재생목록 목록 조회에서 내 유효한 미업로드 준비를 찾으면 `existing.status=AWAITING_UPLOAD`, `existing.batchId`를 반환한다. 기존 완료 결과와 활성 작업이 더 높은 우선순위를 갖는다. `jobId`는 null이며 `batchId`는 이 상태에만 제공한다. 프론트는 그 배치를 조회한 뒤 사용자가 재개를 눌렀을 때 기기 수집을 시작한다.
+
+```json
+{
+  "status": "AWAITING_UPLOAD",
+  "analysisId": null,
+  "recordId": null,
+  "jobId": null,
+  "batchId": "884cba0a-c3df-4795-bcff-18f0761e4490"
+}
+```
+
+조회 이후 앱이 다시 배치 생성을 요청해도 충돌로 신규 배치가 생기지 않는다. 충돌한 모든 영상이 같은 하나의 준비 배치에 있으면 HTTP 409 `STATE_CONFLICT`에 `Location: /api/v1/analysis-batches/{batchId}`를 제공한다. 여러 준비 배치가 섞이면 헤더를 생략한다. 이 경우 앱은 영상 상태를 다시 조회해서 각 항목을 해당 배치에 연결한다. 오류 본문은 공통 형식인 `{code,message}`를 유지한다.
 
 ## 상태 조회
 
@@ -67,7 +79,7 @@ items의 상태를 합산하므로 `total = items.length = 모든 상태 개수�
 {"collectionFailure":{"code":"KOREAN_CAPTION_NOT_FOUND"}}
 ```
 
-허용 code: `KOREAN_CAPTION_NOT_FOUND`, `VIDEO_UNAVAILABLE`, `DURATION_EXCEEDED`, `COLLECTION_RATE_LIMITED`, `UPLOAD_FAILED`. `AWAITING_UPLOAD`에서만 보고할 수 있고 접수된 작업이나 이미 실패한 항목은 409다. 이 오류의 retryable은 false이며 서버 분석 재시도 대상이 아니다. 필요하면 기기 수집·업로드 흐름을 다시 시작한다.
+허용 code는 `KOREAN_CAPTION_NOT_FOUND`, `VIDEO_UNAVAILABLE`, `DURATION_EXCEEDED`, `COLLECTION_RATE_LIMITED`, `UPLOAD_FAILED`다. 기한 내 `AWAITING_UPLOAD` 항목에 처음 보고하면 200으로 실패를 반환한다. 같은 항목의 같은 기기 실패 코드를 재전송하면 저장된 실패를 200으로 반환하며 상태·갱신 시각·알림 예약을 변경하지 않는다. 다른 실패 코드, 접수된 작업, 기한이 지난 새 보고는 `409 STATE_CONFLICT`다. 기기 실패의 `retryable`은 false이며, 필요하면 기기 수집·업로드를 새로 시작한다.
 
 ## 서버 설정과 트랜잭션
 

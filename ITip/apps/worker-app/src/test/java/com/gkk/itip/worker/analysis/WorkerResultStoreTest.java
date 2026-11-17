@@ -4,6 +4,7 @@ import com.gkk.itip.domain.analysis.*;
 import com.gkk.itip.domain.upload.CaptionUpload;
 import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.worker.analysis.caption.CaptionChunker.Chunk;
+import com.gkk.itip.worker.notification.AnalysisPushQueue;
 import com.gkk.itip.domain.analysis.result.ResultDocument;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.*;
@@ -27,7 +28,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {"spring.flyway.enabled=true", "itip.worker.scheduling-enabled=false"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
+        "spring.flyway.enabled=true", "itip.worker.scheduling-enabled=false"})
 @Testcontainers
 class WorkerResultStoreTest {
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -39,6 +41,8 @@ class WorkerResultStoreTest {
     }
     @Autowired WorkerResultStore store;
     @Autowired JobQueue queue;
+    @Autowired AnalysisPushQueue push;
+    @Autowired ExpiredPreparationService expiredPreparations;
     @Autowired TransactionTemplate tx;
     @Autowired EntityManager em;
     @Autowired AnalysisJobRepository jobs;
@@ -51,7 +55,7 @@ class WorkerResultStoreTest {
     private static final Instant NOW = Instant.parse("2026-11-08T00:00:00Z");
     private static final Duration LEASE = Duration.ofSeconds(30);
 
-    @BeforeEach void clear() { jdbc.execute("truncate analysis_batches, videos cascade"); }
+    @BeforeEach void clear() { jdbc.execute("truncate analysis_batches, videos, notification_devices cascade"); }
 
     @Test void savesScreenJsonAndSectionIdsAtomicallyAndReusesTheFirstDraft() {
         var claim = fixture(null);
@@ -180,8 +184,19 @@ class WorkerResultStoreTest {
 
     @Test void completesResultRecordAndJobTogetherAndDuplicateCompletionAddsNothing() {
         var claim = fixture(null);
+        var device = registerDevice(OWNER, "GRANTED", "active-token");
+        registerDevice(OWNER, "DENIED", "denied-token");
+        registerDevice(OWNER, "GRANTED", null);
+        registerDevice("other-owner", "GRANTED", "foreign-token");
         var draft = store.saveDraft(claim, document(UUID.randomUUID()), NOW);
         store.saveIndex(claim, draft.analysisId(), List.of(chunk(draft, UUID.randomUUID(), "원문")), "model", List.of(new float[]{1}), NOW);
+        tx.executeWithoutResult(status -> {
+            store.complete(claim, draft.analysisId(), NOW.plusSeconds(1));
+            assertThat(jdbc.queryForObject("select count(*) from analysis_push_deliveries", Integer.class)).isEqualTo(1);
+            status.setRollbackOnly();
+        });
+        assertThat(records.count()).isZero();
+        assertThat(push.claim(NOW.plusSeconds(1))).isEmpty();
         UUID recordId = store.complete(claim, draft.analysisId(), NOW.plusSeconds(1));
         var result = results.findById(draft.analysisId()).orElseThrow();
         assertThat(result.isChatReady()).isTrue();
@@ -197,6 +212,97 @@ class WorkerResultStoreTest {
         assertThat(records.count()).isEqualTo(1);
         assertThat(results.count()).isEqualTo(1);
         assertThat(chunkCount()).isEqualTo(1);
+        assertThat(jdbc.queryForList("select device_id from analysis_push_deliveries", UUID.class))
+                .containsExactly(device);
+        var delivery = push.claim(NOW.plusSeconds(1)).orElseThrow();
+        assertThat(delivery.batchId()).isEqualTo(claim.batchId());
+        assertThat(delivery.completedCount()).isEqualTo(1);
+        assertThat(delivery.failedCount()).isZero();
+        assertThat(delivery.analysisId()).isEqualTo(draft.analysisId());
+        assertThat(push.currentToken(delivery)).contains("active-token");
+        assertThat(push.claim(NOW.plusSeconds(1))).isEmpty();
+        jdbc.update("update notification_devices set fcm_token = ? where id = ?", "new-token", device);
+        push.invalidateToken(delivery, "active-token");
+        assertThat(push.currentToken(delivery)).contains("new-token");
+        push.retry(delivery, NOW.plusSeconds(60));
+        assertThat(push.claim(NOW.plusSeconds(59))).isEmpty();
+        var retry = push.claim(NOW.plusSeconds(60)).orElseThrow();
+        assertThat(retry.attempts()).isEqualTo(2);
+        push.finish(delivery, true);
+        assertThat(push.currentToken(retry)).contains("new-token");
+        push.finish(retry, false);
+        assertThat(push.claim(NOW.plusSeconds(1000))).isEmpty();
+        assertThat(jobs.findById(claim.jobId()).orElseThrow().getStatus()).isEqualTo(JobStatus.COMPLETED);
+        assertThat(records.findById(recordId)).isPresent();
+    }
+
+    @Test void waitsForTheWholeBatchAndCancelsPendingPushOnDisconnect() {
+        var claim = fixture(null);
+        var device = registerDevice(OWNER, "GRANTED", "active-token");
+        tx.executeWithoutResult(status -> {
+            String videoId = "other-video";
+            em.persist(new Video(videoId));
+            var item = AnalysisBatchItem.collectCaptions(claim.batchId(), videoId, NOW.plusSeconds(600), NOW);
+            em.persist(item);
+        });
+        var draft = store.saveDraft(claim, document(UUID.randomUUID()), NOW);
+        store.saveIndex(claim, draft.analysisId(), List.of(chunk(draft, UUID.randomUUID(), "원문")),
+                "model", List.of(new float[]{1}), NOW);
+        tx.executeWithoutResult(status -> {
+            store.complete(claim, draft.analysisId(), NOW.plusSeconds(1));
+            status.setRollbackOnly();
+        });
+        assertThat(push.claim(NOW.plusSeconds(1))).isEmpty();
+        assertThat(records.count()).isZero();
+        UUID recordId = store.complete(claim, draft.analysisId(), NOW.plusSeconds(2));
+        assertThat(push.claim(NOW.plusSeconds(2))).isEmpty();
+        var deadline = NOW.plusSeconds(600);
+        assertThat(expiredPreparations.expire(OWNER, deadline)).isEqualTo(1);
+        var delivery = push.claim(deadline).orElseThrow();
+        assertThat(delivery.batchId()).isEqualTo(claim.batchId());
+        assertThat(delivery.completedCount()).isEqualTo(1);
+        assertThat(delivery.failedCount()).isEqualTo(1);
+        assertThat(delivery.analysisId()).isNull();
+        jdbc.update("delete from notification_devices where id = ?", device);
+        assertThat(push.currentToken(delivery)).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_push_deliveries", Integer.class)).isZero();
+        assertThat(records.findById(recordId)).isPresent();
+    }
+
+    @Test void waitsThroughJobRetryAndSendsOneFailureSummaryForEachWaitingBatch() {
+        var claim = fixture(null);
+        registerDevice(OWNER, "GRANTED", "active-token");
+        UUID linkedBatchId = tx.execute(status -> {
+            var batch = new AnalysisBatch(OWNER, null, NOW);
+            batch.requestCompletionPush();
+            em.persist(batch);
+            em.persist(AnalysisBatchItem.openJob(batch.getId(), claim.videoId(), claim.jobId(), NOW));
+            return batch.getId();
+        });
+        queue.fail(claim.jobId(), claim.runToken(), "TEST", "test failure", true, NOW, Duration.ofSeconds(2));
+        assertThat(push.claim(NOW)).isEmpty();
+        var retried = queue.claim(NOW.plusSeconds(2), LEASE).orElseThrow();
+        queue.fail(retried.jobId(), retried.runToken(), "TEST", "test failure", false, NOW.plusSeconds(3), Duration.ZERO);
+
+        var now = NOW.plusSeconds(3);
+        var first = push.claim(now).orElseThrow();
+        var second = push.claim(now).orElseThrow();
+        assertThat(List.of(first.batchId(), second.batchId())).containsExactlyInAnyOrder(claim.batchId(), linkedBatchId);
+        assertThat(List.of(first, second)).allSatisfy(delivery -> {
+            assertThat(delivery.completedCount()).isZero();
+            assertThat(delivery.failedCount()).isEqualTo(1);
+            assertThat(delivery.analysisId()).isNull();
+        });
+        assertThat(push.claim(now)).isEmpty();
+    }
+
+    private UUID registerDevice(String owner, String permission, String token) {
+        UUID device = UUID.randomUUID();
+        jdbc.update("""
+                insert into notification_devices (id, installation_id, owner_id, platform, fcm_token, permission, updated_at)
+                values (?, ?, ?, 'ANDROID', ?, ?, now())
+                """, device, UUID.randomUUID(), owner, token, permission);
+        return device;
     }
 
     @Test void recordInsertFailureRollsBackReadyFlagAndFinishingStage() {
@@ -315,7 +421,9 @@ class WorkerResultStoreTest {
             var video = new Video(videoId);
             if (duration != null) video.updateMetadata(null, null, null, null, duration, null);
             em.persist(video);
-            var batch = new AnalysisBatch(OWNER, null, NOW); em.persist(batch);
+            var batch = new AnalysisBatch(OWNER, null, NOW);
+            batch.requestCompletionPush();
+            em.persist(batch);
             var item = AnalysisBatchItem.collectCaptions(batch.getId(), videoId, NOW.plusSeconds(600), NOW); em.persist(item); em.flush();
             var upload = CaptionUpload.issued(OWNER, item.getId(), videoId, "test-bucket", UUID.randomUUID() + ".json",
                     "application/json", 100, NOW.plusSeconds(1));

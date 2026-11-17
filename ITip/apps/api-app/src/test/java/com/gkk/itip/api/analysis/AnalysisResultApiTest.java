@@ -71,7 +71,7 @@ class AnalysisResultApiTest {
     @MockitoBean GcsObjects gcs;
 
     @BeforeEach void clear() {
-        jdbc.execute("truncate videos, analysis_batches, idempotency_requests, folders, youtube_playlist_metadata cascade");
+        jdbc.execute("truncate videos, analysis_batches, idempotency_requests, folders, youtube_playlist_metadata, notification_devices cascade");
         tx.executeWithoutResult(status -> {
             var video = new Video(VIDEO);
             video.updateMetadata("RAG 원본 영상", "예시 채널", "https://example.com/channel.jpg",
@@ -390,6 +390,17 @@ class AnalysisResultApiTest {
                  embedding, embedding_model, embedding_dimensions)
                 values (?, ?, ?, array[?]::uuid[], array['segment-1'], 'test chunk', 0, 1000, 'CAPTION', '[1,0]'::vector, 'test', 2)
                 """, UUID.randomUUID(), OWNER, f.analysisId(), FIRST);
+        var installationId = UUID.randomUUID();
+        var deviceId = UUID.randomUUID();
+        jdbc.update("""
+                insert into notification_devices (id, installation_id, owner_id, platform, fcm_token, permission, updated_at)
+                values (?, ?, ?, 'ANDROID', 'archive-test-token', 'GRANTED', now())
+                """, deviceId, installationId, OWNER);
+        jdbc.update("""
+                insert into analysis_push_deliveries
+                    (batch_id, device_id, installation_id, analysis_id, completed_count, failed_count, next_attempt_at, expires_at)
+                select batch_id, ?, ?, ?, 1, 0, now(), now() + interval '1 day' from analysis_jobs where id = ?
+                """, deviceId, installationId, f.analysisId(), f.jobId());
         String path = "/api/v1/records/" + f.recordId();
 
         mvc.perform(delete(path)).andExpect(status().isOk()).andExpect(jsonPath("data").doesNotExist());
@@ -402,6 +413,8 @@ class AnalysisResultApiTest {
         assertThat(jdbc.queryForObject("select count(*) from folder_records where record_id = ?", Integer.class, f.recordId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from analysis_chunks where analysis_id = ?", Integer.class, f.analysisId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from analysis_sections where analysis_id = ?", Integer.class, f.analysisId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from analysis_push_deliveries where analysis_id = ?",
+                Integer.class, f.analysisId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from analysis_results where id = ?", Integer.class, f.analysisId())).isZero();
         assertThat(jdbc.queryForObject("select count(*) from folders where id = ?", Integer.class, folderId)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from analysis_records where id = ?", Integer.class, other.recordId())).isEqualTo(1);
