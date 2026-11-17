@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -73,6 +74,23 @@ class SpringAiAnalysisClientTest {
     @ValueSource(strings = {"not-json", "null", "{} {}", "```json\n{}\n```"})
     void rejectsInvalidJsonWithoutRetainingTheModelPayload(String json) {
         when(chat.call(any(Prompt.class))).thenReturn(reply(json));
+        assertFailure(() -> client("", 32).generate(captions), "AI_INVALID_RESPONSE", false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "LENGTH", "CONTENT_FILTER", "TOOL_CALLS"})
+    void rejectsIncompleteGenerationEvenWithValidJson(String finishReason) {
+        var generation = new Generation(new AssistantMessage(VALID_JSON),
+                ChatGenerationMetadata.builder().finishReason(finishReason).build());
+        when(chat.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(generation)));
+        assertFailure(() -> client("", 32).generate(captions), "AI_INVALID_RESPONSE", false);
+    }
+
+    @Test void rejectsProviderRefusalEvenWithValidJson() {
+        var message = AssistantMessage.builder().content(VALID_JSON)
+                .properties(java.util.Map.of("refusal", "provider refusal")).build();
+        var generation = new Generation(message, ChatGenerationMetadata.builder().finishReason("STOP").build());
+        when(chat.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(generation)));
         assertFailure(() -> client("", 32).generate(captions), "AI_INVALID_RESPONSE", false);
     }
 
@@ -205,7 +223,8 @@ class SpringAiAnalysisClientTest {
     }
 
     private static ChatResponse reply(String text) {
-        return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+        return new ChatResponse(List.of(new Generation(new AssistantMessage(text),
+                ChatGenerationMetadata.builder().finishReason("STOP").build())));
     }
 
     private static EmbeddingResponse response(String model, Embedding... vectors) {
