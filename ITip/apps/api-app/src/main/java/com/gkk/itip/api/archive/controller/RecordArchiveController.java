@@ -4,7 +4,7 @@ import com.gkk.itip.api.archive.dto.ReadingPositionResponse;
 import com.gkk.itip.api.archive.dto.RecordDetailResponse;
 import com.gkk.itip.api.archive.dto.SaveReadingPositionRequest;
 import com.gkk.itip.api.archive.service.RecordArchiveService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,9 +21,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/records/{recordId}")
 public class RecordArchiveController {
     private final RecordArchiveService archive;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public RecordArchiveController(RecordArchiveService archive, DemoUserProvider user) {
+    public RecordArchiveController(RecordArchiveService archive, CurrentUser user) {
         this.archive = archive;
         this.user = user;
     }

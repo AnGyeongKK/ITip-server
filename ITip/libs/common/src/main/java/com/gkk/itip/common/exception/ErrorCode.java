@@ -2,6 +2,7 @@ package com.gkk.itip.common.exception;
 
 public enum ErrorCode {
 
+    AUTHENTICATION_REQUIRED("로그인이 필요해요."),
     INVALID_REQUEST("잘못된 요청이에요."),
     INVALID_CURSOR("목록을 새로 불러와 주세요."),
     FOLDER_NAME_DUPLICATED("이미 사용 중인 폴더 이름이에요."),

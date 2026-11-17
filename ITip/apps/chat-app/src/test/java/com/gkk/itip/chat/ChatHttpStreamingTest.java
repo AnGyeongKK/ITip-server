@@ -1,5 +1,14 @@
 package com.gkk.itip.chat;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +26,14 @@ import java.net.*;
 import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties={"spring.flyway.enabled=true","itip.demo.owner-id=demo-user"})
+        properties={"spring.flyway.enabled=true","itip.auth.mode=supabase"})
 @Testcontainers
 @org.springframework.context.annotation.Import(ChatEmbeddingFixture.class)
 class ChatHttpStreamingTest {
@@ -32,8 +42,21 @@ class ChatHttpStreamingTest {
     static final CountDownLatch CLIENT_SAW_FIRST=new CountDownLatch(1);
     static final AtomicBoolean RELEASED_BY_CLIENT=new AtomicBoolean();
     static HttpServer model;
+    private static ECKey signingKey;
+    private static String authProjectUrl;
+
     @DynamicPropertySource static void configure(DynamicPropertyRegistry r) throws Exception {
         model=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        authProjectUrl = "http://127.0.0.1:" + model.getAddress().getPort();
+        signingKey = new ECKeyGenerator(Curve.P_256).keyID("chat-test").generate();
+        byte[] publicKeys = new JWKSet(signingKey.toPublicJWK()).toString().getBytes(StandardCharsets.UTF_8);
+        model.createContext("/auth/v1/.well-known/jwks.json", exchange -> {
+            try (exchange) {
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, publicKeys.length);
+                exchange.getResponseBody().write(publicKeys);
+            }
+        });
         model.createContext("/v1/chat/completions",e->{
             e.getRequestBody().readAllBytes();e.getResponseHeaders().add("Content-Type","text/event-stream");e.sendResponseHeaders(200,0);
             try(var out=e.getResponseBody()) {
@@ -44,6 +67,7 @@ class ChatHttpStreamingTest {
                 out.write("data: [DONE]\n\n".getBytes(StandardCharsets.UTF_8));
             }catch(IOException disconnected){ }
         });model.start();
+        r.add("itip.auth.supabase-url", () -> authProjectUrl);
         ChatModelFixture.properties(r,model.getAddress().getPort());
         r.add("spring.datasource.url",POSTGRES::getJdbcUrl);r.add("spring.datasource.username",POSTGRES::getUsername);
         r.add("spring.datasource.password",POSTGRES::getPassword);
@@ -53,15 +77,26 @@ class ChatHttpStreamingTest {
     @Value("${local.server.port}") int port;
 
     @Test void realHttpDeliversAndStoresFirstDeltaBeforeUpstreamCompletes() throws Exception {
-        var f=new ChatTestData(jdbc);f.clear();f.analysis("demo-user","실제 HTTP 테스트");
-        UUID room=f.room("demo-user"),key=UUID.randomUUID();
+        String ownerId = UUID.randomUUID().toString();
+        var f=new ChatTestData(jdbc);f.clear();f.analysis(ownerId,"실제 HTTP 테스트");
+        UUID room=f.room(ownerId),key=UUID.randomUUID();
         String path="http://localhost:"+port+"/api/v1/conversations/"+room+"/messages";
         var request=HttpRequest.newBuilder(URI.create(path)).timeout(Duration.ofSeconds(10))
                 .header("Content-Type","application/json").header("Accept","text/event-stream").header("Idempotency-Key",key.toString())
-                .POST(HttpRequest.BodyPublishers.ofString("{\"clientRequestId\":\""+key+"\",\"content\":\"질문\"}")) .build();
+                .POST(HttpRequest.BodyPublishers.ofString("{\"clientRequestId\":\""+key+"\",\"content\":\"질문\"}"));
         var events=new ArrayList<String>();
         try(var client=HttpClient.newHttpClient()) {
-            var response=client.send(request,HttpResponse.BodyHandlers.ofInputStream());
+            var unauthorized = client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+            assertThat(unauthorized.statusCode()).isEqualTo(401);
+            assertThat(mapper.readTree(unauthorized.body()).path("code").asString()).isEqualTo("AUTHENTICATION_REQUIRED");
+
+            var claims = new JWTClaimsSet.Builder().issuer(authProjectUrl + "/auth/v1").subject(ownerId)
+                    .audience("authenticated").claim("role", "authenticated")
+                    .expirationTime(Date.from(Instant.now().plusSeconds(120))).build();
+            var token = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(signingKey.getKeyID()).build(), claims);
+            token.sign(new ECDSASigner(signingKey));
+            var response=client.send(request.header("Authorization", "Bearer " + token.serialize()).build(),
+                    HttpResponse.BodyHandlers.ofInputStream());
             assertThat(response.statusCode()).isEqualTo(200);
             assertThat(response.headers().firstValue("Content-Type").orElseThrow()).startsWith("text/event-stream");
             try(var reader=new BufferedReader(new InputStreamReader(response.body(),StandardCharsets.UTF_8))) {

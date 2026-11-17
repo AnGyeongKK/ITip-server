@@ -2,7 +2,7 @@ package com.gkk.itip.api.video.controller;
 
 import com.gkk.itip.api.video.dto.response.YoutubePlaylistResponse;
 import com.gkk.itip.api.video.service.YoutubePlaylistService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class YoutubePlaylistController {
 
     private final YoutubePlaylistService playlists;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public YoutubePlaylistController(YoutubePlaylistService playlists, DemoUserProvider user) {
+    public YoutubePlaylistController(YoutubePlaylistService playlists, CurrentUser user) {
         this.playlists = playlists;
         this.user = user;
     }

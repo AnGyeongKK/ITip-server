@@ -5,7 +5,7 @@
 - Spring Boot 프로젝트는 `ITip/`에 있다. Gradle 명령은 이 디렉터리에서 실행한다.
 - `ITip/`는 Gradle 집계 루트이며 `ITip/src/main`, `ITip/src/test`를 사용하지 않는다. 실제 소스·테스트는 `apps/api-app/src`, `apps/worker-app/src`, `apps/chat-app/src`, `libs/common/src`, `libs/domain/src`, `libs/ai/src`에 둔다. 초기 단일 모듈의 빈 `ITip/src/`는 제거했으며 이 경로에 새 코드를 작성하지 않는다.
 - Java 21, Spring Boot 4.1.2, Gradle Wrapper, Spring MVC, JPA를 기준으로 개발한다.
-- 현재 시연용 MVP는 영상·재생목록 가져오기, 분석·결과, 기록·폴더, 검색, AI 대화, 기기·알림이다. 로그인·결제·요금제·이용 한도는 구현 범위에서 제외한다.
+- 현재 시연용 MVP는 영상·재생목록 가져오기, 분석·결과, 기록·폴더, 검색, AI 대화, 기기·알림이다. Google 로그인은 Supabase Auth로 연결하고, 로컬 시연은 `demo` 모드를 지원한다. 결제·요금제·이용 한도는 보류한다.
 - 데모는 로컬 PostgreSQL(pgvector)·DB 작업 조회·Spring Worker로 실행한다. 파일은 실제 GCS의 presigned URL로 업로드한다. 질문 임베딩·pgvector 검색·프롬프트 구성·GPT 답변 생성은 Spring Chat이 담당한다. AI 파트는 프롬프트·모델 옵션·출력 Schema·평가 사례를 제공한다.
 - 기획·API 변경이 필요하면 영향과 제안을 설명하고 합의한 뒤 반영한다. Figma는 읽기 전용으로 사용한다.
 
@@ -69,6 +69,7 @@ gkk/
 | 커밋 직후 독립 코드 리뷰 | [커밋 리뷰 에이전트](.agents/reviewers/commit-reviewer.md) |
 | PR 전체·구현 오류·과한 추상화 검토 | [PR 리뷰 에이전트](.agents/reviewers/pr-reviewer.md) |
 | 컨트롤러·DTO·오류·페이지네이션·업로드·채팅 스트림 | [API 요청·응답 규칙](.agents/rules/api.md) |
+| Google 로그인·API와 Chat 사용자 식별 | [Supabase Google 로그인](docs/supabase-google-auth.md) |
 | AI 분석·마인드맵·결과 조회·임베딩·모델 설정 | [AI 설계 규칙](.agents/rules/ai.md), [AI 결과 계약](docs/analysis-ai-contract.md) |
 | 채팅 범위·기록·출처 보존·직접 생성·스트리밍 | [채팅 계약](docs/chat-contract.md), [직접 생성 계약](docs/chat-generation-contract.md), [코드 읽기 안내](docs/chat-code-reading.md) |
 | 영상·구간 채팅·폴더 이름·기록 추가 응답 | [모바일 합의 반영 계약](docs/mobile-backend-contract.md). RECORD 범위와 폴더 규칙은 이 문서의 현재 구현을 따른다 |
@@ -84,9 +85,9 @@ gkk/
 ```sh
 ./gradlew test                       # 모듈별 테스트
 ./gradlew build                      # 테스트를 포함한 전체 빌드
-./gradlew :apps:api-app:bootRun        # API 실행
+ITIP_AUTH_MODE=demo ./gradlew :apps:api-app:bootRun
 ./gradlew :apps:worker-app:bootRun     # Worker 실행
-./gradlew :apps:chat-app:bootRun       # Chat 실행
+ITIP_AUTH_MODE=demo ./gradlew :apps:chat-app:bootRun
 ```
 
 - 코드 변경 범위에 맞는 검증을 실행한다. 문서·ignore 규칙만 변경했다면 링크·규칙 적용 여부를 확인한다.

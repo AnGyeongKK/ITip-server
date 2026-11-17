@@ -3,7 +3,7 @@ package com.gkk.itip.api.analysis.controller;
 import com.gkk.itip.api.analysis.dto.response.AnalysisResultResponse;
 import com.gkk.itip.api.analysis.dto.response.AnalysisSectionResponse;
 import com.gkk.itip.api.analysis.service.AnalysisResultQueryService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,9 +16,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/analyses")
 public class AnalysisResultController {
     private final AnalysisResultQueryService results;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public AnalysisResultController(AnalysisResultQueryService results, DemoUserProvider user) {
+    public AnalysisResultController(AnalysisResultQueryService results, CurrentUser user) {
         this.results = results;
         this.user = user;
     }

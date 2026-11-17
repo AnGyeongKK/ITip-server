@@ -19,6 +19,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
         HttpStatus status = switch (exception.getErrorCode()) {
+            case AUTHENTICATION_REQUIRED -> HttpStatus.UNAUTHORIZED;
             case INVALID_REQUEST, INVALID_CURSOR -> HttpStatus.BAD_REQUEST;
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case FOLDER_NAME_DUPLICATED, IDEMPOTENCY_CONFLICT, STATE_CONFLICT, BATCH_ITEM_NOT_UPLOADABLE, ANALYSIS_NOT_READY, UPLOAD_NOT_READY, JOB_NOT_RETRYABLE, CHAT_GENERATION_IN_PROGRESS, DUPLICATE_CHAT_REQUEST, CHAT_MESSAGE_NOT_RETRYABLE, SCOPE_UNAVAILABLE -> HttpStatus.CONFLICT;

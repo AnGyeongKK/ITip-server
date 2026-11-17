@@ -2,7 +2,7 @@ package com.gkk.itip.api.video.controller;
 
 import com.gkk.itip.api.video.dto.response.YoutubeResourceResponse;
 import com.gkk.itip.api.video.service.YoutubeResourceService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class YoutubeResourceController {
 
     private final YoutubeResourceService resources;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public YoutubeResourceController(YoutubeResourceService resources, DemoUserProvider user) {
+    public YoutubeResourceController(YoutubeResourceService resources, CurrentUser user) {
         this.resources = resources;
         this.user = user;
     }

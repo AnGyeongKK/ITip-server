@@ -1,15 +1,14 @@
 package com.gkk.itip.common.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import com.gkk.itip.common.auth.CurrentUser;
 
-@Component
-public class DemoUserProvider {
+public class DemoUserProvider implements CurrentUser {
     private final String ownerId;
 
-    public DemoUserProvider(@Value("${itip.demo.owner-id:demo-user}") String ownerId) {
+    public DemoUserProvider(String ownerId) {
         if (ownerId.isBlank() || ownerId.length() > 64) throw new IllegalArgumentException("invalid demo owner ID");
         this.ownerId = ownerId;
     }
+    @Override
     public String ownerId() { return ownerId; }
 }

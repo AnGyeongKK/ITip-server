@@ -41,7 +41,9 @@
 | `CHAT_INPUT_TOKEN_BUDGET`, `CHAT_MAX_OUTPUT_TOKENS` | 기본8000·2048. 입력 budget+출력 cap+여유256이 context 이내여야 함 |
 | `ANALYSIS_EMBEDDING_MODEL_ID` | Worker·Chat 공통 fallback 식별자. 응답 metadata.model이 없을 때 사용하며 공급자의 실제 모델을 선택하지 않음 |
 | `CHAT_RETRIEVAL_TOP_K` | Chat 검색 최대 chunk 수. 기본8, 1~20. 모델·차원이 맞는 현재 소유 기록만 검색 |
-| `DEMO_USER_ID` | API·Chat에서 동일하게 설정하는 데모 소유자. 기본 demo-user |
+| `ITIP_AUTH_MODE` | 직접 실행의 기본값 `supabase`, 데모 Compose의 기본값 `demo` |
+| `SUPABASE_URL` | 인증 모드에서 API·Chat에 같은 Supabase 프로젝트 기본 URL을 설정. [Google 로그인 설정](supabase-google-auth.md) |
+| `DEMO_USER_ID` | `demo` 모드에서 API·Chat에 동일하게 설정. 기본 `demo-user` |
 
 `DB_NAME`·`DB_PORT`를 변경하면 앱의 `DB_URL`도 같은 DB를 가리키게 설정한다. 기존 volume이 있으면 환경변수 변경만으로 DB 계정·비밀번호가 바뀌지 않는다. 개인 데이터가 있는 volume을 임의로 삭제하지 않는다.
 
@@ -49,7 +51,7 @@
 
 ```sh
 docker compose up -d db
-./gradlew :apps:api-app:bootRun
+ITIP_AUTH_MODE=demo ./gradlew :apps:api-app:bootRun
 ```
 
 API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
@@ -57,7 +59,7 @@ API의 Flyway 적용 완료 후 다른 터미널에서 Worker를 실행한다.
 ```sh
 ./gradlew :apps:worker-app:bootRun
 # 별도 터미널
-./gradlew :apps:chat-app:bootRun
+ITIP_AUTH_MODE=demo ./gradlew :apps:chat-app:bootRun
 ```
 
 스키마는 API의 Flyway가 생성·변경하고 세 앱은 `ddl-auto=validate`로 검사한다. Worker·Chat은 마이그레이션을 실행하지 않는다. 운영 Supabase를 로컬 테스트에 사용하지 않는다.
@@ -166,7 +168,7 @@ Android 테스트 앱에서 알림 권한을 허용하고 해당 설치를 등�
 
 ## 테스트
 
-저장된 완료 결과는 아래 GET으로 조회한다. 로그인 제외 MVP이므로 서버의 `DEMO_USER_ID` 설정을 사용하며 임의 사용자 헤더로 소유자를 바꾸지 않는다. 새 환경변수·SQL은 필요 없다.
+저장된 완료 결과는 아래 GET으로 조회한다. 예시는 `demo` 모드 기준이다. `supabase` 모드에서는 Bearer 토큰을 보내며 로그인한 사용자의 기록만 조회한다.
 
 ```sh
 curl 'http://localhost:8080/api/v1/analyses/<analysisId>'
@@ -179,10 +181,10 @@ curl 'http://localhost:8080/api/v1/analyses/<analysisId>/sections/<sectionId>'
 
 ## 채팅 실행·읽기
 
-API의 Flyway 완료 뒤 Chat을 실행한다. API·Chat의 `DEMO_USER_ID`를 동일하게 설정한다. 완료된 개인 분석 기록이 한 개 이상 있어야 방을 만들 수 있다.
+API의 Flyway 완료 뒤 Chat을 실행한다. 데모에서는 API·Chat의 `DEMO_USER_ID`를 동일하게 설정한다. 완료된 개인 분석 기록이 한 개 이상 있어야 방을 만들 수 있다.
 
 ```sh
-./gradlew :apps:chat-app:bootRun
+ITIP_AUTH_MODE=demo ./gradlew :apps:chat-app:bootRun
 ./gradlew :apps:chat-app:test
 ```
 

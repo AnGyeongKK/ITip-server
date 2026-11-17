@@ -2,7 +2,7 @@ package com.gkk.itip.chat.conversation.controller;
 
 import com.gkk.itip.chat.conversation.dto.MessageView;
 import com.gkk.itip.chat.conversation.service.MessageQueryService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -13,8 +13,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/conversations/{conversationId}/messages")
 public class ConversationMessageController {
     private final MessageQueryService messages;
-    private final DemoUserProvider user;
-    public ConversationMessageController(MessageQueryService messages, DemoUserProvider user) { this.messages = messages; this.user = user; }
+    private final CurrentUser user;
+    public ConversationMessageController(MessageQueryService messages, CurrentUser user) { this.messages = messages; this.user = user; }
 
     @GetMapping
     public ApiResponse<MessageView.Page> list(@PathVariable UUID conversationId,

@@ -7,7 +7,7 @@ import com.gkk.itip.api.archive.dto.response.FolderResponse.Created;
 import com.gkk.itip.api.archive.dto.response.FolderResponse.Page;
 import com.gkk.itip.api.archive.dto.response.FolderResponse.RecordsAdded;
 import com.gkk.itip.api.archive.service.FolderService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +29,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/folders")
 public class FolderController {
     private final FolderService folders;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public FolderController(FolderService folders, DemoUserProvider user) {
+    public FolderController(FolderService folders, CurrentUser user) {
         this.folders = folders;
         this.user = user;
     }

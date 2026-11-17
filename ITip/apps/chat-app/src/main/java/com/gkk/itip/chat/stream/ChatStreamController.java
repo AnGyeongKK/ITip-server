@@ -2,7 +2,7 @@ package com.gkk.itip.chat.stream;
 
 import com.gkk.itip.chat.generation.ChatAnswerGenerator;
 import com.gkk.itip.chat.retrieval.QuestionEmbeddingClient;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.exception.BusinessException;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,10 +19,10 @@ public class ChatStreamController {
     private final ChatGenerationStore store;
     private final ChatStreamBridge bridge;
     private final ChatAnswerGenerator generator;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
     private final QuestionEmbeddingClient embeddings;
     private final Semaphore capacity=new Semaphore(ChatLimits.CONCURRENT_STREAMS);
-    public ChatStreamController(ChatGenerationStore store,ChatStreamBridge bridge,ChatAnswerGenerator generator,DemoUserProvider user,QuestionEmbeddingClient embeddings) {
+    public ChatStreamController(ChatGenerationStore store,ChatStreamBridge bridge,ChatAnswerGenerator generator,CurrentUser user,QuestionEmbeddingClient embeddings) {
         this.store=store;this.bridge=bridge;this.generator=generator;this.user=user;this.embeddings=embeddings;
     }
     @PostMapping(produces=MediaType.TEXT_EVENT_STREAM_VALUE)

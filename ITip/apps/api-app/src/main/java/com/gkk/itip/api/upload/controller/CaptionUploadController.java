@@ -4,7 +4,7 @@ import com.gkk.itip.api.upload.dto.request.CreateCaptionUploadRequest;
 import com.gkk.itip.api.upload.dto.response.CaptionUploadCreatedResponse;
 import com.gkk.itip.api.upload.dto.response.CaptionUploadStatusResponse;
 import com.gkk.itip.api.upload.service.CaptionUploadService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
@@ -23,9 +23,9 @@ import java.util.UUID;
 @RequestMapping("/api/v1/caption-uploads")
 public class CaptionUploadController {
     private final CaptionUploadService uploads;
-    private final DemoUserProvider user;
+    private final CurrentUser user;
 
-    public CaptionUploadController(CaptionUploadService uploads, DemoUserProvider user) {
+    public CaptionUploadController(CaptionUploadService uploads, CurrentUser user) {
         this.uploads = uploads;
         this.user = user;
     }

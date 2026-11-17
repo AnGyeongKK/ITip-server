@@ -4,7 +4,7 @@ import com.gkk.itip.api.analysis.dto.request.CreateBatchRequest;
 import com.gkk.itip.api.analysis.dto.request.ReportCollectionFailureRequest;
 import com.gkk.itip.api.analysis.dto.response.*;
 import com.gkk.itip.api.analysis.service.AnalysisBatchService;
-import com.gkk.itip.common.config.DemoUserProvider;
+import com.gkk.itip.common.auth.CurrentUser;
 import com.gkk.itip.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -19,8 +19,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/analysis-batches")
 public class AnalysisBatchController {
     private final AnalysisBatchService batches;
-    private final DemoUserProvider user;
-    public AnalysisBatchController(AnalysisBatchService batches, DemoUserProvider user) { this.batches = batches; this.user = user; }
+    private final CurrentUser user;
+    public AnalysisBatchController(AnalysisBatchService batches, CurrentUser user) { this.batches = batches; this.user = user; }
 
     @PostMapping
     public ResponseEntity<ApiResponse<BatchCreatedResponse>> create(@RequestHeader("Idempotency-Key") UUID key,
