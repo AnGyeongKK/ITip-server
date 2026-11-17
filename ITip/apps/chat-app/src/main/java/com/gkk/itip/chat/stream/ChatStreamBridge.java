@@ -22,6 +22,7 @@ import java.util.concurrent.TimeoutException;
 @Component
 public class ChatStreamBridge {
     private static final Logger LOG=LoggerFactory.getLogger(ChatStreamBridge.class);
+    private static final int PROVIDER_STREAM_BUFFER_SIZE = 256;
     private final ChatAnswerGenerator generator;
     private final ChatGenerationStore store;
     private final MessageQueryService messages;
@@ -45,7 +46,8 @@ public class ChatStreamBridge {
             var candidates=prepared.contexts().stream().flatMap(context->context.citations().stream()).toList();
             var decoder=new AnswerJsonStream();
             int sequence=0;long checkpoint=0;
-            try(var responses=generator.stream(prepared).toStream(1)) {
+            // Keep Spring AI's chunk aggregation independent of blocking DB writes and SSE flushes.
+            try(var responses=generator.stream(prepared).onBackpressureBuffer(PROVIDER_STREAM_BUFFER_SIZE).toStream(1)) {
                 var iterator=responses.iterator();
                 while(iterator.hasNext()) {
                     String delta=decoder.accept(iterator.next());
