@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0",
+  "sections": [
+    {
+      "sectionKey": "section-01",
+      "title": "자동화 효과와 측정 범위",
+      "startSegmentId": "EX1",
+      "endSegmentId": "EX2",
+      "sourceSegmentIds": ["EX1", "EX2"],
+      "summary": "한 팀에서 반복 작업 시간이 40분에서 10분으로 줄었습니다. 다른 팀에서도 같은 효과를 보장하는 수치는 아닙니다.",
+      "subtopics": ["작업 시간 감소", "측정 범위"],
+      "keywords": ["자동화", "시간 측정"],
+      "detail": {
+        "takeaway": "자동화 효과는 측정한 팀의 범위에서 해석해야 합니다.",
+        "explanation": "작업 시간이 40분에서 10분으로 줄었다는 사례입니다. 이 값은 한 팀의 측정이며 일반적인 성과 보장은 아닙니다.",
+        "applicationTips": [
+          {"text": "작업 시간 감소 수치를 한 팀의 측정 범위로 해석하십시오.", "origin": "SOURCE", "sourceSegmentIds": ["EX1", "EX2"]},
+          {"text": "자기 팀의 작업 시간을 같은 기준으로 기록해 보십시오.", "origin": "AI_SUGGESTION", "sourceSegmentIds": ["EX2"]}
+        ],
+        "recommendedTools": [],
+        "usageKeywords": ["팀 내부 측정"],
+        "examples": [
+          {"text": "한 팀의 반복 작업 시간이 40분에서 10분으로 줄었습니다.", "origin": "SOURCE", "sourceSegmentIds": ["EX1"]}
+        ]
+      }
+    },
+    {
+      "sectionKey": "section-02",
+      "title": "배포 전 테스트",
+      "startSegmentId": "EX3",
+      "endSegmentId": "EX3",
+      "sourceSegmentIds": ["EX3"],
+      "summary": "배포 전에 테스트를 실행하라는 안내입니다.",
+      "subtopics": ["테스트 실행", "배포 준비"],
+      "keywords": ["배포", "테스트"],
+      "detail": {
+        "takeaway": "배포 전에 테스트를 실행하십시오.",
+        "explanation": "자막은 배포 전에 테스트를 실행하라고 안내합니다. 특정 테스트 도구나 절차는 제시하지 않습니다.",
+        "applicationTips": [
+          {"text": "배포 전에 테스트를 실행하십시오.", "origin": "SOURCE", "sourceSegmentIds": ["EX3"]},
+          {"text": "실행한 테스트와 결과를 배포 기록에 남겨 보십시오.", "origin": "AI_SUGGESTION", "sourceSegmentIds": ["EX3"]}
+        ],
+        "recommendedTools": [],
+        "usageKeywords": ["배포 전 점검"],
+        "examples": [
+          {"text": "변경한 기능의 기본 동작을 확인한 뒤 배포하는 점검 흐름을 만들어 보십시오.", "origin": "AI_SUGGESTION", "sourceSegmentIds": ["EX3"]}
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "oneLine": "팀의 자동화 효과를 측정 범위 안에서 해석하고 배포 전에 테스트를 실행합니다.",
+    "keyPoints": ["한 팀의 작업 시간이 40분에서 10분으로 줄었습니다.", "다른 팀에서도 같은 결과를 보장하지 않습니다.", "배포 전에 테스트를 실행해야 합니다."],
+    "practicalPoints": [
+      {"text": "배포 전에 테스트를 실행하십시오.", "origin": "SOURCE", "sourceSegmentIds": ["EX3"]}
+    ],
+    "mentionedTools": [],
+    "keywords": ["자동화", "시간 측정", "배포", "테스트"],
+    "highlightSectionKeys": ["section-01", "section-02"]
+  },
+  "mindmap": {"rootTitle": "자동화 효과와 배포 전 테스트", "sectionKeys": ["section-01", "section-02"]}
+}

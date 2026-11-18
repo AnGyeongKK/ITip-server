@@ -1,5 +1,7 @@
 # 영상 분석 연동 경계
 
+현재 Worker 분석 내부 경로는 [Luna-low 분할 생성 (#42)](analysis-split-generation.md)을 따른다. 최종 저장·검색·공개 응답 계약은 유지한다.
+
 분석 작업 처리(#4)의 연결 문서다. 실행 명령은 [local-run.md](local-run.md), 외부 API 형식은 [API 규칙](../.agents/rules/api.md)을 함께 본다.
 
 ```text

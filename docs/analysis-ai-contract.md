@@ -1,34 +1,37 @@
 # 분석 결과 JSON 연결
 
+현재 생성 경로는 [Luna-low 분할 분석 (#42)](analysis-split-generation.md)이다. 단계별 생성·서버 조립을 추가했으며 아래 최종 필드·저장/공개 ID 계약은 유지한다.
+
 기존 [개발 논의 05·06](https://www.notion.so/40c46c2fafdf8032a762cbe43121ce41)의 `schemaVersion:1.0` 초안을 Worker의 내부 DTO로 옮겼다. 이후 확인한 [ITip / AI 실험](https://www.notion.so/40f46c2fafdf80b29264e6ba26342725)과 [결과 조회 명세·마인드맵 보완](https://www.notion.so/40c46c2fafdf81b8aeebcea510c56abf)을 아래에 대조했다. 테스트 JSON은 실제 분석 품질을 검증한 결과가 아니다.
 
 ## AI 파트와 서버의 책임
 
 ```text
-AI: 요약·sections의 title/subtopics·mindmap 생성
+AI: 구간 계획·상세·전체 요약·rootTitle 생성
+  → 서버: 구간 경계·sectionKey·mindmap.sectionKeys·전체 JSON 조립
   → Worker: 원문 근거 검증·sectionId/시간 매핑
   → DB: 검증 결과·검색 데이터·개인 기록 저장 후 완료
   → 결과 GET: 저장된 결과와 영상·기록 조회
   → 앱: rootTitle → 주제 → subtopics를 그래프로 배치
 ```
 
-AI 문서의 마인드맵 예시는 `sections[].sectionKey/title/subtopics`와 `mindmap.rootTitle/sectionKeys`를 사용한다. 현재 내부 타입과 이 부분은 맞는다. 전체 원시 JSON Schema·프롬프트가 확인된 것은 아니므로 전체 분석 계약까지 일치한다고 판단하지 않는다. 그래프 좌표·색상·연결선은 앱의 표현이며 서버가 마인드맵을 다시 생성하지 않는다.
+AI 문서의 마인드맵 예시는 `sections[].sectionKey/title/subtopics`와 `mindmap.rootTitle/sectionKeys`를 사용한다. 현재 내부 타입과 이 부분은 맞는다. 전체 Schema와 단계 프롬프트를 Worker 리소스에 연결했다. 구조 호환성과 실제 내용 품질의 확인 범위는 분할 분석 문서에서 구분한다. 그래프 좌표·색상·연결선은 앱의 표현이며 서버가 마인드맵을 다시 생성하지 않는다.
 
 ## 현재 반영 상태와 합의할 차이
 
 | 항목 | 현재 코드 | AI 문서 또는 다음 구현 |
 | --- | --- | --- |
-| AI 결과 | `AnalysisOutput`의 summary·sections·mindmap | 마인드맵 예시는 호환. 전체 Schema·필수 필드·origin·근거 형식은 실제 원시 응답으로 대조 필요 |
+| AI 결과 | `AnalysisOutput`의 summary·sections·mindmap 유지 | 전체 Schema와 단계별 출처 enum 검사 후 서버 조립 |
 | 서버 변환 | `AnalysisOutputValidator`가 UUID sectionId·실제 시간·키워드 ID 매핑 | 같은 sectionId를 요약·마인드맵·상세에서 공유 |
 | 저장·완료 | `WorkerResultStore`가 draft·구간·벡터·기록 저장 | 완료 전에 저장된 draft와 공개 결과를 구분 |
 | 공개 조회 | `AnalysisResultController.get()`·`getSection()` 제공 | GET은 저장된 데이터만 조회. 관련 영상 추천은 별도 후속 범위 |
-| 자막 입력 | `generate()`가 원본 `CaptionDocument` 전체를 JSON으로 전달 | AI 실험은 10~20초 묶음의 ID·텍스트 중심. 집계 ID ↔ 원본 segmentId·시간 대응과 전체 입력 계약 합의 필요 |
-| 구간 수 | sections·mindmap 참조가 비어 있으면 거절. 1개는 허용 | AI 실험은 0개 또는 2개 이상 조건. 0개의 의미·작업 상태·앱 표시 합의 전 현재 검증 유지 |
-| 분석 모델 | Worker 전용 OpenAI `ChatModel` 설정 구현, 기본 비활성 | 모델과 출력 토큰 한도를 명시해야 한다. AI 문서의 모델·effort 적용 및 실제 품질 검증은 별도 확인 |
+| 자막 입력 | 실제 길이·제목과10~20초 묶음 사용 | 계획은 전체, 상세는 해당 구간, 요약은 상세+근거 원문. 최종 결과는 원본 segmentId로 펼침 |
+| 구간 수 | 현재 분할 계약은1~15개, 비어 있으면 거절 | 과거0개/최소2개 실험과 구분. 현재 정책을 임의 완화하지 않음 |
+| 분석 모델 | 명시적 활성화 시 전용 OpenAI ChatModel Bean 생성 | `gpt-6-luna / low`, strict 단계 Schema. 기본 비활성 |
 | 임베딩 | libs/ai의 실제 OpenAI Bean 설정 구현, 기본 비활성 | 분석용 텍스트 생성 모델과 별도로 선택. Spring Chat의 질문 임베딩과 같은 모델·버전·차원 및 입력 규칙 사용 |
-| 분석 호출 방식 | 현재 어댑터는 Spring AI 모델 Bean을 직접 호출 | 분석 endpoint·Schema·프롬프트는 AI 파트와 별도 확인. 채팅 직접 호출 전환에서 이 입력/출력과 구간 매핑은 변경하지 않음. GET에 외부 호출 없음 |
+| 분석 호출 방식 | Spring AI로 계획→상세→요약 호출 | 서버 조립/검증 뒤 저장. 공개 결과 GET에 외부 호출 없음 |
 
-위 차이는 자동 적용할 정책이 아니다. 특히 sections 0개를 임의의 빈 성공 결과로 바꾸거나 집계 ID를 원본 ID처럼 취급하지 않는다. 실제 공급자의 모델 가용성과 한국어·최대 60분 영상의 품질은 아직 검증하지 않았다.
+위 차이는 자동 적용할 정책이 아니다. 특히 sections 0개를 임의의 빈 성공 결과로 바꾸거나 집계 ID를 원본 ID처럼 취급하지 않는다. 모델·프롬프트·Schema 연결은 자체 작성 입력의 실제3단계 호출로 확인했다. 실제7영상·반복 안정성·최대60분 영상의 Spring 검증은 남아 있다.
 
 ## 결과·구간 조회 구현 (#5)
 
@@ -54,8 +57,9 @@ AnalysisResultController.get(analysisId) / getSection(analysisId, sectionId)
 ## 입력과 결과의 연결
 
 ```text
-GCS 자막 → CaptionParser → s000001, s000002 …
-→ 분석 JSON의 sectionKey·sourceSegmentIds
+GCS 자막 → CaptionParser → 원본 s000001, s000002 …
+→ AnalysisCaptionGroups → 분석 묶음 g000001 … → 분할 생성
+→ 원본 ID로 펼친 분석 JSON의 sectionKey·sourceSegmentIds
 → AnalysisOutputValidator
 → 서버 sectionId·실제 시간으로 변환 → 결과 draft 저장
 → 원문 검색 조각·임베딩 저장 → 완료·개인 기록 확정
@@ -92,31 +96,23 @@ GCS 자막 → CaptionParser → s000001, s000002 …
 
 ## Spring AI 모델 어댑터
 
-`SpringAiAnalysisClient`는 Worker 전용 Spring AI `ChatModel`과 공통 `EmbeddingModel`을 사용한다. `ANALYSIS_AI_ENABLED=true`일 때 `OPENAI_API_KEY`, `ANALYSIS_MODEL`, 양수 `ANALYSIS_MAX_OUTPUT_TOKENS`를 설정한다. `OPENAI_BASE_URL` 기본값은 `https://api.openai.com/v1`이다. 모델 이름과 출력 한도는 선택한 공급자 모델의 지원 범위에 맞춰야 한다. Chat 답변 모델과 설정은 독립적이며, 임베딩 모델은 Worker와 Chat이 일치해야 한다. 분석 모델은 연결 3초, 쓰기 8초, 읽기와 전체 요청 각각 2분으로 제한하고 SDK 자동 재시도는 끈다. 공급자가 정상 종료(`STOP`)한 응답만 변환하며, 종료 사유가 없거나 거절이 포함되면 `AI_INVALID_RESPONSE`로 처리한다. 실제 API 인증·모델 가용성·품질은 별도 확인한다.
+`SpringAiAnalysisClient.generate(captions, durationMs, title)`는 `SplitAnalysisGenerator`에 위임한다. 상세 단계 cap은4,096이고 영상 합산 출력·추론 예산은16,000이다. 고정 System·입력 JSON·단계 Schema·종료/사용량·예산·실행 방법은 [분할 분석 문서](analysis-split-generation.md)에 있다. 기존 `handoff/` 단일 호출 자료는 이전 실험 기록이며 현재 전달 진입점은 `handoff/split/README.md`다.
 
-| 메서드 | 입출력과 확인 범위 |
+`checkConfigured()`는 유일한 분석/임베딩 모델과 tokenizer 설정을 확인하며 외부 API 인증/가용성을 시험하지 않는다. 실제 모델·키·context 용량은 명시해야 하고 공급자는 기본 비활성이다. 분석과 채팅은 별도 모델 Bean이다.
+
+`embed(List<CaptionChunker.Chunk>)`는 기존 원문 chunk만 보내며 입력 index 순서 복원·배치 모델 일치·식별자 fallback 정책을 유지한다. 임베딩에는 분석 요약·AI 제안을 사용하지 않는다. 임베딩 배치 크기는 `ANALYSIS_EMBEDDING_BATCH_SIZE` 기본32이며 응답 metadata.model이 없을 때만 `ANALYSIS_EMBEDDING_MODEL_ID`를 사용한다. 실제 임베딩 모델·차원은 Worker·Chat 공통 설정을 따른다.
+
+분할 결과는 Markdown/thinking 태그 제거 없이 파싱하고, 중복 JSON 키·trailing token·null·누락/추가 필드·없는 출처·잘린 응답을 거절한다. 원본 ID 변환 후에도 구간 순서·누락·겹침·구간 밖 인용을 검증한다. 모델용 인용 최대5개는 원본 ID로 펼친 뒤 재적용하지 않는다. 시간·UUID는 기존 서버 검증기에서 결정한다.
+
+| 실패 | 기존 코드·재시도 |
 | --- | --- |
-| `checkConfigured()` | 두 모델 Bean이 각각 하나로 선택되는지 확인. 외부 API 호출·인증·모델 가용성은 확인하지 않음. 여러 Bean을 제공하면 `@Primary` 등으로 하나를 선택해야 함 |
-| `generate(CaptionDocument)` → `AnalysisOutput` | `BeanOutputConverter<AnalysisOutput>`의 JSON Schema 형식과 `1.0`·한국어·원문 근거·origin 지시를 system message에 포함. 자막 JSON은 별도 user message에 전달하며 원문의 중괄호를 템플릿 변수로 다시 해석하지 않음 |
-| `embed(List<CaptionChunker.Chunk>)` → `Embeddings(String model, List<float[]> vectors)` | `chunk.text` 원문만 전달. 배치 응답의 `Embedding.index`로 입력 조각 순서를 복원. 개수·누락·중복·범위를 확인하고 모든 배치가 같은 모델인지 확인 |
+| 모델/tokenizer 설정 누락 | `AI_NOT_CONFIGURED`, false |
+| 입력·입력 예산 오류 | `AI_INVALID_INPUT`, false |
+| JSON·Schema·출처·LENGTH·사용량·합산 예산 오류 | `AI_INVALID_RESPONSE`, false |
+| 공급자 거절/비일시 오류 | `AI_REQUEST_REJECTED`, false |
+| 일시 공급자·I/O 오류 | `AI_UNAVAILABLE`, true |
+| 그 외 공급자 runtime 오류 | `AI_REQUEST_FAILED`, false |
 
-JSON 응답은 Markdown·thinking 태그 제거 없이 변환하며 뒤따르는 별도 JSON도 거절한다. 빈 응답·변환 실패는 `AI_INVALID_RESPONSE`로 처리한다. 변환된 `AnalysisOutput`의 `schemaVersion`, 필수 구조, 실제 원문·sectionKey 참조 등은 호출자가 기존 `AnalysisOutputValidator`로 검증한 뒤 저장해야 한다. 임베딩의 finite 값·동일 차원·0 벡터 여부는 기존 `WorkerResultStore.saveIndex()`가 확인한다. 어댑터는 DB에 접근하지 않는다.
+실제 분석 모델은 connect3초/write8초/read120초/호출 전체120초이며 SDK·transport 재시도0회다. 임베딩은 기존 공통 SDK 설정을 유지한다. Worker DB 재시도와 중첩된 호출별 자동 재시도를 추가하지 않는다. 원문·prompt·서명 URL·키·원래 공급자 exception body/cause는 로그/오류에 포함하지 않는다.
 
-임베딩 모델 식별자는 실제 `EmbeddingResponse.getMetadata().getModel()`을 우선한다. 메타데이터가 비어 있을 때만 운영자가 명시한 `analysis.ai.embedding-model-id` 또는 `ANALYSIS_EMBEDDING_MODEL_ID`를 사용한다. 둘 다 없으면 `AI_NOT_CONFIGURED`로 실패하며 이름을 추측하지 않는다. 이 설정은 실제 모델을 선택하는 SDK 옵션이 아니라 저장할 모델 식별자이므로 실제 Bean의 모델과 일치해야 한다.
-
-`analysis.ai.embedding-batch-size` 또는 `ANALYSIS_EMBEDDING_BATCH_SIZE`는 요청 한 번에 포함할 최대 조각 수이며 기본값은 `32`다. 양수만 허용한다. `32`는 요청을 무제한으로 보내지 않기 위한 로컬 기술 기본값이며 서비스의 최종 제한·공급자 토큰 한도·분석 품질 정책을 뜻하지 않는다. 공급자의 개별 입력 토큰 한도는 실제 모델과 조각 설정을 확정할 때 별도로 확인한다.
-
-| `AnalysisAiException.code()` | `retryable()` | 처리 기준 |
-| --- | --- | --- |
-| `AI_NOT_CONFIGURED` | `false` | 모델 Bean 누락·선택 불가, 잘못된 배치 설정, 응답과 설정 모두에 모델 식별자 없음 |
-| `AI_INVALID_INPUT` | `false` | 빈 자막 입력, 빈 조각 목록·원문 |
-| `AI_INVALID_RESPONSE` | `false` | JSON 변환·기본 응답 구조·임베딩 index·배치 간 모델 일치 실패. 같은 요청의 자동 재생성을 하지 않음 |
-| `AI_UNAVAILABLE` | `true` | `TransientAiException`, 네트워크 I/O 실패, HTTP 408·429·5xx |
-| `AI_REQUEST_REJECTED` | `false` | `NonTransientAiException`, 재시도 대상이 아닌 HTTP 응답 |
-| `AI_REQUEST_FAILED` | `false` | 분류되지 않은 공급자 runtime 실패. 무조건 재시도하지 않음 |
-
-어댑터는 재시도 루프와 HTTP timeout을 만들지 않는다. 기존 job 시도 상한이 최초 포함 3회이므로 실제 연동 시 모델 Bean 제공자가 SDK 총 시도를 1회(내부 자동 재시도 0회)로 설정하고 HTTP connect/read/전체 호출 시간 상한을 설정·검증해야 한다. 이는 SDK의 개별 호출 기준이며 한 job 단계에서 필요한 임베딩 배치 호출 수를 1개로 제한한다는 뜻은 아니다. 이 모듈의 mock 테스트는 공급자 설정이나 외부 요청 종료 시간을 보장하지 않는다.
-
-원문·전체 prompt·서명 URL·토큰·공급자 응답을 로그에 남기지 않는다. 어댑터 실패는 code와 retryable만 전달하며 민감한 내용을 포함할 수 있는 원래 예외 메시지·cause를 노출하지 않는다. 실제 모델의 내용 차단·응답 품질·요금·rate limit·인증·네트워크는 검증하지 않았다.
-
-SDK 기준은 [Spring AI Getting Started](https://docs.spring.io/spring-ai/reference/getting-started.html), [Structured Output Converters](https://docs.spring.io/spring-ai/reference/api/structured-output/converters.html), [Embeddings Model API](https://docs.spring.io/spring-ai/reference/api/embeddings.html)와 Maven Central의 `2.0.2` source JAR다. Spring AI `2.0.x`는 Spring Boot `4.0.x`·`4.1.x`를 지원한다. reference의 일부 예시와 실제 타입이 다르면 해석된 버전의 SDK를 따른다.
+실제 Spring AI·OpenAI 연동은 자체 작성한 작은 입력의3단계 호출로 확인했다. Python 실영상7개 최초 실험, 실패 상세 한 건의4,096 진단, PostgreSQL·HTTP 대역 검사를 구분하며 전체7영상/60분/Spring+GCS+기기 흐름·내용 정확도는 미검증이다. 공개 가능한 실제 요청/응답은 `handoff/split/examples/spring-live.actual.json`을 참고한다.

@@ -10,7 +10,7 @@ spring:
 
 logging:
   level:
-    # Spring AI logs the full prompt when the provider returns no choices.
+    # 빈 choices 응답에서 SDK 모델이 전체 prompt를 WARN으로 기록하는 경로를 차단한다.
     "org.springframework.ai.openai.OpenAiChatModel": "OFF"
 
 itip:
@@ -19,11 +19,18 @@ itip:
     project-id: ${FCM_PROJECT_ID:}
   worker:
     analysis-model:
-      enabled: ${ANALYSIS_AI_ENABLED:false}
+      enabled: ${ANALYSIS_OPENAI_ENABLED:${ANALYSIS_AI_ENABLED:false}}
       api-key: ${OPENAI_API_KEY:}
       base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
-      model: ${ANALYSIS_MODEL:}
-      max-output-tokens: ${ANALYSIS_MAX_OUTPUT_TOKENS:0}
+      model: ${ANALYSIS_OPENAI_MODEL:${ANALYSIS_MODEL:}}
+      token-encoding: ${ANALYSIS_TOKEN_ENCODING:}
+      context-tokens: ${ANALYSIS_CONTEXT_TOKENS:0}
+      input-token-budget: ${ANALYSIS_INPUT_TOKEN_BUDGET:30000}
+      total-output-tokens: ${ANALYSIS_TOTAL_OUTPUT_TOKENS:16000}
+      plan-output-tokens: ${ANALYSIS_PLAN_OUTPUT_TOKENS:1024}
+      detail-output-tokens: ${ANALYSIS_DETAIL_OUTPUT_TOKENS:4096}
+      summary-output-tokens: ${ANALYSIS_SUMMARY_OUTPUT_TOKENS:3072}
+      detail-concurrency: ${ANALYSIS_DETAIL_CONCURRENCY:3}
     scheduling-enabled: ${WORKER_SCHEDULING_ENABLED:true}
     poll-delay: ${WORKER_POLL_DELAY:PT2S}
     lease-duration: ${WORKER_LEASE_DURATION:PT2M}

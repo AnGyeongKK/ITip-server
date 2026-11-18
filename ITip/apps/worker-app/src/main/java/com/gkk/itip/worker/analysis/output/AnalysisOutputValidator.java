@@ -18,6 +18,14 @@ public class AnalysisOutputValidator {
             require(!output.mindmap().sectionKeys().isEmpty());
             Map<String, Integer> sourceIndex = new HashMap<>();
             for (int i = 0; i < captions.segments().size(); i++) sourceIndex.put(captions.segments().get(i).segmentId(), i);
+            require(sourceIndex.size() == captions.segments().size());
+            int previousEnd = -1;
+            for (var section : output.sections()) {
+                Integer start = sourceIndex.get(section.startSegmentId()), end = sourceIndex.get(section.endSegmentId());
+                require(start != null && end != null && start == previousEnd + 1 && end >= start);
+                previousEnd = end;
+            }
+            require(previousEnd == captions.segments().size() - 1);
             Map<String, String> sectionIds = new LinkedHashMap<>();
             for (var section : output.sections()) {
                 require(sectionIds.putIfAbsent(text(section.sectionKey()), UUID.randomUUID().toString()) == null);

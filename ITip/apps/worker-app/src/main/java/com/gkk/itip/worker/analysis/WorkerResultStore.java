@@ -47,7 +47,7 @@ public class WorkerResultStore {
     }
 
     public record Draft(UUID analysisId, ResultDocument document, boolean indexed) {}
-    public record Source(String bucket, String objectKey, long generation, Long durationMs, long declaredSizeBytes) {}
+    public record Source(String bucket, String objectKey, long generation, Long durationMs, long declaredSizeBytes, String title) {}
 
     @Transactional(readOnly = true)
     public Optional<Draft> draft(JobQueue.Claim claim, Instant now) {
@@ -64,7 +64,7 @@ public class WorkerResultStore {
         var video = em.find(Video.class, job.getVideoId());
         if (video == null) throw new IllegalStateException("job video is missing");
         return new Source(upload.getBucket(), upload.getObjectKey(), job.getGeneration(),
-                video.getDurationMs(), upload.getDeclaredSizeBytes());
+                video.getDurationMs(), upload.getDeclaredSizeBytes(), video.getTitle());
     }
 
     @Transactional

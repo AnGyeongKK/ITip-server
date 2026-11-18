@@ -1,0 +1,45 @@
+{
+  "experimentDate": "2026-11-17",
+  "model": "gpt-6-luna",
+  "reasoning_effort": "low",
+  "qualityVerified": false,
+  "primary": {
+    "videos": 7,
+    "singleCallPassed": 4,
+    "splitPassed": 6,
+    "actualSplitApiCalls": 69,
+    "detailCompletionCap": 2048,
+    "splitEstimatedCostUsd": 0.062248,
+    "splitMedianVideoSeconds": 44.825,
+    "sdkRetries": 0
+  },
+  "detail4096Diagnostic": {
+    "scope": "one previously failed detail; not a new seven-video pass rate",
+    "passed": true,
+    "seconds": 10.827,
+    "finishReason": "stop",
+    "usage": {
+      "completion_tokens": 961,
+      "prompt_tokens": 1802,
+      "total_tokens": 2763,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 249,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cache_write_tokens": 1799,
+        "cached_tokens": 0
+      }
+    },
+    "max_completion_tokens": 4096
+  },
+  "limitations": [
+    "contract and source-range validation, not full factual accuracy",
+    "known seven-video evaluation, no held-out or repeats",
+    "4096 change tested on only one failed detail",
+    "Spring end-to-end GCS/mobile quality not established"
+  ]
+}

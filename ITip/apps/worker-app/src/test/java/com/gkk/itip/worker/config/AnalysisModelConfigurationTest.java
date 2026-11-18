@@ -1,30 +1,62 @@
 package com.gkk.itip.worker.config;
-
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.ai.chat.model.ChatModel;
 import static org.assertj.core.api.Assertions.*;
 
 class AnalysisModelConfigurationTest {
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withUserConfiguration(AnalysisModelConfiguration.class);
+    private final ApplicationContextRunner context=new ApplicationContextRunner().withUserConfiguration(AnalysisModelConfiguration.class);
 
-    @Test void enablesModelOnlyWithExplicitConfiguration() {
-        runner.run(context -> assertThat(context).doesNotHaveBean(ChatModel.class));
-        runner.withPropertyValues("itip.worker.analysis-model.enabled=true")
-                .run(context -> assertThat(context).hasFailed());
-        runner.withPropertyValues("itip.worker.analysis-model.enabled=true",
-                        "itip.worker.analysis-model.api-key=fixture-only-not-a-secret")
-                .run(context -> assertThat(context).hasFailed());
+    @Test void staysDisabledWithoutSecretsOrModelFallbacks() {
+        context.run(c -> {assertThat(c).hasNotFailed();assertThat(c).doesNotHaveBean(ChatModel.class);
+            assertThat(c.getBean(AnalysisGenerationProperties.class).detailOutputTokens()).isEqualTo(4096);});
     }
 
+    @Test void requiresExplicitModelTokenizerAndCapacityWhenEnabled() {
+        context.withPropertyValues("itip.worker.analysis-model.enabled=true").run(c -> assertThat(c).hasFailed());
+    }
+
+    @Test void invalidBudgetsAndConcurrencyFailBeforeExternalRequests() {
+        for(String property: new String[]{"detail-concurrency=4","total-output-tokens=2000","detail-output-tokens=0","input-token-budget=0"})
+            context.withPropertyValues("itip.worker.analysis-model."+property).run(c -> assertThat(c).hasFailed());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"ANALYSIS_AI_ENABLED", "ANALYSIS_OPENAI_ENABLED"})
+    void applicationYamlSupportsExistingAndSplitEnvironmentNames(String enableName) {
+        String modelName=enableName.equals("ANALYSIS_AI_ENABLED") ? "ANALYSIS_MODEL" : "ANALYSIS_OPENAI_MODEL";
+        withApplicationYaml().withPropertyValues(enableName+"=true", modelName+"=fixture-analysis",
+                "OPENAI_API_KEY=fixture-only-not-a-secret", "ANALYSIS_TOKEN_ENCODING=O200K_BASE",
+                "ANALYSIS_CONTEXT_TOKENS=1050000").run(c -> {
+                    assertThat(c).hasNotFailed();assertThat(c).hasSingleBean(ChatModel.class);
+                    var properties=c.getBean(AnalysisGenerationProperties.class);
+                    assertThat(properties.enabled()).isTrue();assertThat(properties.model()).isEqualTo("fixture-analysis");
+                    assertThat(properties.detailOutputTokens()).isEqualTo(4096);
+                });
+    }
+
+    @Test void explicitSplitOverrideCanDisableExistingEnvironmentActivation() {
+        withApplicationYaml().withPropertyValues("ANALYSIS_AI_ENABLED=true", "ANALYSIS_OPENAI_ENABLED=false")
+                .run(c -> {assertThat(c).hasNotFailed();assertThat(c).doesNotHaveBean(ChatModel.class);});
+    }
+
+    private ApplicationContextRunner withApplicationYaml() {
+        return context.withInitializer(c -> {
+            try {
+                var loader=new org.springframework.boot.env.YamlPropertySourceLoader();
+                for(var source:loader.load("worker-yaml",new org.springframework.core.io.ClassPathResource("application.yaml")))
+                    c.getEnvironment().getPropertySources().addLast(source);
+            } catch(java.io.IOException exception) {throw new IllegalStateException(exception);}
+        });
+    }
     @Test void sendsConfiguredAnalysisOptionsAndDoesNotRetryOn429() throws Exception {
         var body = new AtomicReference<String>();
         var status = new AtomicInteger(200);
@@ -43,10 +75,12 @@ class AnalysisModelConfigurationTest {
         });
         server.start();
         try {
-            runner.withPropertyValues("itip.worker.analysis-model.enabled=true",
+            context.withPropertyValues("itip.worker.analysis-model.enabled=true",
                             "itip.worker.analysis-model.api-key=fixture-only-not-a-secret",
                             "itip.worker.analysis-model.model=fixture-analysis",
-                            "itip.worker.analysis-model.max-output-tokens=512",
+                            "itip.worker.analysis-model.detail-output-tokens=512",
+                            "itip.worker.analysis-model.token-encoding=O200K_BASE",
+                            "itip.worker.analysis-model.context-tokens=1050000",
                             "itip.worker.analysis-model.base-url=http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
                     .run(context -> {
                         assertThat(context).hasNotFailed();

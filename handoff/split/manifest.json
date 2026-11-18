@@ -1,0 +1,31 @@
+{
+  "version": "split-analysis-v1-detail4096",
+  "historicalManifestPreserved": "handoff/manifest.json",
+  "fullFinalSchema": "handoff/schemas/analysis.spring-v1.json",
+  "model": "gpt-6-luna",
+  "reasoning_effort": "low",
+  "maxCompletionTokens": {
+    "plan": 1024,
+    "detail": 4096,
+    "summary": 3072,
+    "videoTotal": 16000
+  },
+  "providerAutoRetries": 0,
+  "files": {
+    "ITip/apps/worker-app/src/main/resources/application.yaml": "0cafd9d6324c5febafdafe176f64df03d70e057e3b819f62e2c0e9befc0abff4",
+    "ITip/apps/worker-app/src/main/resources/prompts/analysis-split/detail.system.md": "6342ee6771d338ddb9ccff8ff165733497004d30995fa46f42b4d89946261565",
+    "ITip/apps/worker-app/src/main/resources/prompts/analysis-split/plan.system.md": "bcedf5ff44dca8a7b3496d3995545db7db39195b3723979230ce265902a431cc",
+    "ITip/apps/worker-app/src/main/resources/prompts/analysis-split/summary.system.md": "781ad244e38cf34ae6bc208f73693c60a16cad34cd399586ff413caf45e23e2f",
+    "ITip/apps/worker-app/src/main/resources/schemas/analysis.spring-v1.json": "6a29a12775c4d56f21db00f8a9893536a09d28cc10840cbb4311e6899779ad6d",
+    "handoff/split/README.md": "699f6106aa58c174749b0282b59557797fafeaf4b62d5dcebcb009d2ca2b0b31",
+    "handoff/split/detail.system.md": "6342ee6771d338ddb9ccff8ff165733497004d30995fa46f42b4d89946261565",
+    "handoff/split/evaluation.json": "a3fec595db4c9779e9de0bc8a7f0f67b543fea14ae20f1f8041ddc5879379faf",
+    "handoff/split/examples/example.input.json": "7f3d0d223eaae3604250f256ac7278d9ba40067fd115b9f70398ff954afea4b0",
+    "handoff/split/examples/example.output.json": "e23b9f148f1a150608921b9d620a75adb1afa08b0bd88480fcc9e5d1271a4a38",
+    "handoff/split/examples/spring-live.actual.json": "0191a497d874c644101059702007f5377e5dad6b93324a72b3bc1e5d29d07803",
+    "handoff/split/pipeline.py": "dd505a6457d732e7ddde4ddd8b48f65ca837db31ab8dbb12f57014b9d3f6040e",
+    "handoff/split/plan.system.md": "bcedf5ff44dca8a7b3496d3995545db7db39195b3723979230ce265902a431cc",
+    "handoff/split/summary.system.md": "781ad244e38cf34ae6bc208f73693c60a16cad34cd399586ff413caf45e23e2f",
+    "handoff/split/test_pipeline.py": "acdd32eb19422c74341bd6ce648bac3edb5d5cce604034cd8128432ee0fe3290"
+  }
+}

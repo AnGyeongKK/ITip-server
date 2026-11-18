@@ -75,12 +75,24 @@ class AnalysisOutputValidatorTest {
         String item = field.equals("recommendedTools")
                 ? "{\"name\":\"도구\",\"reason\":\"다른 구간의 설명\",\"origin\":\"SOURCE\",\"sourceSegmentIds\":[\"s000002\"]}"
                 : "{\"text\":\"다른 구간의 설명\",\"origin\":\"SOURCE\",\"sourceSegmentIds\":[\"s000002\"]}";
-        rejects(firstSectionOnly().replace("\"" + field + "\":[]", "\"" + field + "\":[" + item + "]"));
+        rejects(twoSections().replace("\"" + field + "\":[]", "\"" + field + "\":[" + item + "]"));
     }
 
     @Test void wholeVideoSummaryCanStillReferenceAnotherSection() {
-        String json = firstSectionOnly().replaceFirst("\\[\"s000001\"\\]", "[\"s000002\"]");
+        String json = twoSections().replaceFirst("\\[\"s000001\"\\]", "[\"s000002\"]");
         assertThatCode(() -> validate(json)).doesNotThrowAnyException();
+    }
+
+    @Test void rejectsMissingTailAndOverlappingSections() {
+        rejects(firstSectionOnly());
+        rejects(twoSections().replace("\"startSegmentId\":\"s000002\"", "\"startSegmentId\":\"s000001\""));
+    }
+
+    private String twoSections() {
+        var original=mapper.readValue(VALID,AnalysisOutput.class);var s=original.sections().getFirst();
+        var first=new AnalysisOutput.Section(s.sectionKey(),s.title(),"s000001","s000001",List.of("s000001"),s.summary(),s.subtopics(),s.keywords(),s.detail());
+        var second=new AnalysisOutput.Section("topic-b",s.title(),"s000002","s000002",List.of("s000002"),s.summary(),s.subtopics(),s.keywords(),s.detail());
+        return mapper.writeValueAsString(new AnalysisOutput("1.0",original.summary(),List.of(first,second),new AnalysisOutput.Mindmap("근거 검색",List.of("topic-a","topic-b"))));
     }
 
     private String firstSectionOnly() {

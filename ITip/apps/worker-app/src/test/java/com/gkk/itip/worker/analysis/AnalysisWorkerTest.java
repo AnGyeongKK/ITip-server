@@ -6,6 +6,8 @@ import com.gkk.itip.domain.analysis.*;
 import com.gkk.itip.domain.upload.CaptionUpload;
 import com.gkk.itip.domain.video.Video;
 import com.gkk.itip.worker.analysis.ai.SpringAiAnalysisClient;
+import com.gkk.itip.worker.analysis.ai.SplitAnalysisFixtures;
+import com.gkk.itip.worker.analysis.ai.SplitAnalysisGenerator;
 import com.gkk.itip.worker.analysis.caption.CaptionChunker;
 import com.gkk.itip.worker.analysis.caption.CaptionParser;
 import com.gkk.itip.worker.analysis.output.AnalysisOutputValidator;
@@ -63,7 +65,9 @@ import static org.mockito.Mockito.*;
 
 /** 모델 JSON은 외부 응답을 대신하는 고정 예시이며 실제 분석 품질의 근거가 아니다. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {
-        "spring.flyway.enabled=true", "itip.worker.scheduling-enabled=false", "itip.worker.heartbeat-delay=PT0.05S"})
+        "spring.flyway.enabled=true", "itip.worker.analysis-model.model=gpt-6-luna",
+        "itip.worker.analysis-model.token-encoding=O200K_BASE", "itip.worker.analysis-model.context-tokens=1050000",
+        "itip.worker.scheduling-enabled=false", "itip.worker.heartbeat-delay=PT0.05S"})
 @Testcontainers
 class AnalysisWorkerTest {
     @Container static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -123,7 +127,7 @@ class AnalysisWorkerTest {
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             assertOutsideTransaction();
             assertThat(MDC.get("jobId")).isNotBlank();
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         when(embedding.call(any(EmbeddingRequest.class))).thenAnswer(call -> {
             assertOutsideTransaction();
@@ -155,19 +159,24 @@ class AnalysisWorkerTest {
         assertThat(jdbc.queryForObject("select section_ids[1] from analysis_chunks", UUID.class)).isEqualTo(saved.getFirst().getId());
         assertThat(runNext()).isFalse();
         assertThat(MDC.get("jobId")).isNull();
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(embedding).call(any(EmbeddingRequest.class));
     }
 
     @Test void configuredOpenAiModelCompletesAndStoresANewJob() throws Exception {
         var received = new AtomicReference<String>();
+        var modelCalls = new java.util.concurrent.atomic.AtomicInteger();
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/chat/completions", exchange -> {
             received.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            modelCalls.incrementAndGet();
+            var wire=context.getBean(JsonMapper.class).readTree(received.get());
+            var wireMessages=wire.get("messages");
+            var stageInput=context.getBean(JsonMapper.class).readTree(wireMessages.get(wireMessages.size()-1).get("content").asString());
             String json = context.getBean(JsonMapper.class).writeValueAsString(Map.of(
                     "id", "fixture", "object", "chat.completion", "created", 1, "model", "fixture-analysis",
-                    "choices", List.of(Map.of("index", 0, "message", Map.of("role", "assistant", "content", OUTPUT),
-                            "finish_reason", "stop"))));
+                    "choices", List.of(Map.of("index", 0, "message", Map.of("role", "assistant", "content", context.getBean(JsonMapper.class).writeValueAsString(SplitAnalysisFixtures.payload(stageInput))),
+                            "finish_reason", "stop")), "usage", Map.of("prompt_tokens",100,"completion_tokens",100,"total_tokens",200)));
             byte[] body = json.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, body.length);
@@ -179,15 +188,21 @@ class AnalysisWorkerTest {
                     .withPropertyValues("itip.worker.analysis-model.enabled=true",
                             "itip.worker.analysis-model.api-key=fixture-only-not-a-secret",
                             "itip.worker.analysis-model.model=fixture-analysis",
-                            "itip.worker.analysis-model.max-output-tokens=512",
+                            "itip.worker.analysis-model.token-encoding=O200K_BASE",
+                            "itip.worker.analysis-model.context-tokens=1050000",
                             "itip.worker.analysis-model.base-url=http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
                     .run(application -> {
                         assertThat(application).hasNotFailed();
                         var beans = new StaticListableBeanFactory();
                         beans.addBean("analysis", application.getBean(ChatModel.class));
                         beans.addBean("embedding", embedding);
+                        SplitAnalysisGenerator generation;
+                        try { generation = new SplitAnalysisGenerator(beans.getBeanProvider(ChatModel.class), context.getBean(JsonMapper.class),
+                                context.getBean(com.gkk.itip.worker.analysis.ai.AnalysisSchemas.class), context.getBean(com.gkk.itip.worker.analysis.caption.AnalysisCaptionGroups.class),
+                                application.getBean(com.gkk.itip.worker.config.AnalysisGenerationProperties.class)); }
+                        catch (java.io.IOException exception) { throw new IllegalStateException(exception); }
                         var ai = new SpringAiAnalysisClient(beans.getBeanProvider(ChatModel.class),
-                                beans.getBeanProvider(EmbeddingModel.class), context.getBean(JsonMapper.class), "", 32);
+                                beans.getBeanProvider(EmbeddingModel.class), generation, "", 32);
                         UUID id = fixture(3000L, CAPTION.length);
                         assertThat(processor(ai, 1048576).runNext()).isTrue();
                         var job = jobs.findById(id).orElseThrow();
@@ -196,7 +211,8 @@ class AnalysisWorkerTest {
                         assertThat(records.count()).isEqualTo(1);
                         assertThat(sections.findAllByAnalysisIdOrderByStartMsAscIdAsc(job.getAnalysisId())).hasSize(1);
                         assertThat(jdbc.queryForObject("select count(*) from analysis_chunks", Integer.class)).isEqualTo(1);
-                        assertThat(received.get()).contains("fixture-analysis", "s000001");
+                        assertThat(received.get()).contains("fixture-analysis", "g000001");
+                        assertThat(modelCalls.get()).isEqualTo(3);
                     });
         } finally {
             server.stop(0);
@@ -266,7 +282,7 @@ class AnalysisWorkerTest {
         assertThat(results.findById(analysisId).orElseThrow().getResultJson()).isEqualTo(original);
         assertThat(sections.findAllByAnalysisIdOrderByStartMsAscIdAsc(analysisId).getFirst().getId()).isEqualTo(sectionId);
         assertThat(records.count()).isEqualTo(1);
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(gcs, times(2)).read("test-bucket", "caption.json", 7, 1048576);
     }
 
@@ -284,7 +300,7 @@ class AnalysisWorkerTest {
         assertThat(jobs.findById(id).orElseThrow().getStatus()).isEqualTo(JobStatus.COMPLETED);
         assertThat(records.count()).isEqualTo(1);
         verify(gcs).read("test-bucket", "caption.json", 7, 1048576);
-        verify(chat).call(any(Prompt.class));
+        verify(chat, times(3)).call(any(Prompt.class));
         verify(embedding).call(any(EmbeddingRequest.class));
     }
 
@@ -293,8 +309,8 @@ class AnalysisWorkerTest {
         AtomicReference<JobQueue.Claim> newer = new AtomicReference<>();
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             clock.set(NOW.plusSeconds(121));
-            newer.set(queue.claim(clock.instant(), Duration.ofMinutes(2)).orElseThrow());
-            return reply(OUTPUT);
+            if (newer.get() == null) newer.set(queue.claim(clock.instant(), Duration.ofMinutes(2)).orElseThrow());
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         runNext();
         var job = jobs.findById(id).orElseThrow();
@@ -327,7 +343,7 @@ class AnalysisWorkerTest {
             clock.set(NOW.plusSeconds(60));
             assertThat(renewed.await(5, TimeUnit.SECONDS)).isTrue();
             assertThat(jobs.findById(id).orElseThrow().getLeaseUntil()).isEqualTo(NOW.plusSeconds(180));
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         assertThat(runNext()).isTrue();
         assertThat(callbackSeen.await(5, TimeUnit.SECONDS)).isTrue();
@@ -367,7 +383,7 @@ class AnalysisWorkerTest {
 
     @Test void invalidModelReferencesNeverCreateADraftOrIndex() {
         UUID id = fixture(3000L, CAPTION.length);
-        when(chat.call(any(Prompt.class))).thenReturn(reply(OUTPUT.replace("s000002", "s999999")));
+        when(chat.call(any(Prompt.class))).thenAnswer(call -> SplitAnalysisFixtures.replyWithInvalidDetail(call.getArgument(0, Prompt.class)));
         runNext();
         assertFailure(id, "AI_INVALID_RESPONSE", false, JobStatus.FAILED);
         assertThat(results.count()).isZero();
@@ -405,13 +421,40 @@ class AnalysisWorkerTest {
         } finally { logger.detachAppender(appender); appender.stop(); }
     }
 
+    @Test void actualSdkEmptyChoicesCannotLogTheOriginalPrompt() throws Exception {
+        var logger=(ch.qos.logback.classic.Logger)org.slf4j.LoggerFactory.getLogger("org.springframework.ai.openai.OpenAiChatModel");
+        assertThat(logger.getEffectiveLevel()).isEqualTo(ch.qos.logback.classic.Level.OFF);
+        var appender=new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();appender.start();logger.addAppender(appender);
+        var calls=new java.util.concurrent.atomic.AtomicInteger();
+        var server=com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/v1/chat/completions",exchange -> {
+            calls.incrementAndGet();
+            exchange.getRequestBody().readAllBytes();
+            byte[] body="{\"id\":\"chatcmpl-empty\",\"object\":\"chat.completion\",\"created\":1,\"model\":\"gpt-6-luna\",\"choices\":[]}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type","application/json");exchange.sendResponseHeaders(200,body.length);exchange.getResponseBody().write(body);exchange.close();
+        });server.start();
+        var client=com.gkk.itip.ai.OpenAiClients.create("fixture-not-a-real-key","http://127.0.0.1:"+server.getAddress().getPort()+"/v1",Duration.ofSeconds(10),Duration.ofSeconds(10));
+        try {
+            var actual=org.springframework.ai.openai.OpenAiChatModel.builder().openAiClient(client).openAiClientAsync(client.async())
+                .options(org.springframework.ai.openai.OpenAiChatOptions.builder().maxRetries(0).build()).build();
+            var beans=new StaticListableBeanFactory();beans.addBean("actual",actual);
+            var generator=new SplitAnalysisGenerator(beans.getBeanProvider(ChatModel.class),context.getBean(JsonMapper.class),
+                context.getBean(com.gkk.itip.worker.analysis.ai.AnalysisSchemas.class),context.getBean(com.gkk.itip.worker.analysis.caption.AnalysisCaptionGroups.class),
+                context.getBean(com.gkk.itip.worker.config.AnalysisGenerationProperties.class));
+            var captions=context.getBean(CaptionParser.class).parse(CAPTION,VIDEO,3000,1048576);
+            assertThatThrownBy(() -> generator.generate(captions,3000,PRIVATE_TEXT)).isInstanceOf(com.gkk.itip.worker.analysis.ai.AnalysisAiException.class);
+            assertThat(calls.get()).isEqualTo(1);
+            assertThat(appender.list).isEmpty();
+        } finally {client.close();server.stop(0);logger.detachAppender(appender);appender.stop();}
+    }
+
     @Test void eachDatabaseWriteUsesTheClockAfterItsExternalWait() {
         UUID id = fixture(3000L, CAPTION.length);
         when(gcs.read(anyString(), anyString(), anyLong(), anyLong())).thenAnswer(call -> {
             clock.set(NOW.plusSeconds(1)); return CAPTION;
         });
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
-            clock.set(NOW.plusSeconds(2)); return reply(OUTPUT);
+            clock.set(NOW.plusSeconds(2)); return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         when(embedding.call(any(EmbeddingRequest.class))).thenAnswer(call -> {
             clock.set(NOW.plusSeconds(3));
@@ -489,7 +532,7 @@ class AnalysisWorkerTest {
         UUID id = fixture(3000L, CAPTION.length);
         var empty = new StaticListableBeanFactory();
         var ai = new SpringAiAnalysisClient(empty.getBeanProvider(ChatModel.class), empty.getBeanProvider(EmbeddingModel.class),
-                context.getBean(JsonMapper.class), "", 32);
+                context.getBean(SplitAnalysisGenerator.class), "", 32);
         assertThat(processor(ai, 1048576).runNext()).isTrue();
         assertFailure(id, "AI_NOT_CONFIGURED", false, JobStatus.FAILED);
         assertThat(results.count()).isZero();
@@ -538,7 +581,7 @@ class AnalysisWorkerTest {
         when(chat.call(any(Prompt.class))).thenAnswer(call -> {
             assertThat(failed.await(5, TimeUnit.SECONDS)).isTrue();
             assertThat(succeeded.await(5, TimeUnit.SECONDS)).isTrue();
-            return reply(OUTPUT);
+            return SplitAnalysisFixtures.reply(call.getArgument(0, Prompt.class));
         });
         runNext();
         assertThat(jobs.findById(id).orElseThrow().getStatus()).isEqualTo(JobStatus.COMPLETED);
